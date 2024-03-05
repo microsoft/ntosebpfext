@@ -1,0 +1,9 @@
+[submodule "external/ebpf-verifier"]
+	path = external/ebpf-verifier
+	url = https://github.com/vbpf/ebpf-verifier.git
+[submodule "external/Catch2"]
+	path = external/Catch2
+	url = https://github.com/catchorg/Catch2.git
+[submodule "external/usersim"]
+	path = external/usersim
+	url = https://github.com/microsoft/usersim.git

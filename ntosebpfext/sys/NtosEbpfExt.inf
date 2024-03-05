@@ -1,0 +1,98 @@
+;
+;  Copyright (c) Microsoft Corporation
+;  SPDX-License-Identifier: MIT
+;
+
+;
+; NtosEbpfExt.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=EbpfExtension
+ClassGuid={b23b88e3-60fb-4950-b71e-2f70e591dff6}
+Provider=%ManufacturerName%
+CatalogFile=NtosEbpfExt.cat
+DriverVer= 1/11/2021,1.0.0.0
+PnpLockDown=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+NtosEbpfExt_Device_CoInstaller_CopyFiles = 11
+
+; ================= Class section =====================
+
+[ClassInstall32]
+Addreg=EbpfExtensionClassReg
+
+[EbpfExtensionClassReg]
+HKR,,,0,%ClassName%
+HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+NtosEbpfExt.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%NtosEbpfExt.DeviceDesc%=NtosEbpfExt_Device, Root\NtosEbpfExt
+
+[NtosEbpfExt_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+NtosEbpfExt.sys
+
+[DefaultUninstall]
+DelFiles = Drivers_Dir
+
+[DefaultUninstall.Services]
+DelService = NtosEbpfExt,0x200                                ; SPSVCINST_STOPSERVICE
+
+;-------------- Service installation
+[NtosEbpfExt_Device.NT.Services]
+AddService = NtosEbpfExt,%SPSVCINST_ASSOCSERVICE%, NtosEbpfExt_Service_Inst
+
+; -------------- NtosEbpfExt driver install sections
+[NtosEbpfExt_Service_Inst]
+DisplayName    = %NtosEbpfExt.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\NtosEbpfExt.sys
+
+;
+;--- NtosEbpfExt_Device Coinstaller installation ------
+;
+
+[NtosEbpfExt_Device.NT.CoInstallers]
+AddReg=NtosEbpfExt_Device_CoInstaller_AddReg
+CopyFiles=NtosEbpfExt_Device_CoInstaller_CopyFiles
+
+[NtosEbpfExt_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[NtosEbpfExt_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[NtosEbpfExt_Device.NT.Wdf]
+KmdfService =  NtosEbpfExt, NtosEbpfExt_wdfsect
+[NtosEbpfExt_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="EdgeOS CoreNtos"
+ClassName="EbpfExtension"
+DiskName = "NtosEbpfExt Installation Disk"
+NtosEbpfExt.DeviceDesc = "NtosEbpfExt Device"
+NtosEbpfExt.SVCDESC = "NtosEbpfExt Service"
