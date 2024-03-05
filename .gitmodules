@@ -1,25 +1,9 @@
 [submodule "external/ebpf-verifier"]
 	path = external/ebpf-verifier
 	url = https://github.com/vbpf/ebpf-verifier.git
-[submodule "external/ubpf"]
-	path = external/ubpf
-	url = https://github.com/iovisor/ubpf.git
-[submodule "external/bpftool"]
-	path = external/bpftool
-	url = https://github.com/dthaler/bpftool-1.git
-	branch = windows
-[submodule "external/win-c"]
-	path = external/win-c
-	url = https://github.com/takamin/win-c.git
 [submodule "external/Catch2"]
 	path = external/Catch2
 	url = https://github.com/catchorg/Catch2.git
-[submodule "external/pe-parse"]
-	path = external/pe-parse
-	url = https://github.com/trailofbits/pe-parse.git
 [submodule "external/usersim"]
 	path = external/usersim
 	url = https://github.com/microsoft/usersim.git
-[submodule "tests/external/kissfft"]
-	path = tests/external/kissfft
-	url = https://github.com/mborgerding/kissfft
