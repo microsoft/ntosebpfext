@@ -1,0 +1,141 @@
+{
+    "license":["Copyright (c) Microsoft Corporation", "SPDX-License-Identifier: MIT"],
+
+    "VMMap":
+    {
+        "TK5-3WP08R0904_WS2019_1":
+        [
+            {
+                "Name": "vm1_ws2019"
+            }
+        ],
+        "TK5-3WP08R0904_WS2019_2":
+        [
+            {
+                "Name": "vm2_ws2019"
+            }
+        ],
+        "TK5-3WP08R0907_WS2019_1":
+        [
+            {
+                "Name": "vm1_ws2019"
+            }
+        ],
+        "TK5-3WP08R0907_WS2019_2":
+        [
+            {
+                "Name": "vm2_ws2019"
+            }
+        ],
+        "TK5-3WP07R0703_WS2019_1":
+        [
+            {
+                "Name": "vm1_ws2019"
+            }
+        ],
+        "TK5-3WP07R0703_WS2019_2":
+        [
+            {
+                "Name": "vm2_ws2019"
+            }
+        ],
+        "TK5-3WP07R0703_WS2019_3":
+        [
+            {
+                "Name": "vm3_ws2019"
+            }
+        ],
+        "TK5-3WP07R0703_WS2019_4":
+        [
+            {
+                "Name": "vm4_ws2019"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_1":
+        [
+            {
+                "Name": "vm1_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_2":
+        [
+            {
+                "Name": "vm2_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_3":
+        [
+            {
+                "Name": "vm3_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_4":
+        [
+            {
+                "Name": "vm4_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_5":
+        [
+            {
+                "Name": "vm5_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_6":
+        [
+            {
+                "Name": "vm6_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_7":
+        [
+            {
+                "Name": "vm7_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_8":
+        [
+            {
+                "Name": "vm8_ws2022"
+            }
+        ],
+        "TK5-3WP07R0703_WS2022_PERF_1":
+        [
+            {
+                "Name": "vm_perf_ws2022"
+            }
+        ]
+    },
+
+    "Interfaces":
+    [
+        {
+            "Alias": "duo1",
+            "V4Address": "192.168.1.11",
+            "V6Address": "fc00::1:11"
+        },
+        {
+            "Alias": "duo2",
+            "V4Address": "192.168.1.12",
+            "V6Address": "fc00::1:12"
+        },
+        {
+            "Alias": "duo3",
+            "V4Address": "192.168.2.11",
+            "V6Address": "fc00::2:11"
+        },
+        {
+            "Alias": "duo4",
+            "V4Address": "192.168.2.12",
+            "V6Address": "fc00::2:12"
+        }
+    ],
+
+    "ConnectRedirectTest":
+    {
+        "V4VipAddress": "192.168.1.100",
+        "V6VipAddress": "fc00::1:100",
+        "DestinationPort": 4444,
+        "ProxyPort": 4443
+    }
+}
