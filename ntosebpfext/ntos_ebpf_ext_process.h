@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include "net_ebpf_ext.h"
+#include "ntos_ebpf_ext.h"
 
 /**
  * @brief Unregister PROCESS NPI providers.
  *
  */
 void
-net_ebpf_ext_process_unregister_providers();
+ntos_ebpf_ext_process_unregister_providers();
 
 /**
  * @brief Register PROCESS NPI providers.
@@ -19,4 +19,4 @@ net_ebpf_ext_process_unregister_providers();
  * @retval STATUS_UNSUCCESSFUL Operation failed.
  */
 NTSTATUS
-net_ebpf_ext_process_register_providers();
+ntos_ebpf_ext_process_register_providers();

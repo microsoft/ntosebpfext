@@ -1,26 +1,26 @@
 // Copyright (c) Microsoft Corporation
 // SPDX-License-Identifier: MIT
 
-#include "netebpf_ext_helper.h"
+#include "ntos_ebpf_ext_helper.h"
 
-DEVICE_OBJECT* _net_ebpf_ext_driver_device_object;
+DEVICE_OBJECT* _ntos_ebpf_ext_driver_device_object;
 
-_netebpf_ext_helper::_netebpf_ext_helper() : _netebpf_ext_helper(nullptr, nullptr, nullptr) {}
+_ntosebpf_ext_helper::_ntosebpf_ext_helper() : _ntosebpf_ext_helper(nullptr, nullptr, nullptr) {}
 
-_netebpf_ext_helper::_netebpf_ext_helper(
+_ntosebpf_ext_helper::_ntosebpf_ext_helper(
     _In_opt_ const void* npi_specific_characteristics,
     _In_opt_ _ebpf_extension_dispatch_function dispatch_function,
-    _In_opt_ netebpfext_helper_base_client_context_t* client_context)
+    _In_opt_ ntosebpfext_helper_base_client_context_t* client_context)
 {
     // Do not use REQUIRE() in this constructor or the destructor will never be called
     // to clean up any state allocated before the REQUIRE.
 
-    if (!NT_SUCCESS(net_ebpf_ext_trace_initiate())) {
+    if (!NT_SUCCESS(ntos_ebpf_ext_trace_initiate())) {
         return;
     }
     trace_initiated = true;
 
-    if (!NT_SUCCESS(net_ebpf_ext_register_providers())) {
+    if (!NT_SUCCESS(ntos_ebpf_ext_register_providers())) {
         return;
     }
 
@@ -36,7 +36,7 @@ _netebpf_ext_helper::_netebpf_ext_helper(
     }
 }
 
-_netebpf_ext_helper::~_netebpf_ext_helper()
+_ntosebpf_ext_helper::~_ntosebpf_ext_helper()
 {
     if (nmr_hook_client_handle) {
         nmr_hook_client_handle.reset(nullptr);
@@ -47,16 +47,16 @@ _netebpf_ext_helper::~_netebpf_ext_helper()
     }
 
     if (provider_registered) {
-        net_ebpf_ext_unregister_providers();
+        ntos_ebpf_ext_unregister_providers();
     }
 
     if (trace_initiated) {
-        net_ebpf_ext_trace_terminate();
+        ntos_ebpf_ext_trace_terminate();
     }
 }
 
 std::vector<GUID>
-_netebpf_ext_helper::program_info_provider_guids()
+_ntosebpf_ext_helper::program_info_provider_guids()
 {
     std::vector<GUID> guids;
     for (const auto& [id, provider] : program_info_providers) {
@@ -66,7 +66,7 @@ _netebpf_ext_helper::program_info_provider_guids()
 }
 
 ebpf_extension_data_t
-_netebpf_ext_helper::get_program_info_provider_data(_In_ const GUID& program_info_provider)
+_ntosebpf_ext_helper::get_program_info_provider_data(_In_ const GUID& program_info_provider)
 {
     auto iter = program_info_providers.find(program_info_provider);
 
@@ -77,12 +77,12 @@ _netebpf_ext_helper::get_program_info_provider_data(_In_ const GUID& program_inf
 }
 
 NTSTATUS
-_netebpf_ext_helper::_program_info_client_attach_provider(
+_ntosebpf_ext_helper::_program_info_client_attach_provider(
     _In_ HANDLE nmr_binding_handle,
     _Inout_ void* client_context,
     _In_ const NPI_REGISTRATION_INSTANCE* provider_registration_instance)
 {
-    auto& helper = *reinterpret_cast<_netebpf_ext_helper*>(client_context);
+    auto& helper = *reinterpret_cast<_ntosebpf_ext_helper*>(client_context);
     auto client_binding_context = std::make_unique<program_info_provider_t>();
     client_binding_context->module_id = *provider_registration_instance->ModuleId;
     client_binding_context->parent = &helper;
@@ -104,27 +104,27 @@ _netebpf_ext_helper::_program_info_client_attach_provider(
 }
 
 NTSTATUS
-_netebpf_ext_helper::_program_info_client_detach_provider(_Inout_ void* client_binding_context)
+_ntosebpf_ext_helper::_program_info_client_detach_provider(_Inout_ void* client_binding_context)
 {
     UNREFERENCED_PARAMETER(client_binding_context);
     return STATUS_SUCCESS;
 }
 
 void
-_netebpf_ext_helper::_program_info_client_cleanup_binding_context(_In_ _Post_invalid_ void* client_binding_context)
+_ntosebpf_ext_helper::_program_info_client_cleanup_binding_context(_In_ _Post_invalid_ void* client_binding_context)
 {
     UNREFERENCED_PARAMETER(client_binding_context);
 }
 
 NTSTATUS
-_netebpf_ext_helper::_hook_client_attach_provider(
+_ntosebpf_ext_helper::_hook_client_attach_provider(
     _In_ HANDLE nmr_binding_handle,
     _Inout_ void* client_context,
     _In_ const NPI_REGISTRATION_INSTANCE* provider_registration_instance)
 {
     UNREFERENCED_PARAMETER(provider_registration_instance);
     const void* provider_dispatch_table;
-    auto base_client_context = reinterpret_cast<netebpfext_helper_base_client_context_t*>(client_context);
+    auto base_client_context = reinterpret_cast<ntosebpfext_helper_base_client_context_t*>(client_context);
     if (base_client_context == nullptr) {
         return STATUS_INVALID_PARAMETER;
     }
@@ -147,7 +147,7 @@ _netebpf_ext_helper::_hook_client_attach_provider(
 }
 
 NTSTATUS
-_netebpf_ext_helper::_hook_client_detach_provider(_Inout_ void* client_binding_context)
+_ntosebpf_ext_helper::_hook_client_detach_provider(_Inout_ void* client_binding_context)
 {
     UNREFERENCED_PARAMETER(client_binding_context);
 
@@ -156,7 +156,7 @@ _netebpf_ext_helper::_hook_client_detach_provider(_Inout_ void* client_binding_c
 }
 
 void
-_netebpf_ext_helper::_hook_client_cleanup_binding_context(_In_ void* client_binding_context)
+_ntosebpf_ext_helper::_hook_client_cleanup_binding_context(_In_ void* client_binding_context)
 {
     UNREFERENCED_PARAMETER(client_binding_context);
 }

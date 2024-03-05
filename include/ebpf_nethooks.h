@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 // This file contains APIs for hooks and helpers that are
-// exposed by netebpfext.sys for use by eBPF programs.
+// exposed by ntosebpfext.sys for use by eBPF programs.
 
 // XDP_TEST hook.  We use "struct xdp_md" for cross-platform compatibility.
 typedef struct xdp_md_

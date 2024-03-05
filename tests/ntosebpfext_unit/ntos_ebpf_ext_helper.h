@@ -14,31 +14,31 @@
 #endif
 
 #include "ebpf_extension_uuids.h"
-#include "net_ebpf_ext.h"
-#include "net_ebpf_ext_tracelog.h"
+#include "ntos_ebpf_ext.h"
+#include "ntos_ebpf_ext_tracelog.h"
 #include "usersim\fwp_test.h"
 
 #include <iostream>
 #include <vector>
 
-typedef struct _netebpfext_helper_base_client_context
+typedef struct _ntosebpfext_helper_base_client_context
 {
-    class _netebpf_ext_helper* helper;
+    class _ntosebpf_ext_helper* helper;
     void* provider_binding_context;
     bpf_attach_type_t desired_attach_type; // BPF_ATTACH_TYPE_UNSPEC for any allowed.
-} netebpfext_helper_base_client_context_t;
+} ntosebpfext_helper_base_client_context_t;
 
-typedef class _netebpf_ext_helper
+typedef class _ntosebpf_ext_helper
 {
   public:
     // If the caller invokes platform functions itself, the caller must pass initialize_platform = false
     // and initialize/terminate the platform itself as needed.
-    _netebpf_ext_helper();
-    _netebpf_ext_helper(
+    _ntosebpf_ext_helper();
+    _ntosebpf_ext_helper(
         _In_opt_ const void* npi_specific_characteristics,
         _In_opt_ _ebpf_extension_dispatch_function dispatch_function,
-        _In_opt_ netebpfext_helper_base_client_context_t* client_context);
-    ~_netebpf_ext_helper();
+        _In_opt_ ntosebpfext_helper_base_client_context_t* client_context);
+    ~_ntosebpf_ext_helper();
 
     std::vector<GUID>
     program_info_provider_guids();
@@ -67,7 +67,7 @@ typedef class _netebpf_ext_helper
 
     typedef struct _program_info_provider
     {
-        _netebpf_ext_helper* parent;
+        _ntosebpf_ext_helper* parent;
         NPI_MODULEID module_id;
         void* context;
         const void* dispatch;
@@ -170,4 +170,4 @@ typedef class _netebpf_ext_helper
     std::unique_ptr<nmr_client_registration_t> nmr_program_info_client_handle;
     std::unique_ptr<nmr_client_registration_t> nmr_hook_client_handle;
 
-} netebpf_ext_helper_t;
+} ntosebpf_ext_helper_t;

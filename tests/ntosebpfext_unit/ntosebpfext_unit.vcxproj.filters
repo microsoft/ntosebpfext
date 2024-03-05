@@ -19,15 +19,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="netebpfext_unit.cpp">
+    <ClCompile Include="ntos_ebpfext_unit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="netebpf_ext_helper.cpp">
+    <ClCompile Include="ntos_ebpf_ext_helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="netebpf_ext_helper.h">
+    <ClInclude Include="ntos_ebpf_ext_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -5,7 +5,7 @@
 #include "catch_wrapper.hpp"
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
-#include "netebpf_ext_helper.h"
+#include "ntos_ebpf_ext_helper.h"
 #include "watchdog.h"
 
 #include <map>
@@ -19,12 +19,12 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 
 typedef struct test_process_client_context_t
 {
-    netebpfext_helper_base_client_context_t base;
+    ntosebpfext_helper_base_client_context_t base;
     process_md_t process_context;
 } test_process_client_context_t;
 
 _Must_inspect_result_ ebpf_result_t
-netebpfext_unit_invoke_process_program(
+ntosebpfext_unit_invoke_process_program(
     _In_ const void* client_process_context, _In_ const void* context, _Out_ uint32_t* result)
 {
     process_md_t* process_context = (process_md_t*)context;
@@ -35,15 +35,15 @@ netebpfext_unit_invoke_process_program(
     return EBPF_SUCCESS;
 }
 
-TEST_CASE("process_invoke", "[netebpfext]")
+TEST_CASE("process_invoke", "[ntosebpfext]")
 {
     ebpf_extension_data_t npi_specific_characteristics = {};
     test_process_client_context_t client_context = {};
 
-    netebpf_ext_helper_t helper(
+    ntosebpf_ext_helper_t helper(
         &npi_specific_characteristics,
-        (_ebpf_extension_dispatch_function)netebpfext_unit_invoke_process_program,
-        (netebpfext_helper_base_client_context_t*)&client_context);
+        (_ebpf_extension_dispatch_function)ntosebpfext_unit_invoke_process_program,
+        (ntosebpfext_helper_base_client_context_t*)&client_context);
 
     // Test process creation.
     std::wstring process_name = L"notepad.exe";
@@ -70,11 +70,11 @@ TEST_CASE("process_invoke", "[netebpfext]")
     usersime_invoke_process_creation_notify_routine(
         reinterpret_cast<PEPROCESS>(&fake_eprocess), (HANDLE)1, &create_info);
 
-    std::wstring test_command_line = std::wstring(
-        reinterpret_cast<wchar_t*>(client_context.process_context.command_start),
-        reinterpret_cast<wchar_t*>(client_context.process_context.command_end));
+    std::string test_command_line = std::string(
+        reinterpret_cast<char*>(client_context.process_context.command_start),
+        reinterpret_cast<char*>(client_context.process_context.command_end));
 
-    REQUIRE(test_command_line == command_line);
+    REQUIRE(test_command_line == std::string("notepad.exe foo.txt"));
 
     REQUIRE(client_context.process_context.process_id == 1);
     REQUIRE((HANDLE)client_context.process_context.parent_process_id == create_info.ParentProcessId);
