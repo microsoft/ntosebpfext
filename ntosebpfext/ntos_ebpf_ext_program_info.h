@@ -4,7 +4,10 @@
 
 #include "ebpf_extension.h"
 #include "ebpf_program_types.h"
-#include "ebpf_shared_framework.h"
+
+#define EBPF_COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
+#define EBPF_OFFSET_OF(s, m) (((size_t) & ((s*)0)->m))
+#define EBPF_FROM_FIELD(s, m, o) (s*)((uint8_t*)o - EBPF_OFFSET_OF(s, m))
 
 // Process program information.
 static const ebpf_helper_function_prototype_t _process_ebpf_extension_helper_function_prototype[] = {
@@ -21,6 +24,10 @@ static const ebpf_context_descriptor_t _ebpf_process_context_descriptor = {
     -1,
 };
 
+// Need to allocate these in ebpf_structs.h in ebpf-for-windows repo.
+#define BPF_PROG_TYPE_PROCESS 99999
+#define BPF_ATTACH_TYPE_PROCESS 99999
+
 static const ebpf_program_info_t _ebpf_process_program_info = {
     {"process", &_ebpf_process_context_descriptor, EBPF_PROGRAM_TYPE_PROCESS_GUID, BPF_PROG_TYPE_PROCESS},
     EBPF_COUNT_OF(_process_ebpf_extension_helper_function_prototype),
@@ -28,5 +35,11 @@ static const ebpf_program_info_t _ebpf_process_program_info = {
 };
 
 static const ebpf_program_section_info_t _ebpf_process_section_info[] = {
-    {L"process", &EBPF_PROGRAM_TYPE_PROCESS, &EBPF_ATTACH_TYPE_PROCESS, BPF_PROG_TYPE_PROCESS, BPF_ATTACH_TYPE_PROCESS},
+    {
+        L"process",
+        &EBPF_PROGRAM_TYPE_PROCESS,
+        &EBPF_ATTACH_TYPE_PROCESS,
+        BPF_ATTACH_TYPE_PROCESS,
+        BPF_ATTACH_TYPE_PROCESS,
+    },
 };

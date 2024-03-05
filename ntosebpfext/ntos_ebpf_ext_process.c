@@ -6,7 +6,6 @@
  * @brief This file implements the process program type hook on eBPF for Windows.
  */
 
-#include "ebpf_shared_framework.h"
 #include "ntos_ebpf_ext_process.h"
 
 #include <errno.h>
@@ -184,8 +183,9 @@ ntos_ebpf_ext_process_register_providers()
 
     _ntos_ebpf_process_hook_provider_data.supported_program_type = EBPF_PROGRAM_TYPE_PROCESS;
     // Set the attach type as the provider module id.
-    _ebpf_process_hook_provider_moduleid.Guid = EBPF_ATTACH_TYPE_PROCESS;
-    _ntos_ebpf_process_hook_provider_data.bpf_attach_type = BPF_ATTACH_TYPE_PROCESS;
+    _ebpf_process_hook_provider_moduleid.Guid = *_ebpf_process_section_info->program_type;
+    _ntos_ebpf_process_hook_provider_data.bpf_attach_type =
+        (bpf_attach_type_t)_ebpf_process_section_info->bpf_attach_type;
     _ntos_ebpf_process_hook_provider_data.link_type = BPF_LINK_TYPE_PLAIN;
     status = ntos_ebpf_extension_hook_provider_register(
         &hook_provider_parameters,
