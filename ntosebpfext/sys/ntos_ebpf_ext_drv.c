@@ -8,7 +8,7 @@
  */
 
 #include "ebpf_platform.h"
-#include "ebpf_version.h"
+#include "ntos_ebpf_ext_version.h"
 #include "git_commit_id.h"
 #include "ntos_ebpf_ext.h"
 

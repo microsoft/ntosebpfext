@@ -7,8 +7,8 @@
  * @brief Header file for structures/prototypes of the driver.
  */
 
-#include "ebpf_nethooks.h"
-#include "ebpf_program_attach_type_guids.h"
+#include "ebpf_ntos_hooks.h"
+#include "ebpf_ntos_program_attach_type_guids.h"
 #include "ebpf_program_types.h"
 #include "ebpf_shared_framework.h"
 #include "ebpf_windows.h"
