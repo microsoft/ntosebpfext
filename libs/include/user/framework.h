@@ -4,7 +4,7 @@
 #pragma once
 
 #include "cxplat_fault_injection.h"
-#include "ebpf_shared_framework.h"
+#include "shared_context.h"
 #include "usersim\ex.h"
 #include "usersim\ke.h"
 #include "usersim\ps.h"

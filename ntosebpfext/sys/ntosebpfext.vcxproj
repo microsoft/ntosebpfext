@@ -4,6 +4,7 @@
   SPDX-License-Identifier: MIT
 -->
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\eBPF-for-Windows.0.14.1\build\native\ebpf-for-windows.props" Condition="Exists('..\..\packages\eBPF-for-Windows.0.14.1\build\native\ebpf-for-windows.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -120,7 +121,7 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\shared;$(SolutionDir)libs\shared\kernel;$(SolutionDir)libs\runtime;$(SolutionDir)libs\runtime\kernel;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winkernel;$(OutputPath);$(SolutionDir)external\ebpf-verifier\src;$(SolutionDir)include\kernel;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\sys;$(SolutionDir)resource</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\include\kernel;$(SolutionDir)include\kernel;$(SolutionDir)resource;$(SolutionDir)ntosebpfext</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO</PreprocessorDefinitions>
       <!-- Change stack depth for C6262 from 1024 to 4096 -->
       <PREfastAdditionalOptions>stacksize4096</PREfastAdditionalOptions>
@@ -144,7 +145,7 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\shared;$(SolutionDir)libs\shared\kernel;$(SolutionDir)libs\runtime;$(SolutionDir)libs\runtime\kernel;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winkernel;$(OutputPath);$(SolutionDir)external\ebpf-verifier\src;$(SolutionDir)include\kernel;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\sys;$(SolutionDir)resource</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\include\kernel;$(SolutionDir)include\kernel;$(SolutionDir)resource;$(SolutionDir)ntosebpfext</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO;NDEBUG</PreprocessorDefinitions>
       <PREfastAdditionalOptions>stacksize4096</PREfastAdditionalOptions>
     </ClCompile>
@@ -167,7 +168,7 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\shared;$(SolutionDir)libs\shared\kernel;$(SolutionDir)libs\runtime;$(SolutionDir)libs\runtime\kernel;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winkernel;$(OutputPath);$(SolutionDir)external\ebpf-verifier\src;$(SolutionDir)include\kernel;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\sys;$(SolutionDir)resource</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\include\kernel;$(SolutionDir)include\kernel;$(SolutionDir)resource;$(SolutionDir)ntosebpfext</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO</PreprocessorDefinitions>
     </ClCompile>
     <Midl>
@@ -189,7 +190,7 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\shared;$(SolutionDir)libs\shared\kernel;$(SolutionDir)libs\runtime;$(SolutionDir)libs\runtime\kernel;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winkernel;$(OutputPath);$(SolutionDir)external\ebpf-verifier\src;$(SolutionDir)include\kernel;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\sys;$(SolutionDir)resource</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);$(SolutionDir)include;$(SolutionDir)libs\include\kernel;$(SolutionDir)include\kernel;$(SolutionDir)resource;$(SolutionDir)ntosebpfext</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);BINARY_COMPATIBLE=0;NT;UNICODE;_UNICODE;NDIS60;POOL_NX_OPTIN_AUTO</PreprocessorDefinitions>
     </ClCompile>
     <Midl>
@@ -231,7 +232,15 @@
     <ClInclude Include="..\ntos_ebpf_ext_tracelog.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\eBPF-for-Windows.0.14.1\build\native\ebpf-for-windows.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\eBPF-for-Windows.0.14.1\build\native\ebpf-for-windows.props'))" />
+  </Target>
 </Project>
