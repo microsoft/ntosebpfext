@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "setup_build", "scripts\setup_build\setup_build.vcxproj", "{231EE32B-EBA4-4FE5-A55B-DB18F539D403}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netebpfext", "netebpfext\sys\netebpfext.vcxproj", "{55499E36-37D4-4F86-B694-9F2990315758}"
+	ProjectSection(ProjectDependencies) = postProject
+		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netebpfext_user", "netebpfext\user\netebpfext_user.vcxproj", "{630BB78F-6211-41D8-8E3A-096E22E169EF}"
 EndProject
