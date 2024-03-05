@@ -1,4 +1,4 @@
-# NtOs eBPF Extensions
+# NTOS eBPF Extensions
 
 An eBPF for Windows extension that permits developers to leverage existing hooks in the Windows kernel to gather data and influence policy of the OS.
 
