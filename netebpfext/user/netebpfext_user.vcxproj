@@ -24,7 +24,7 @@
     <ProjectGuid>{630bb78f-6211-41d8-8e3a-096e22e169ef}</ProjectGuid>
     <RootNamespace>netebpfextunit</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>netebpfext_user</ProjectName>
+    <ProjectName>ntosebpfext_user</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
