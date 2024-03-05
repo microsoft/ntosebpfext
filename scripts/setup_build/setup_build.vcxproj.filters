@@ -19,7 +19,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\net-ebpf-ext.guid">
+    <CopyFileToFolders Include="..\ntos-ebpf-ext.guid">
       <Filter>Source Files</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\external\usersim\scripts\Test-FaultInjection.ps1" />

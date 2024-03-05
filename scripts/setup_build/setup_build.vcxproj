@@ -41,7 +41,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\net-ebpf-ext.guid">
+    <CopyFileToFolders Include="..\ntos-ebpf-ext.guid">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">true</DeploymentContent>

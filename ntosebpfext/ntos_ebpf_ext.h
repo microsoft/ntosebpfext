@@ -21,7 +21,7 @@
 #include <netioapi.h>
 #include <netiodef.h>
 
-#define NTOS_EBPF_EXTENSION_POOL_TAG 'Nfbe'
+#define NTOS_EBPF_EXTENSION_POOL_TAG 'bEtN'
 #define NTOS_EBPF_EXTENSION_NPI_PROVIDER_VERSION 0
 
 struct _ntos_ebpf_extension_hook_client;
