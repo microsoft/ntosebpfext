@@ -22,28 +22,13 @@
     <ClCompile Include="..\net_ebpf_ext.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\net_ebpf_ext_bind.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\net_ebpf_ext_hook_provider.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\net_ebpf_ext_prog_info_provider.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\net_ebpf_ext_sock_addr.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\net_ebpf_ext_sock_ops.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\net_ebpf_ext_tracelog.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\net_ebpf_ext_xdp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\guid.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\net_ebpf_ext_process.c">
@@ -52,9 +37,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\net_ebpf_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\net_ebpf_ext_bind.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\net_ebpf_ext_hook_provider.h">
@@ -66,16 +48,7 @@
     <ClInclude Include="..\net_ebpf_ext_program_info.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\net_ebpf_ext_sock_addr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\net_ebpf_ext_sock_ops.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\net_ebpf_ext_tracelog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\net_ebpf_ext_xdp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="netebpfext_platform.h">

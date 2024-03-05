@@ -134,9 +134,6 @@
     <ProjectReference Include="..\..\external\usersim\src\usersim.vcxproj">
       <Project>{030a7ac6-14dc-45cf-af34-891057ab1402}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\libs\api_common\api_common.vcxproj">
-      <Project>{e79382b2-fed9-4cd4-9498-dbddd6c46c91}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\libs\runtime\user\platform_user.vcxproj">
       <Project>{c26cb6a9-158c-4a9e-a243-755ddd98e5fe}</Project>
     </ProjectReference>

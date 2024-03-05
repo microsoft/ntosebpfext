@@ -20,23 +20,6 @@ static TOKEN_ACCESS_INFORMATION _test_token_access_information = {0};
 static FWP_BYTE_BLOB _test_user_id = {
     .size = (sizeof(TOKEN_ACCESS_INFORMATION)), .data = (uint8_t*)&_test_token_access_information};
 
-void
-netebpfext_initialize_fwp_classify_parameters(_Out_ fwp_classify_parameters_t* parameters)
-{
-    parameters->destination_ipv4_address = _test_destination_ipv4_address;
-    parameters->destination_ipv6_address = _test_destination_ipv6_address;
-    parameters->source_ipv4_address = _test_source_ipv4_address;
-    parameters->source_ipv6_address = _test_source_ipv6_address;
-    parameters->source_port = _test_source_port;
-    parameters->destination_port = _test_destination_port;
-    parameters->protocol = _test_protocol;
-    parameters->compartment_id = _test_compartment_id;
-    parameters->app_id = _test_app_id;
-    parameters->interface_luid = _test_interface_luid;
-    parameters->token_access_information = _test_token_access_information;
-    parameters->user_id = _test_user_id;
-}
-
 _netebpf_ext_helper::_netebpf_ext_helper(bool initialize_platform)
     : _netebpf_ext_helper(nullptr, nullptr, nullptr, initialize_platform)
 {}
@@ -62,23 +45,11 @@ _netebpf_ext_helper::_netebpf_ext_helper(
         platform_initialized = true;
     }
 
-    if (!NT_SUCCESS(net_ebpf_ext_initialize_ndis_handles(driver_object))) {
-        return;
-    }
-
-    ndis_handle_initialized = true;
-
     if (!NT_SUCCESS(net_ebpf_ext_register_providers())) {
         return;
     }
 
     provider_registered = true;
-
-    if (!NT_SUCCESS(net_ebpf_extension_initialize_wfp_components(device_object))) {
-        return;
-    }
-
-    wfp_initialized = true;
 
     nmr_program_info_client_handle = std::make_unique<nmr_client_registration_t>(&program_info_client, this);
 
@@ -88,9 +59,6 @@ _netebpf_ext_helper::_netebpf_ext_helper(
         client_context->helper = this;
         nmr_hook_client_handle = std::make_unique<nmr_client_registration_t>(&hook_client, client_context);
     }
-
-    usersim_fwp_set_sublayer_guids(
-        EBPF_DEFAULT_SUBLAYER, EBPF_HOOK_CGROUP_CONNECT_V4_SUBLAYER, EBPF_HOOK_CGROUP_CONNECT_V6_SUBLAYER);
 }
 
 _netebpf_ext_helper::~_netebpf_ext_helper()
@@ -103,16 +71,8 @@ _netebpf_ext_helper::~_netebpf_ext_helper()
         nmr_program_info_client_handle.reset(nullptr);
     }
 
-    if (wfp_initialized) {
-        net_ebpf_extension_uninitialize_wfp_components();
-    }
-
     if (provider_registered) {
         net_ebpf_ext_unregister_providers();
-    }
-
-    if (ndis_handle_initialized) {
-        net_ebpf_ext_uninitialize_ndis_handles();
     }
 
     if (platform_initialized) {
