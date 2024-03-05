@@ -7,8 +7,8 @@
  */
 
 #include "ebpf_registry_helper.h"
-#include "ebpf_shared_framework.h"
 #include "ebpf_windows.h"
+#include "shared_context.h"
 
 #include <rpc.h>
 #include <string>
@@ -23,7 +23,7 @@ wchar_t*
 ebpf_get_wstring_from_string(_In_ const char* text)
 {
     int length = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0);
-    wchar_t* wide = (wchar_t*)ebpf_allocate(length * sizeof(wchar_t));
+    wchar_t* wide = (wchar_t*)malloc(length * sizeof(wchar_t));
     if (wide == nullptr) {
         return nullptr;
     }
@@ -35,7 +35,7 @@ ebpf_get_wstring_from_string(_In_ const char* text)
 void
 ebpf_free_wstring(_Frees_ptr_opt_ wchar_t* wide)
 {
-    ebpf_free(wide);
+    free(wide);
 }
 
 void
@@ -129,7 +129,7 @@ ebpf_read_registry_value_string(
         return result;
     }
 
-    string_value = (wchar_t*)ebpf_allocate((value_size + sizeof(wchar_t)));
+    string_value = (wchar_t*)malloc((value_size + sizeof(wchar_t)));
     if (string_value == nullptr) {
         return EBPF_NO_MEMORY;
     }
@@ -145,7 +145,7 @@ ebpf_read_registry_value_string(
 
 Exit:
     if (string_value) {
-        ebpf_free(string_value);
+        free(string_value);
     }
     return result;
 }

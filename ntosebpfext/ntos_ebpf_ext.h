@@ -10,7 +10,6 @@
 #include "ebpf_ntos_hooks.h"
 #include "ebpf_ntos_program_attach_type_guids.h"
 #include "ebpf_program_types.h"
-#include "ebpf_shared_framework.h"
 #include "ebpf_windows.h"
 #include "ntos_ebpf_ext_hook_provider.h"
 #include "ntos_ebpf_ext_prog_info_provider.h"

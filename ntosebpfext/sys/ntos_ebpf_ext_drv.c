@@ -7,10 +7,9 @@
  * 2. Registers as an eBPF program information provider and hook provider.
  */
 
-#include "ebpf_platform.h"
-#include "ntos_ebpf_ext_version.h"
 #include "git_commit_id.h"
 #include "ntos_ebpf_ext.h"
+#include "ntos_ebpf_ext_version.h"
 
 #include <ntddk.h>
 #pragma warning(push)

@@ -146,11 +146,6 @@
     <ClInclude Include="ntos_ebpf_ext_platform.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\libs\store_helper\user\ebpf_store_helper_um.vcxproj">
-      <Project>{aa933b9f-b5d8-4aa8-ac18-98fe1a161e8a}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

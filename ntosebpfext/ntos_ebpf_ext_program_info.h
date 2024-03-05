@@ -4,7 +4,10 @@
 
 #include "ebpf_extension.h"
 #include "ebpf_program_types.h"
-#include "ebpf_shared_framework.h"
+
+#define EBPF_COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
+#define EBPF_OFFSET_OF(s, m) (((size_t) & ((s*)0)->m))
+#define EBPF_FROM_FIELD(s, m, o) (s*)((uint8_t*)o - EBPF_OFFSET_OF(s, m))
 
 // Process program information.
 static const ebpf_helper_function_prototype_t _process_ebpf_extension_helper_function_prototype[] = {
