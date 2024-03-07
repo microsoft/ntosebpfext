@@ -4,7 +4,7 @@
   SPDX-License-Identifier: MIT
 -->
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props" Condition="Exists('..\..\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props')" />
+  <Import Project="$(SolutionDir)\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props" Condition="Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -12,6 +12,14 @@
     </ProjectConfiguration>
     <ProjectConfiguration Include="FuzzerDebug|x64">
       <Configuration>FuzzerDebug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="NativeOnlyDebug|x64">
+      <Configuration>NativeOnlyDebug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="NativeOnlyRelease|x64">
+      <Configuration>NativeOnlyRelease</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
@@ -22,26 +30,38 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{630bb78f-6211-41d8-8e3a-096e22e169ef}</ProjectGuid>
-    <RootNamespace>ntosebpfextunit</RootNamespace>
+    <ProjectGuid>{fa9bb88d-8259-40c1-9422-bdedf9e9ce68}</ProjectGuid>
+    <RootNamespace>encodeprograminfo</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>ntosebpfext_user</ProjectName>
+    <ProjectName>ntos_ebpf_ext_export_program_info</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -49,9 +69,11 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared">
-  </ImportGroup>
+  <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'" Label="PropertySheets">
@@ -60,17 +82,33 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\libs\store_helper</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\libs\store_helper</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\libs\store_helper</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\libs\store_helper</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\libs\store_helper</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -78,82 +116,105 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
-      <CompileAs>CompileAsCpp</CompileAs>
-      <DisableSpecificWarnings>4505</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(ConfigurationName)\</AdditionalLibraryDirectories>
-    </Lib>
+    <CustomBuildStep>
+      <Command>$(OutDir)ntos_ebpf_ext_export_program_info.exe --clear
+$(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CustomBuildStep>
+      <Command>$(OutDir)ntos_ebpf_ext_export_program_info.exe --clear
+$(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
-      <CompileAs>CompileAsCpp</CompileAs>
-      <DisableSpecificWarnings>4505</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <Lib>
-      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(ConfigurationName)\</AdditionalLibraryDirectories>
-    </Lib>
+    <CustomBuildStep>
+      <Command>$(OutDir)ntos_ebpf_ext_export_program_info.exe --clear
+$(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
-      <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>4505</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(ConfigurationName)\</AdditionalLibraryDirectories>
-    </Lib>
+    <CustomBuildStep>
+      <Command>$(OutDir)ntos_ebpf_ext_export_program_info.exe --clear
+$(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CustomBuildStep>
+      <Command>$(OutDir)ntos_ebpf_ext_export_program_info.exe --clear
+$(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ntos_ebpf_ext.c" />
-    <ClCompile Include="..\ntos_ebpf_ext_hook_provider.c" />
-    <ClCompile Include="..\ntos_ebpf_ext_process.c" />
-    <ClCompile Include="..\ntos_ebpf_ext_prog_info_provider.c" />
-    <ClCompile Include="..\ntos_ebpf_ext_tracelog.c" />
+    <ClCompile Include="export_program_info.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ntos_ebpf_ext.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_hook_provider.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_process.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_program_info.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_prog_info_provider.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_tracelog.h" />
-    <ClInclude Include="ntos_ebpf_ext_platform.h" />
+    <ClInclude Include="export_program_info.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)\libs\store_helper\user\ebpf_store_helper_um.vcxproj">
+      <Project>{aa933b9f-b5d8-4aa8-ac18-98fe1a161e8a}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\eBPF-for-Windows.0.14.0\build\native\ebpf-for-windows.props'))" />
   </Target>
 </Project>

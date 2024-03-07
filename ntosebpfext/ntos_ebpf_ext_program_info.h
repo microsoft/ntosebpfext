@@ -3,6 +3,8 @@
 #pragma once
 
 #include "ebpf_extension.h"
+#include "ebpf_ntos_hooks.h"
+#include "ebpf_ntos_program_attach_type_guids.h"
 #include "ebpf_program_types.h"
 
 #define EBPF_COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
