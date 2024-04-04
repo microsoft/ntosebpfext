@@ -28,7 +28,7 @@ struct _ntos_ebpf_extension_hook_client;
 extern DEVICE_OBJECT* _ntos_ebpf_ext_driver_device_object;
 
 /**
- * @brief Register network extension NPI providers with eBPF core.
+ * @brief Register ntos extension NPI providers with eBPF core.
  *
  * @retval STATUS_SUCCESS Operation succeeded.
  * @retval STATUS_UNSUCCESSFUL Operation failed.
@@ -37,7 +37,7 @@ NTSTATUS
 ntos_ebpf_ext_register_providers();
 
 /**
- * @brief Unregister network extension NPI providers from eBPF core.
+ * @brief Unregister ntos extension NPI providers from eBPF core.
  *
  */
 void
