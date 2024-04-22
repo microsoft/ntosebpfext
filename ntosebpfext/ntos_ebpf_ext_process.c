@@ -36,12 +36,16 @@ _ebpf_process_get_image_path(_In_ process_md_t* process_md, _Out_ uint8_t* path,
 static const void* _ebpf_process_helper_functions[] = {(void*)&_ebpf_process_get_image_path};
 
 static ebpf_helper_function_addresses_t _ebpf_process_helper_function_address_table = {
-    EBPF_COUNT_OF(_ebpf_process_helper_functions), (uint64_t*)_ebpf_process_helper_functions};
+    .header = {EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION, EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
+    .helper_function_count = EBPF_COUNT_OF(_ebpf_process_helper_functions),
+    .helper_function_address = (uint64_t*)_ebpf_process_helper_functions,
+};
 
 //
 // Process Program Information NPI Provider.
 //
 static ebpf_program_data_t _ebpf_process_program_data = {
+    .header = {EBPF_PROGRAM_DATA_CURRENT_VERSION, EBPF_PROGRAM_DATA_CURRENT_VERSION_SIZE},
     .program_info = &_ebpf_process_program_info,
     .program_type_specific_helper_function_addresses = &_ebpf_process_helper_function_address_table,
     .context_create = _ebpf_process_context_create,
@@ -62,9 +66,8 @@ static ntos_ebpf_extension_program_info_provider_t* _ebpf_process_program_info_p
 ebpf_attach_provider_data_t _ntos_ebpf_process_hook_provider_data;
 
 ebpf_extension_data_t _ntos_ebpf_extension_process_hook_provider_data = {
-    EBPF_ATTACH_PROVIDER_DATA_VERSION,
-    sizeof(_ntos_ebpf_process_hook_provider_data),
-    &_ntos_ebpf_process_hook_provider_data};
+    .header = {EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION, EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION_SIZE},
+    .data = &_ntos_ebpf_process_hook_provider_data};
 
 NPI_MODULEID DECLSPEC_SELECTANY _ebpf_process_hook_provider_moduleid = {sizeof(NPI_MODULEID), MIT_GUID, {0}};
 
