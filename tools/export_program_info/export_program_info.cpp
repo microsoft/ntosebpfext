@@ -21,9 +21,6 @@ typedef struct _ebpf_program_section_info_with_count
 
 static const ebpf_program_info_t* _program_information_array[] = {&_ebpf_process_program_info};
 
-ebpf_program_section_info_t _mock_xdp_section_info[] = {
-    {L"xdp", &EBPF_PROGRAM_TYPE_XDP, &EBPF_ATTACH_TYPE_XDP, BPF_PROG_TYPE_XDP, BPF_XDP}};
-
 static std::vector<ebpf_program_section_info_with_count_t> _section_information = {
     {&_ebpf_process_section_info[0], 1},
 };
@@ -34,7 +31,7 @@ export_all_program_information()
     uint32_t status = ERROR_SUCCESS;
     size_t array_size = _countof(_program_information_array);
     for (uint32_t i = 0; i < array_size; i++) {
-        status = ebpf_store_update_program_information(_program_information_array[i], 1);
+        status = ebpf_store_update_program_information_array(_program_information_array[i], 1);
         if (status != ERROR_SUCCESS) {
             break;
         }

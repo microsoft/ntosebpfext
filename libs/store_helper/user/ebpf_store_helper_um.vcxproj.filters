@@ -19,6 +19,7 @@
     <ClCompile Include="..\ebpf_store_helper.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="shared_common.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\ebpf_store_helper.h">
@@ -27,6 +28,7 @@
     <ClInclude Include="ebpf_registry_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shared_common.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
