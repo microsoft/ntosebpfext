@@ -87,7 +87,7 @@ jobs:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       if: steps.skip_check.outputs.should_skip != 'true'
       with:
-        repository: microsoft/ebpf-for-windows
+        repository: ${{github.repository}}
         submodules: 'recursive'
         ref: ${{inputs.ref}}
 
