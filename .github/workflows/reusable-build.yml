@@ -145,10 +145,14 @@ jobs:
         path: packages
         key: ${{ runner.os }}-${{env.BUILD_PLATFORM}}-${{env.BUILD_CONFIGURATION}}-${{env.BUILD_ARTIFACT_NAME}}-${{ hashFiles('**/packages.config') }}-${{env.msvc_tools_version}}
 
-    - name: Nuget restore
+    - name: Configuring repo for first build
       if: steps.skip_check.outputs.should_skip != 'true'
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+      env:
+        CXXFLAGS: /ZH:SHA_256 ${{env.CXX_FLAGS}}
+        LDFLAGS: ${{env.LD_FLAGS}}
+      run: |
+        .\scripts\initialize_repo.ps1
 
     - name: Build
       if: steps.skip_check.outputs.should_skip != 'true'
