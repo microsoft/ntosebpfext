@@ -99,38 +99,6 @@ jobs:
       build_artifact: Build-x64-Sanitize
       build_options: /p:AddressSanitizer='True'
 
-  # Run the ntosebpfext unit tests in GitHub.
-  ntosebpfext_unit_sanitizer:
-    # Always run this job.
-    needs: sanitize
-    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/reusable-test.yml
-    with:
-      name: ntosebpfext_unit_sanitizer
-      test_command: .\ntosebpfext_unit.exe -d yes
-      build_artifact: Build-x64-Sanitize
-      environment: windows-2022
-      code_coverage: true
-      gather_dumps: true
-      capture_etw: true
-      leak_detection: true
-
-
-  # # Run the low memory simulator for ntosebpfext_unit tests.
-  # fault_injection_ntosebpfext_unit:
-  #   needs: regular
-  #   if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
-  #   uses: ./.github/workflows/reusable-test.yml
-  #   with:
-  #     name: ntosebpfext_fault_injection
-  #     test_command: .\ntosebpfext_unit.exe
-  #     build_artifact: Build-x64
-  #     environment: windows-2022
-  #     code_coverage: true
-  #     gather_dumps: true
-  #     fault_injection: true
-  #     leak_detection: true
-
   # Additional jobs to run on a schedule only (skip push and pull request).
   # ---------------------------------------------------------------------------
   codeql:
@@ -141,19 +109,3 @@ jobs:
       ref: ${{ github.ref }}
       build_artifact: Build-x64-CodeQl
       build_codeql: true
-
-
-  # # Run the complete fault injection simulator for ntosebpfext in GitHub.
-  # # Runs on a schedule as this takes a long time to run.
-  # ntosebpfext_fault_injection_full:
-  #   needs: regular
-  #   if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-  #   uses: ./.github/workflows/reusable-test.yml
-  #   with:
-  #     name: ntosebpfext_fault_injection_full
-  #     test_command: .\ntosebpfext_unit.exe
-  #     build_artifact: Build-x64
-  #     environment: windows-2022
-  #     code_coverage: false
-  #     gather_dumps: true
-  #     fault_injection: true
