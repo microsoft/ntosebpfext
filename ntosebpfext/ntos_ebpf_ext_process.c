@@ -63,11 +63,11 @@ static ntos_ebpf_extension_program_info_provider_t* _ebpf_process_program_info_p
 //
 // Process Hook NPI Provider.
 //
-ebpf_attach_provider_data_t _ntos_ebpf_process_hook_provider_data;
-
-ebpf_extension_data_t _ntos_ebpf_extension_process_hook_provider_data = {
+ebpf_attach_provider_data_t _ntos_ebpf_process_hook_provider_data = {
     .header = {EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION, EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION_SIZE},
-    .data = &_ntos_ebpf_process_hook_provider_data};
+    .supported_program_type = EBPF_PROGRAM_TYPE_PROCESS_GUID,
+    .bpf_attach_type = (bpf_attach_type_t)BPF_ATTACH_TYPE_PROCESS,
+};
 
 NPI_MODULEID DECLSPEC_SELECTANY _ebpf_process_hook_provider_moduleid = {sizeof(NPI_MODULEID), MIT_GUID, {0}};
 
@@ -167,9 +167,9 @@ ntos_ebpf_ext_process_register_providers()
     NTOS_EBPF_EXT_LOG_ENTRY();
 
     const ntos_ebpf_extension_program_info_provider_parameters_t program_info_provider_parameters = {
-        &_ebpf_process_program_info_provider_moduleid, &_ebpf_process_program_info_provider_data};
+        &_ebpf_process_program_info_provider_moduleid, &_ebpf_process_program_data};
     const ntos_ebpf_extension_hook_provider_parameters_t hook_provider_parameters = {
-        &_ebpf_process_hook_provider_moduleid, &_ntos_ebpf_extension_process_hook_provider_data};
+        &_ebpf_process_hook_provider_moduleid, &_ntos_ebpf_process_hook_provider_data};
 
     // Set the program type as the provider module id.
     _ebpf_process_program_info_provider_moduleid.Guid = EBPF_PROGRAM_TYPE_PROCESS;
@@ -184,12 +184,6 @@ ntos_ebpf_ext_process_register_providers()
         goto Exit;
     }
 
-    _ntos_ebpf_process_hook_provider_data.supported_program_type = EBPF_PROGRAM_TYPE_PROCESS;
-    // Set the attach type as the provider module id.
-    _ebpf_process_hook_provider_moduleid.Guid = EBPF_ATTACH_TYPE_PROCESS;
-    _ntos_ebpf_process_hook_provider_data.bpf_attach_type =
-        (bpf_attach_type_t)_ebpf_process_section_info->bpf_attach_type;
-    _ntos_ebpf_process_hook_provider_data.link_type = BPF_LINK_TYPE_PLAIN;
     status = ntos_ebpf_extension_hook_provider_register(
         &hook_provider_parameters,
         _ntos_ebpf_extension_process_on_client_attach,

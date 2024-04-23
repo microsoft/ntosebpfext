@@ -19,7 +19,7 @@ $service_status = Get-Service -Name "ntosebpfext" -ErrorAction SilentlyContinue
 # If the service is not present create and start the service.
 if ($service_status -eq $null) {
     Write-Output "Creating and starting the ntosebpfext service."
-    Start-Process -FilePath "sc" -ArgumentList "create ntosebpfext type= kernel binPath= `"$env:ProgramFiles\ebpf-core\ntosebpfext`" start= auto " -Wait
+    Start-Process -FilePath "sc" -ArgumentList "create ntosebpfext type= kernel binPath= $PSScriptRoot\ntosebpfext.sys start= auto " -Wait
     Start-Service -Name "ntosebpfext"
 }
 
@@ -42,7 +42,11 @@ $notepad = Start-Process -FilePath "cmd.exe" -ArgumentList "/c dir c:\" -Wait -P
 $notepad.WaitForExit()
 
 # Stop Process_Monitor.exe
-Stop-Process -Id $process_monitor.Id
+Stop-Process -Id $process_monitor.Id -ErrorAction SilentlyContinue
+
+# Print the output file content for debugging.
+Write-Output "Process Monitor output file content:"
+Get-Content -Path "process_monitor_output.txt"
 
 # Check if the output file is created.
 if (Test-Path -Path "process_monitor_output.txt") {
@@ -66,8 +70,5 @@ if ((Get-Content -Path "process_monitor_output.txt") -match "cmd.exe") {
     exit 1
 }
 
-# Print the output file content for debugging.
-Write-Output "Process Monitor output file content:"
-Get-Content -Path "process_monitor_output.txt"
 
 exit 0

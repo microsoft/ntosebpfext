@@ -114,8 +114,8 @@ typedef void (*ntos_ebpf_extension_hook_on_client_detach)(
  */
 typedef struct _ntos_ebpf_extension_hook_provider_parameters
 {
-    const NPI_MODULEID* provider_module_id;     ///< NPI provider module ID.
-    const ebpf_extension_data_t* provider_data; ///< Hook provider data (contains supported program types).
+    const NPI_MODULEID* provider_module_id;           ///< NPI provider module ID.
+    const ebpf_attach_provider_data_t* provider_data; ///< Hook provider data (contains supported program types).
 } ntos_ebpf_extension_hook_provider_parameters_t;
 
 /**
