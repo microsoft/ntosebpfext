@@ -28,6 +28,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <CopyFileToFolders Include="..\ntosebpfext.wprp">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
     <None Include="..\pre-commit">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">echo copy %(FullPath) $(SolutionDir).git\hooks</Command>

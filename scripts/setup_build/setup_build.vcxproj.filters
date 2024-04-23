@@ -23,6 +23,7 @@
       <Filter>Source Files</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="..\..\external\usersim\scripts\Test-FaultInjection.ps1" />
+    <CopyFileToFolders Include="..\ntosebpfext.wprp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\pre-commit">
