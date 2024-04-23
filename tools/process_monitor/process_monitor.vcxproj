@@ -166,7 +166,13 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     <ClCompile Include="process_monitor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <CopyFileToFolders Include="..\..\scripts\Install-eBbpfForWindows.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
     <None Include="packages.config" />
+    <CopyFileToFolders Include="Test-ProcessMonitor.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

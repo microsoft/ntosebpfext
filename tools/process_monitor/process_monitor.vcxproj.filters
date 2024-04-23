@@ -31,4 +31,8 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\..\scripts\Install-eBbpfForWindows.ps1" />
+    <CopyFileToFolders Include="Test-ProcessMonitor.ps1" />
+  </ItemGroup>
 </Project>
