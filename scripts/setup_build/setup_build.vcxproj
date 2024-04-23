@@ -43,6 +43,9 @@
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">$(SolutionDir).git\hooks</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">$(SolutionDir).git\hooks</DestinationFolders>
     </None>
+    <CopyFileToFolders Include="..\Run-Test.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
