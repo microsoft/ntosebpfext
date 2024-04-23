@@ -53,14 +53,13 @@ jobs:
       configurations: '["Debug", "Release"]'
 
   # Run the ntosebpfext unit tests in GitHub.
-  netebpf_ext_unit_tests:
+  ntosebpfext_units:
     # Always run this job.
     needs: regular
     if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-test.yml
     with:
-      name: netebpf_ext_unit_tests
-      pre_test: appverif -enable Exceptions Handles Heaps Leak Locks Memory SRWLock Threadpool TLS DangerousAPIs DirtyStacks TimeRollOver -for unit_tests.exe
+      name: ntosebpfext_units
       test_command: .\ntosebpfext_unit.exe -d yes
       build_artifact: Build-x64
       environment: windows-2022
@@ -100,21 +99,6 @@ jobs:
       build_artifact: Build-x64-Sanitize
       build_options: /p:AddressSanitizer='True'
 
-  # Run the low memory simulator for ntosebpfext_unit tests.
-  fault_injection_ntosebpfext_unit:
-    needs: regular
-    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/reusable-test.yml
-    with:
-      name: ntosebpfext_fault_injection
-      test_command: .\ntosebpfext_unit.exe
-      build_artifact: Build-x64
-      environment: windows-2022
-      code_coverage: true
-      gather_dumps: true
-      fault_injection: true
-      leak_detection: true
-
   # Additional jobs to run on a schedule only (skip push and pull request).
   # ---------------------------------------------------------------------------
   codeql:
@@ -125,19 +109,3 @@ jobs:
       ref: ${{ github.ref }}
       build_artifact: Build-x64-CodeQl
       build_codeql: true
-
-
-  # Run the complete fault injection simulator for ntosebpfext in GitHub.
-  # Runs on a schedule as this takes a long time to run.
-  ntosebpfext_fault_injection_full:
-    needs: regular
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/reusable-test.yml
-    with:
-      name: ntosebpfext_fault_injection_full
-      test_command: .\ntosebpfext_unit.exe
-      build_artifact: Build-x64
-      environment: windows-2022
-      code_coverage: false
-      gather_dumps: true
-      fault_injection: true

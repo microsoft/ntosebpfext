@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) Microsoft Corporation
+  SPDX-License-Identifier: MIT
+-->
+<WindowsPerformanceRecorder Version="1.0" Author="Microsoft Corporation" Copyright="Microsoft Corporation" Company="Microsoft Corporation">
+  <Profiles>
+    <EventCollector Id="EventCollector_EbpfCoreProvider" Name="EbpfCoreProvider">
+      <BufferSize Value="256" />
+      <Buffers Value="1024" />
+    </EventCollector>
+
+    <EventProvider Id="ExecutionContext" Name="394f321c-5cf4-404c-aa34-4df1428a7f9c" NonPagedMemory="true"/>
+    <EventProvider Id="NtosEbpfExt" Name="d15cc421-e9e4-459b-87a6-b45b7d84e9a8" NonPagedMemory="true"/>
+
+    <Profile
+        Id="EbpfForWindowsProvider-File.Verbose.File"
+        Name="EbpfForWindowsProvider-File"
+        Description="Traces for all eBPF for Windows providers"
+        LoggingMode="File"
+        DetailLevel="Verbose">
+      <Collectors>
+        <EventCollectorId Value="EventCollector_EbpfCoreProvider">
+          <EventProviders>
+            <EventProviderId Value="ExecutionContext"/>
+          </EventProviders>
+          <EventProviders>
+            <EventProviderId Value="NtosEbpfExt"/>
+          </EventProviders>
+        </EventCollectorId>
+      </Collectors>
+    </Profile>
+
+    <Profile
+        Id="EbpfForWindowsProvider-Memory.Verbose.Memory"
+        Name="EbpfForWindowsProvider-Memory"
+        Description="Traces for all eBPF for Windows providers"
+        LoggingMode="Memory"
+        DetailLevel="Verbose">
+      <Collectors>
+        <EventCollectorId Value="EventCollector_EbpfCoreProvider">
+          <EventProviders>
+            <EventProviderId Value="ExecutionContext"/>
+          </EventProviders>
+          <EventProviders>
+            <EventProviderId Value="NtosEbpfExt"/>
+          </EventProviders>
+        </EventCollectorId>
+      </Collectors>
+    </Profile>
+
+  </Profiles>
+</WindowsPerformanceRecorder>

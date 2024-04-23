@@ -30,8 +30,8 @@ void
 _ebpf_process_create_process_notify_routine_ex(
     _Inout_ PEPROCESS process, _In_ HANDLE process_id, _Inout_opt_ PPS_CREATE_NOTIFY_INFO create_info);
 
-static int32_t
-_ebpf_process_get_image_path(_In_ process_md_t* process_md, _Out_ uint8_t* path, uint32_t path_length);
+_Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
+    _In_ process_md_t* process_md, _Out_writes_bytes_(path_length) uint8_t* path, uint32_t path_length);
 
 static const void* _ebpf_process_helper_functions[] = {(void*)&_ebpf_process_get_image_path};
 
@@ -330,14 +330,22 @@ _ebpf_process_create_process_notify_routine_ex(
         .process_md = {0}, .process = process, .create_info = create_info};
 
     NTOS_EBPF_EXT_LOG_ENTRY();
+    ntos_ebpf_extension_hook_client_t* client_context;
 
     if (create_info != NULL) {
         if (create_info->CommandLine != NULL) {
-            RtlUnicodeStringToUTF8String(&process_notify_context.command_line_utf8, create_info->CommandLine, TRUE);
+            NTSTATUS status =
+                RtlUnicodeStringToUTF8String(&process_notify_context.command_line_utf8, create_info->CommandLine, TRUE);
+            if (!NT_SUCCESS(status)) {
+                goto Exit;
+            }
         }
         if (create_info->ImageFileName != NULL) {
-            RtlUnicodeStringToUTF8String(
+            NTSTATUS status = RtlUnicodeStringToUTF8String(
                 &process_notify_context.image_file_name_utf8, create_info->ImageFileName, TRUE);
+            if (!NT_SUCCESS(status)) {
+                goto Exit;
+            }
         }
         process_notify_context.process_md.operation = PROCESS_OPERATION_CREATE;
         process_notify_context.process_md.process_id = (uint64_t)process_id;
@@ -354,8 +362,7 @@ _ebpf_process_create_process_notify_routine_ex(
 
     // For each attached client call the process hook.
     ebpf_result_t result;
-    ntos_ebpf_extension_hook_client_t* client_context =
-        ntos_ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, NULL);
+    client_context = ntos_ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, NULL);
     while (client_context != NULL) {
         NTSTATUS status = 0;
         if (ntos_ebpf_extension_hook_client_enter_rundown(client_context)) {
@@ -384,6 +391,7 @@ _ebpf_process_create_process_notify_routine_ex(
             ntos_ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, client_context);
     }
 
+Exit:
     if (process_notify_context.command_line_utf8.Buffer != NULL) {
         RtlFreeUTF8String(&process_notify_context.command_line_utf8);
     }
@@ -395,8 +403,8 @@ _ebpf_process_create_process_notify_routine_ex(
     NTOS_EBPF_EXT_LOG_EXIT();
 }
 
-static int32_t
-_ebpf_process_get_image_path(_In_ process_md_t* process_md, _Out_ uint8_t* path, uint32_t path_length)
+_Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
+    _In_ process_md_t* process_md, _Out_writes_bytes_(path_length) uint8_t* path, uint32_t path_length)
 {
     process_notify_context_t* process_notify_context = (process_notify_context_t*)process_md;
     int32_t result = 0;

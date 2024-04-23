@@ -87,7 +87,7 @@ jobs:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       if: steps.skip_check.outputs.should_skip != 'true'
       with:
-        repository: microsoft/ebpf-for-windows
+        repository: ${{github.repository}}
         submodules: 'recursive'
         ref: ${{inputs.ref}}
 
@@ -144,6 +144,15 @@ jobs:
       with:
         path: packages
         key: ${{ runner.os }}-${{env.BUILD_PLATFORM}}-${{env.BUILD_CONFIGURATION}}-${{env.BUILD_ARTIFACT_NAME}}-${{ hashFiles('**/packages.config') }}-${{env.msvc_tools_version}}
+
+    - name: Configuring repo for first build
+      if: steps.skip_check.outputs.should_skip != 'true'
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      env:
+        CXXFLAGS: /ZH:SHA_256 ${{env.CXX_FLAGS}}
+        LDFLAGS: ${{env.LD_FLAGS}}
+      run: |
+        .\scripts\initialize_repo.ps1
 
     - name: Build
       if: steps.skip_check.outputs.should_skip != 'true'
