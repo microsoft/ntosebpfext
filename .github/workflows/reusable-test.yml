@@ -203,6 +203,15 @@ jobs:
           set EBPF_ENABLE_WER_REPORT=yes
           OpenCppCoverage.exe -q --sources %CD% --excluded_sources %CD%\external\Catch2 --export_type cobertura:ebpf_for_windows.xml --working_dir ${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}} -- powershell .\Run-Test.ps1 ${{env.DUMP_PATH}} ${{env.TEST_TIMEOUT}} ${{env.TEST_COMMAND}}
 
+    - name: Run test without codecoverage
+      if: (inputs.code_coverage != true) && (inputs.vs_dev != true) && (inputs.fault_injection != true) && (steps.skip_check.outputs.should_skip != 'true')
+      working-directory: ./${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}
+      id: run_test_without_code_coverage
+      shell: cmd
+      run: |
+          set EBPF_ENABLE_WER_REPORT=yes
+          ${{env.TEST_COMMAND}}
+
     - name: Run post test command
       # Run the post test command even if the workflow has failed.
       if: (success() || failure()) && (steps.skip_check.outputs.should_skip != 'true') && (inputs.environment != 'ebpf_cicd_tests_ws2019' && inputs.environment != 'ebpf_cicd_tests_ws2022' && inputs.environment != 'ebpf_cicd_perf_ws2022')

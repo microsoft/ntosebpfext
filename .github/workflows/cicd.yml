@@ -68,6 +68,21 @@ jobs:
       capture_etw: true
       leak_detection: true
 
+  # Process_Monitor test
+  # Disabled until https://github.com/microsoft/ebpf-for-windows/issues/3484 is fixed and a new release is available.
+  # process_monitor:
+  #   # Always run this job.
+  #   needs: regular
+  #   if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
+  #   uses: ./.github/workflows/reusable-test.yml
+  #   with:
+  #     name: process_monitor
+  #     pre_test: powershell .\Install-eBpfForWindows.ps1 0.15.1
+  #     test_command: powershell .\Test-ProcessMonitor.ps1
+  #     build_artifact: Build-x64
+  #     environment: windows-2022
+  #     capture_etw: true
+
   ossar:
     # Always run this job.
     needs: regular
