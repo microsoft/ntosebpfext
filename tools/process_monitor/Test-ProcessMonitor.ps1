@@ -33,16 +33,27 @@ if ($service_status.Status -ne "Running") {
 }
 
 # Start Process_Montior.exe, redirect the output to a file.
-$process_monitor = Start-Process -FilePath ".\Process_Monitor.exe" -Wait -RedirectStandardOutput "process_monitor_output.txt" -PassThru
+Start-Process -FilePath ".\Process_Monitor.exe" -RedirectStandardOutput ".\process_monitor_output.txt"  -PassThru -RedirectStandardError ".\process_monitor_error.txt"0.15.0
 
-# Launch child processes to see if they are monitored.
-$notepad = Start-Process -FilePath "cmd.exe" -ArgumentList "/c dir c:\" -Wait -PassThru
+# Wait for the Process Monitor to start.
+Start-Sleep -Seconds 5
 
-# Wait for the child processes to exit.
-$notepad.WaitForExit()
+# Check if the Process Monitor is running.
+if (Get-Process -name Process_Monitor) {
+    Write-Output "Process Monitor is running."
+} else {
+    Write-Output "Process Monitor is not running."
+    exit 1
+}
+
+# Start a test process.
+Start-Process -FilePath "cmd.exe" -ArgumentList "/c echo Hello World" -Wait
+
+# Wait for the Process Monitor to capture the process.
+Start-Sleep -Seconds 5
 
 # Stop Process_Monitor.exe
-Stop-Process -Id $process_monitor.Id -ErrorAction SilentlyContinue
+Get-Process -name Process_Monitor | stop-process
 
 # Print the output file content for debugging.
 Write-Output "Process Monitor output file content:"
@@ -62,7 +73,7 @@ if ((Get-Content -Path "process_monitor_output.txt") -eq "") {
     exit 1
 }
 
-# Check if the output file contains the expected string.
+# Check for the process name in the output file.
 if ((Get-Content -Path "process_monitor_output.txt") -match "cmd.exe") {
     Write-Output "Process Monitor output file contains the expected string."
 } else {
@@ -70,5 +81,12 @@ if ((Get-Content -Path "process_monitor_output.txt") -match "cmd.exe") {
     exit 1
 }
 
+# Check for the process command in the output file.
+if ((Get-Content -Path "process_monitor_output.txt") -match "/c echo Hello World ") {
+    Write-Output "Process Monitor output file contains the expected string."
+} else {
+    Write-Output "Process Monitor output file does not contain the expected string."
+    exit 1
+}
 
 exit 0
