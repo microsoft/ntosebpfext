@@ -33,7 +33,7 @@ if ($service_status.Status -ne "Running") {
 }
 
 # Start Process_Montior.exe, redirect the output to a file.
-$process_monitor = Start-Process -FilePath "Process_Monitor.exe" -Wait -RedirectStandardOutput "process_monitor_output.txt" -PassThru
+$process_monitor = Start-Process -FilePath ".\Process_Monitor.exe" -Wait -RedirectStandardOutput "process_monitor_output.txt" -PassThru
 
 # Launch child processes to see if they are monitored.
 $notepad = Start-Process -FilePath "cmd.exe" -ArgumentList "/c dir c:\" -Wait -PassThru

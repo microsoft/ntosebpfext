@@ -173,6 +173,7 @@ ntos_ebpf_ext_process_register_providers()
 
     // Set the program type as the provider module id.
     _ebpf_process_program_info_provider_moduleid.Guid = EBPF_PROGRAM_TYPE_PROCESS;
+    _ebpf_process_hook_provider_moduleid.Guid = EBPF_ATTACH_TYPE_PROCESS;
     status = ntos_ebpf_extension_program_info_provider_register(
         &program_info_provider_parameters, &_ebpf_process_program_info_provider_context);
     if (!NT_SUCCESS(status)) {
