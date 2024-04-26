@@ -42,7 +42,7 @@ process_hook_t(process_md_t* context);
 // Process helper functions.
 #define PROCESS_EXT_HELPER_FN_BASE 0xFFFF
 
-#ifndef __doxygen
+#if !defined(__doxygen) && !defined(EBPF_HELPER)
 #define EBPF_HELPER(return_type, name, args) typedef return_type(*name##_t) args
 #endif
 
