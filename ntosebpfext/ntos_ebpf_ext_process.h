@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "ntos_ebpf_ext.h"
+#include "ebpf_ext.h"
 
 /**
  * @brief Unregister PROCESS NPI providers.

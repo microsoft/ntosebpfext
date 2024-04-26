@@ -5,13 +5,12 @@
 
 #include "ebpf_extension.h"
 #include "framework.h"
-#include "ntos_ebpf_ext.h"
 
 /**
  *  @brief This is the per client binding context for the eBPF Hook
  *         NPI provider.
  */
-typedef struct _ntos_ebpf_extension_hook_client ntos_ebpf_extension_hook_client_t;
+typedef struct _ebpf_extension_hook_client ebpf_extension_hook_client_t;
 
 /**
  * @brief Attempt to acquire rundown.
@@ -22,7 +21,7 @@ typedef struct _ntos_ebpf_extension_hook_client ntos_ebpf_extension_hook_client_
  * @retval False Rundown acquisition failed.
  */
 _Must_inspect_result_ bool
-ntos_ebpf_extension_hook_client_enter_rundown(_Inout_ ntos_ebpf_extension_hook_client_t* hook_client);
+ebpf_extension_hook_client_enter_rundown(_Inout_ ebpf_extension_hook_client_t* hook_client);
 
 /**
  * @brief Release rundown.
@@ -30,7 +29,7 @@ ntos_ebpf_extension_hook_client_enter_rundown(_Inout_ ntos_ebpf_extension_hook_c
  * @param[in, out] hook_client Pointer to attached hook NPI client.
  */
 void
-ntos_ebpf_extension_hook_client_leave_rundown(_Inout_ ntos_ebpf_extension_hook_client_t* hook_client);
+ebpf_extension_hook_client_leave_rundown(_Inout_ ebpf_extension_hook_client_t* hook_client);
 
 /**
  * @brief Get the attach parameters for the input client.
@@ -40,7 +39,7 @@ ntos_ebpf_extension_hook_client_leave_rundown(_Inout_ ntos_ebpf_extension_hook_c
  * @returns Attach parameters.
  */
 const ebpf_extension_data_t*
-ntos_ebpf_extension_hook_client_get_client_data(_In_ const ntos_ebpf_extension_hook_client_t* hook_client);
+ebpf_extension_hook_client_get_client_data(_In_ const ebpf_extension_hook_client_t* hook_client);
 
 /**
  * @brief Set the hook-specific provider data for the attached client.
@@ -49,8 +48,7 @@ ntos_ebpf_extension_hook_client_get_client_data(_In_ const ntos_ebpf_extension_h
  * @param[in] data hook-specific provider data.
  */
 void
-ntos_ebpf_extension_hook_client_set_provider_data(
-    _In_ ntos_ebpf_extension_hook_client_t* hook_client, const void* data);
+ebpf_extension_hook_client_set_provider_data(_In_ ebpf_extension_hook_client_t* hook_client, const void* data);
 
 /**
  * @brief Get the hook-specific provider data for the attached client.
@@ -60,12 +58,12 @@ ntos_ebpf_extension_hook_client_set_provider_data(
  * @returns Pointer to hook-specific provider data for the attached client.
  */
 const void*
-ntos_ebpf_extension_hook_client_get_provider_data(_In_ const ntos_ebpf_extension_hook_client_t* hook_client);
+ebpf_extension_hook_client_get_provider_data(_In_ const ebpf_extension_hook_client_t* hook_client);
 
 /**
  *  @brief This is the provider context of eBPF Hook NPI provider.
  */
-typedef struct _ntos_ebpf_extension_hook_provider ntos_ebpf_extension_hook_provider_t;
+typedef struct _ebpf_extension_hook_provider ebpf_extension_hook_provider_t;
 
 /**
  * @brief Get the hook-specific custom data from the provider.
@@ -75,7 +73,7 @@ typedef struct _ntos_ebpf_extension_hook_provider ntos_ebpf_extension_hook_provi
  * @returns Pointer to the hook-specific custom data from the provider.
  */
 const void*
-ntos_ebpf_extension_hook_provider_get_custom_data(_In_ const ntos_ebpf_extension_hook_provider_t* provider_context);
+ebpf_extension_hook_provider_get_custom_data(_In_ const ebpf_extension_hook_provider_t* provider_context);
 
 /**
  * @brief Unregister the hook NPI provider.
@@ -83,8 +81,7 @@ ntos_ebpf_extension_hook_provider_get_custom_data(_In_ const ntos_ebpf_extension
  * @param[in] provider_context Pointer to the provider context being un-registered.
  */
 void
-ntos_ebpf_extension_hook_provider_unregister(
-    _In_opt_ _Frees_ptr_opt_ ntos_ebpf_extension_hook_provider_t* provider_context);
+ebpf_extension_hook_provider_unregister(_In_opt_ _Frees_ptr_opt_ ebpf_extension_hook_provider_t* provider_context);
 
 /**
  * @brief This callback function should be implemented by hook modules. This callback is invoked when a hook NPI client
@@ -97,26 +94,25 @@ ntos_ebpf_extension_hook_provider_unregister(
  * @retval EBPF_ACCESS_DENIED Request to attach client is denied by the provider.
  * @retval EBPF_INVALID_ARGUMENT One or more parameters are incorrect.
  */
-typedef ebpf_result_t (*ntos_ebpf_extension_hook_on_client_attach)(
-    _In_ const ntos_ebpf_extension_hook_client_t* attaching_client,
-    _In_ const ntos_ebpf_extension_hook_provider_t* provider_context);
+typedef ebpf_result_t (*ebpf_extension_hook_on_client_attach)(
+    _In_ const ebpf_extension_hook_client_t* attaching_client,
+    _In_ const ebpf_extension_hook_provider_t* provider_context);
 
 /**
  * @brief This callback function should be implemented by hook modules. This callback is invoked when a hook NPI client
  * is attempting to detach from the hook NPI provider.
  * @param detaching_client Pointer to context of the hook NPI client that is requesting to be detached.
  */
-typedef void (*ntos_ebpf_extension_hook_on_client_detach)(
-    _In_ const ntos_ebpf_extension_hook_client_t* detaching_client);
+typedef void (*ebpf_extension_hook_on_client_detach)(_In_ const ebpf_extension_hook_client_t* detaching_client);
 
 /**
  * @brief Data structure for hook NPI provider registration parameters.
  */
-typedef struct _ntos_ebpf_extension_hook_provider_parameters
+typedef struct _ebpf_extension_hook_provider_parameters
 {
     const NPI_MODULEID* provider_module_id;           ///< NPI provider module ID.
     const ebpf_attach_provider_data_t* provider_data; ///< Hook provider data (contains supported program types).
-} ntos_ebpf_extension_hook_provider_parameters_t;
+} ebpf_extension_hook_provider_parameters_t;
 
 /**
  * @brief Register the hook NPI provider.
@@ -131,16 +127,16 @@ typedef struct _ntos_ebpf_extension_hook_provider_parameters
  * @retval STATUS_NO_MEMORY Not enough memory to allocate resources.
  */
 NTSTATUS
-ntos_ebpf_extension_hook_provider_register(
-    _In_ const ntos_ebpf_extension_hook_provider_parameters_t* parameters,
-    _In_ const ntos_ebpf_extension_hook_on_client_attach attach_callback,
-    _In_ const ntos_ebpf_extension_hook_on_client_detach detach_callback,
+ebpf_extension_hook_provider_register(
+    _In_ const ebpf_extension_hook_provider_parameters_t* parameters,
+    _In_ const ebpf_extension_hook_on_client_attach attach_callback,
+    _In_ const ebpf_extension_hook_on_client_detach detach_callback,
     _In_opt_ const void* custom_data,
-    _Outptr_ ntos_ebpf_extension_hook_provider_t** provider_context);
+    _Outptr_ ebpf_extension_hook_provider_t** provider_context);
 
 /**
  * @brief Invoke the eBPF program attached to this hook. This must be called
- * inside a ntos_ebpf_extension_hook_client_enter_rundown/ntos_ebpf_extension_hook_client_leave_rundown block.
+ * inside a ebpf_extension_hook_client_enter_rundown/ebpf_extension_hook_client_leave_rundown block.
  *
  * @param[in] client Pointer to Hook NPI Client (a.k.a. eBPF Link object).
  * @param[in] context Context to pass to eBPF program.
@@ -150,8 +146,8 @@ ntos_ebpf_extension_hook_provider_register(
  * operation.
  */
 _Must_inspect_result_ ebpf_result_t
-ntos_ebpf_extension_hook_invoke_program(
-    _In_ const ntos_ebpf_extension_hook_client_t* client, _Inout_ void* context, _Out_ uint32_t* result);
+ebpf_extension_hook_invoke_program(
+    _In_ const ebpf_extension_hook_client_t* client, _Inout_ void* context, _Out_ uint32_t* result);
 
 /**
  * @brief Return client attached to the hook NPI provider.
@@ -160,8 +156,8 @@ ntos_ebpf_extension_hook_invoke_program(
  * (Note: this is a temporary helper routine that will be re-written when multiple attached clients are supported as fix
  * to #754)
  */
-ntos_ebpf_extension_hook_client_t*
-ntos_ebpf_extension_hook_get_attached_client(_Inout_ ntos_ebpf_extension_hook_provider_t* provider_context);
+ebpf_extension_hook_client_t*
+ebpf_extension_hook_get_attached_client(_Inout_ ebpf_extension_hook_provider_t* provider_context);
 
 /**
  * @brief Return the next client attached to the hook NPI provider.
@@ -170,13 +166,13 @@ ntos_ebpf_extension_hook_get_attached_client(_Inout_ ntos_ebpf_extension_hook_pr
  * @returns The next client after the one passed in client_context parameter. If the input client context is NULL, then
  * the first attached client context (if any) is returned.
  */
-ntos_ebpf_extension_hook_client_t*
-ntos_ebpf_extension_hook_get_next_attached_client(
-    _Inout_ ntos_ebpf_extension_hook_provider_t* provider_context,
-    _In_opt_ const ntos_ebpf_extension_hook_client_t* client_context);
+ebpf_extension_hook_client_t*
+ebpf_extension_hook_get_next_attached_client(
+    _Inout_ ebpf_extension_hook_provider_t* provider_context,
+    _In_opt_ const ebpf_extension_hook_client_t* client_context);
 
 /**
- * @brief Utility function called from ntos_ebpf_extension_hook_on_client_attach callback of hook providers, that
+ * @brief Utility function called from ebpf_extension_hook_on_client_attach callback of hook providers, that
  * determines if the attach parameter provided by an attaching client is compatible with the existing clients.
  * @param[in] attach_parameter_size The expected length (in bytes) of attach parameter for this type of hook.
  * @param[in] attach_parameter The attach parameter supplied by the client requesting to be attached.
@@ -187,8 +183,8 @@ ntos_ebpf_extension_hook_get_next_attached_client(
  * @retval EBPF_INVALID_ARGUMENT One or more parameters are incorrect.
  */
 _Must_inspect_result_ ebpf_result_t
-ntos_ebpf_extension_hook_check_attach_parameter(
+ebpf_extension_hook_check_attach_parameter(
     size_t attach_parameter_size,
     _In_reads_(attach_parameter_size) const void* attach_parameter,
     _In_reads_(attach_parameter_size) const void* wild_card_attach_parameter,
-    _Inout_ ntos_ebpf_extension_hook_provider_t* provider_context);
+    _Inout_ ebpf_extension_hook_provider_t* provider_context);

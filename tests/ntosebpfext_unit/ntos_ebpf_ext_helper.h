@@ -13,9 +13,9 @@
     }
 #endif
 
+#include "ebpf_ext.h"
+#include "ebpf_ext_tracelog.h"
 #include "ebpf_extension_uuids.h"
-#include "ntos_ebpf_ext.h"
-#include "ntos_ebpf_ext_tracelog.h"
 #include "usersim\fwp_test.h"
 
 #include <iostream>

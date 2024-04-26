@@ -15,12 +15,12 @@ _ntosebpf_ext_helper::_ntosebpf_ext_helper(
     // Do not use REQUIRE() in this constructor or the destructor will never be called
     // to clean up any state allocated before the REQUIRE.
 
-    if (!NT_SUCCESS(ntos_ebpf_ext_trace_initiate())) {
+    if (!NT_SUCCESS(ebpf_ext_trace_initiate())) {
         return;
     }
     trace_initiated = true;
 
-    if (!NT_SUCCESS(ntos_ebpf_ext_register_providers())) {
+    if (!NT_SUCCESS(ebpf_ext_register_providers())) {
         return;
     }
 
@@ -47,11 +47,11 @@ _ntosebpf_ext_helper::~_ntosebpf_ext_helper()
     }
 
     if (provider_registered) {
-        ntos_ebpf_ext_unregister_providers();
+        ebpf_ext_unregister_providers();
     }
 
     if (trace_initiated) {
-        ntos_ebpf_ext_trace_terminate();
+        ebpf_ext_trace_terminate();
     }
 }
 

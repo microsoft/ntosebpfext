@@ -12,6 +12,5 @@
 #endif
 #endif
 
-#include "ntos_ebpf_ext_version.h"
+#include "ebpf_ext_version.h"
 #include "git_commit_id.h"
-#define EBPF_PRODUCT_NAME "NTOS eBPF Extension"
