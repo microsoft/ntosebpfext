@@ -75,9 +75,9 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROVIDER_NAME=ntos;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext;$(SolutionDir)resource</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4505</DisableSpecificWarnings>
@@ -93,9 +93,9 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PROVIDER_NAME=ntos;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext;$(SolutionDir)resource</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4505</DisableSpecificWarnings>
@@ -113,8 +113,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>PROVIDER_NAME=ntos;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext;$(SolutionDir)resource</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4505</DisableSpecificWarnings>
@@ -130,19 +130,19 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ntos_ebpf_ext.c" />
-    <ClCompile Include="..\ntos_ebpf_ext_hook_provider.c" />
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext.c" />
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_hook_provider.c" />
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c" />
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.c" />
     <ClCompile Include="..\ntos_ebpf_ext_process.c" />
-    <ClCompile Include="..\ntos_ebpf_ext_prog_info_provider.c" />
-    <ClCompile Include="..\ntos_ebpf_ext_tracelog.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ntos_ebpf_ext.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_hook_provider.h" />
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext.h" />
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_hook_provider.h" />
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.h" />
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.h" />
     <ClInclude Include="..\ntos_ebpf_ext_process.h" />
     <ClInclude Include="..\ntos_ebpf_ext_program_info.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_prog_info_provider.h" />
-    <ClInclude Include="..\ntos_ebpf_ext_tracelog.h" />
     <ClInclude Include="ntos_ebpf_ext_platform.h" />
   </ItemGroup>
   <ItemGroup>

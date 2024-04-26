@@ -1,22 +1,24 @@
 // Copyright (c) Microsoft Corporation
 // SPDX-License-Identifier: MIT
 
+#include "ebpf_ext.h"
+#include "ebpf_ext_hook_provider.h"
+#include "ebpf_ext_tracelog.h"
 #include "ebpf_extension_uuids.h"
-#include "ntos_ebpf_ext_hook_provider.h"
 
-typedef struct _ntos_ebpf_ext_hook_client_rundown
+typedef struct _ebpf_ext_hook_client_rundown
 {
     EX_RUNDOWN_REF protection;
     bool rundown_occurred;
-} ntos_ebpf_ext_hook_client_rundown_t;
+} ebpf_ext_hook_client_rundown_t;
 
-struct _ntos_ebpf_extension_hook_provider;
+struct _ebpf_extension_hook_provider;
 
 /**
  * @brief Data structure representing a hook NPI client (attached eBPF program). This is returned
  * as the provider binding context in the NMR client attach callback.
  */
-typedef struct _ntos_ebpf_extension_hook_client
+typedef struct _ebpf_extension_hook_client
 {
     LIST_ENTRY link;                               ///< Link to next client (if any).
     HANDLE nmr_binding_handle;                     ///< NMR binding handle.
@@ -25,30 +27,30 @@ typedef struct _ntos_ebpf_extension_hook_client
     const ebpf_extension_data_t* client_data;      ///< Client supplied attach parameters.
     ebpf_program_invoke_function_t invoke_program; ///< Pointer to function to invoke eBPF program.
     void* provider_data; ///< Opaque pointer to hook specific data associated with this client.
-    struct _ntos_ebpf_extension_hook_provider* provider_context; ///< Pointer to the hook NPI provider context.
-    PIO_WORKITEM detach_work_item;               ///< Pointer to IO work item that is invoked to detach the client.
-    ntos_ebpf_ext_hook_client_rundown_t rundown; ///< Pointer to rundown object used to synchronize detach operation.
-} ntos_ebpf_extension_hook_client_t;
+    struct _ebpf_extension_hook_provider* provider_context; ///< Pointer to the hook NPI provider context.
+    PIO_WORKITEM detach_work_item;          ///< Pointer to IO work item that is invoked to detach the client.
+    ebpf_ext_hook_client_rundown_t rundown; ///< Pointer to rundown object used to synchronize detach operation.
+} ebpf_extension_hook_client_t;
 
-typedef struct _ntos_ebpf_extension_hook_clients_list
+typedef struct _ebpf_extension_hook_clients_list
 {
     EX_PUSH_LOCK lock;
     LIST_ENTRY attached_clients_list;
-} ntos_ebpf_extension_hook_clients_list_t;
+} ebpf_extension_hook_clients_list_t;
 
-typedef struct _ntos_ebpf_extension_hook_provider
+typedef struct _ebpf_extension_hook_provider
 {
-    NPI_PROVIDER_CHARACTERISTICS characteristics;              ///< NPI Provider characteristics.
-    HANDLE nmr_provider_handle;                                ///< NMR binding handle.
-    EX_PUSH_LOCK lock;                                         ///< Lock for synchronization.
-    ntos_ebpf_extension_hook_on_client_attach attach_callback; /*!< Pointer to hook specific callback to be invoked
+    NPI_PROVIDER_CHARACTERISTICS characteristics;         ///< NPI Provider characteristics.
+    HANDLE nmr_provider_handle;                           ///< NMR binding handle.
+    EX_PUSH_LOCK lock;                                    ///< Lock for synchronization.
+    ebpf_extension_hook_on_client_attach attach_callback; /*!< Pointer to hook specific callback to be invoked
                                                               when a client attaches. */
-    ntos_ebpf_extension_hook_on_client_detach detach_callback; /*!< Pointer to hook specific callback to be invoked
+    ebpf_extension_hook_on_client_detach detach_callback; /*!< Pointer to hook specific callback to be invoked
                                                               when a client detaches. */
     const void* custom_data; ///< Opaque pointer to hook specific data associated for this provider.
     _Guarded_by_(lock)
         LIST_ENTRY attached_clients_list; ///< Linked list of hook NPI clients that are attached to this provider.
-} ntos_ebpf_extension_hook_provider_t;
+} ebpf_extension_hook_provider_t;
 
 #define _ACQUIRE_PUSH_LOCK(lock, mode) \
     {                                  \
@@ -77,20 +79,20 @@ typedef struct _ntos_ebpf_extension_hook_provider
  * @retval STATUS_INSUFFICIENT_RESOURCES IO work item could not be allocated.
  */
 static NTSTATUS
-_ebpf_ext_attach_init_rundown(ntos_ebpf_extension_hook_client_t* hook_client)
+_ebpf_ext_attach_init_rundown(ebpf_extension_hook_client_t* hook_client)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    ntos_ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
+    ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     //
     // Allocate work item for client detach processing.
     //
-    hook_client->detach_work_item = IoAllocateWorkItem(_ntos_ebpf_ext_driver_device_object);
+    hook_client->detach_work_item = IoAllocateWorkItem(_ebpf_ext_driver_device_object);
     if (hook_client->detach_work_item == NULL) {
         status = STATUS_INSUFFICIENT_RESOURCES;
-        NTOS_EBPF_EXT_LOG_NTSTATUS_API_FAILURE(NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "IoAllocateWorkItem", status);
+        EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "IoAllocateWorkItem", status);
         goto Exit;
     }
 
@@ -99,7 +101,7 @@ _ebpf_ext_attach_init_rundown(ntos_ebpf_extension_hook_client_t* hook_client)
     rundown->rundown_occurred = FALSE;
 
 Exit:
-    NTOS_EBPF_EXT_RETURN_NTSTATUS(status);
+    EBPF_EXT_RETURN_NTSTATUS(status);
 }
 
 /**
@@ -109,19 +111,19 @@ Exit:
  *
  */
 static void
-_ebpf_ext_attach_wait_for_rundown(_Inout_ ntos_ebpf_ext_hook_client_rundown_t* rundown)
+_ebpf_ext_attach_wait_for_rundown(_Inout_ ebpf_ext_hook_client_rundown_t* rundown)
 {
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     ExWaitForRundownProtectionRelease(&rundown->protection);
     rundown->rundown_occurred = TRUE;
 
-    NTOS_EBPF_EXT_LOG_EXIT();
+    EBPF_EXT_LOG_EXIT();
 }
 
-IO_WORKITEM_ROUTINE _ntos_ebpf_extension_detach_client_completion;
+IO_WORKITEM_ROUTINE _ebpf_extension_detach_client_completion;
 #if !defined(__cplusplus)
-#pragma alloc_text(PAGE, _ntos_ebpf_extension_detach_client_completion)
+#pragma alloc_text(PAGE, _ebpf_extension_detach_client_completion)
 #endif
 
 /**
@@ -132,15 +134,15 @@ IO_WORKITEM_ROUTINE _ntos_ebpf_extension_detach_client_completion;
  *
  */
 void
-_ntos_ebpf_extension_detach_client_completion(_In_ DEVICE_OBJECT* device_object, _In_opt_ void* context)
+_ebpf_extension_detach_client_completion(_In_ DEVICE_OBJECT* device_object, _In_opt_ void* context)
 {
-    ntos_ebpf_extension_hook_client_t* hook_client = (ntos_ebpf_extension_hook_client_t*)context;
+    ebpf_extension_hook_client_t* hook_client = (ebpf_extension_hook_client_t*)context;
     PIO_WORKITEM work_item;
 
     PAGED_CODE();
     UNREFERENCED_PARAMETER(device_object);
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     ASSERT(hook_client != NULL);
     _Analysis_assume_(hook_client != NULL);
@@ -159,71 +161,71 @@ _ntos_ebpf_extension_detach_client_completion(_In_ DEVICE_OBJECT* device_object,
     // Note: This frees the provider binding context (hook_client).
     NmrProviderDetachClientComplete(hook_client->nmr_binding_handle);
 
-    NTOS_EBPF_EXT_LOG_EXIT();
+    EBPF_EXT_LOG_EXIT();
 }
 
 _Must_inspect_result_ bool
-ntos_ebpf_extension_hook_client_enter_rundown(_Inout_ ntos_ebpf_extension_hook_client_t* hook_client)
+ebpf_extension_hook_client_enter_rundown(_Inout_ ebpf_extension_hook_client_t* hook_client)
 {
-    ntos_ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
+    ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
     bool status = ExAcquireRundownProtection(&rundown->protection);
     return status;
 }
 
 void
-ntos_ebpf_extension_hook_client_leave_rundown(_Inout_ ntos_ebpf_extension_hook_client_t* hook_client)
+ebpf_extension_hook_client_leave_rundown(_Inout_ ebpf_extension_hook_client_t* hook_client)
 {
-    ntos_ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
+    ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
     ExReleaseRundownProtection(&rundown->protection);
 }
 
 const ebpf_extension_data_t*
-ntos_ebpf_extension_hook_client_get_client_data(_In_ const ntos_ebpf_extension_hook_client_t* hook_client)
+ebpf_extension_hook_client_get_client_data(_In_ const ebpf_extension_hook_client_t* hook_client)
 {
     return hook_client->client_data;
 }
 
 void
-ntos_ebpf_extension_hook_client_set_provider_data(_In_ ntos_ebpf_extension_hook_client_t* hook_client, const void* data)
+ebpf_extension_hook_client_set_provider_data(_In_ ebpf_extension_hook_client_t* hook_client, const void* data)
 {
     hook_client->provider_data = (void*)data;
 }
 
 const void*
-ntos_ebpf_extension_hook_client_get_provider_data(_In_ const ntos_ebpf_extension_hook_client_t* hook_client)
+ebpf_extension_hook_client_get_provider_data(_In_ const ebpf_extension_hook_client_t* hook_client)
 {
     return hook_client->provider_data;
 }
 
 const void*
-ntos_ebpf_extension_hook_provider_get_custom_data(_In_ const ntos_ebpf_extension_hook_provider_t* provider_context)
+ebpf_extension_hook_provider_get_custom_data(_In_ const ebpf_extension_hook_provider_t* provider_context)
 {
     return provider_context->custom_data;
 }
 
 _Must_inspect_result_ ebpf_result_t
-ntos_ebpf_extension_hook_invoke_program(
-    _In_ const ntos_ebpf_extension_hook_client_t* client, _Inout_ void* context, _Out_ uint32_t* result)
+ebpf_extension_hook_invoke_program(
+    _In_ const ebpf_extension_hook_client_t* client, _Inout_ void* context, _Out_ uint32_t* result)
 {
     ebpf_program_invoke_function_t invoke_program = client->invoke_program;
     const void* client_binding_context = client->client_binding_context;
 
     ebpf_result_t invoke_result = invoke_program(client_binding_context, context, result);
-    NTOS_EBPF_EXT_RETURN_RESULT(invoke_result);
+    EBPF_EXT_RETURN_RESULT(invoke_result);
 }
 
 _Must_inspect_result_ ebpf_result_t
-ntos_ebpf_extension_hook_check_attach_parameter(
+ebpf_extension_hook_check_attach_parameter(
     size_t attach_parameter_size,
     _In_reads_(attach_parameter_size) const void* attach_parameter,
     _In_reads_(attach_parameter_size) const void* wild_card_attach_parameter,
-    _Inout_ ntos_ebpf_extension_hook_provider_t* provider_context)
+    _Inout_ ebpf_extension_hook_provider_t* provider_context)
 {
     ebpf_result_t result = EBPF_SUCCESS;
     bool using_wild_card_attach_parameter = FALSE;
     bool lock_held = FALSE;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     if (memcmp(attach_parameter, wild_card_attach_parameter, attach_parameter_size) == 0) {
         using_wild_card_attach_parameter = TRUE;
@@ -235,9 +237,9 @@ ntos_ebpf_extension_hook_check_attach_parameter(
         // Client requested wild card attach parameter. This will only be allowed if there are no other clients
         // attached.
         if (!IsListEmpty(&provider_context->attached_clients_list)) {
-            NTOS_EBPF_EXT_LOG_MESSAGE(
-                NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
                 "Wildcard attach denied as other clients present.");
             result = EBPF_ACCESS_DENIED;
             goto Exit;
@@ -248,17 +250,17 @@ ntos_ebpf_extension_hook_check_attach_parameter(
 
         LIST_ENTRY* link = provider_context->attached_clients_list.Flink;
         while (link != &provider_context->attached_clients_list) {
-            ntos_ebpf_extension_hook_client_t* next_client =
-                (ntos_ebpf_extension_hook_client_t*)CONTAINING_RECORD(link, ntos_ebpf_extension_hook_client_t, link);
+            ebpf_extension_hook_client_t* next_client =
+                (ebpf_extension_hook_client_t*)CONTAINING_RECORD(link, ebpf_extension_hook_client_t, link);
 
             const ebpf_extension_data_t* next_client_data = next_client->client_data;
             const void* next_client_attach_parameter =
                 (next_client_data->data == NULL) ? wild_card_attach_parameter : next_client_data->data;
             if (((memcmp(wild_card_attach_parameter, next_client_attach_parameter, attach_parameter_size) == 0)) ||
                 (memcmp(attach_parameter, next_client_attach_parameter, attach_parameter_size) == 0)) {
-                NTOS_EBPF_EXT_LOG_MESSAGE(
-                    NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                    NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+                EBPF_EXT_LOG_MESSAGE(
+                    EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                    EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
                     "Attach denied as other clients present with wildcard/exact attach parameter.");
                 result = EBPF_ACCESS_DENIED;
                 goto Exit;
@@ -273,11 +275,11 @@ Exit:
         RELEASE_PUSH_LOCK_SHARED(&provider_context->lock);
     }
 
-    NTOS_EBPF_EXT_RETURN_RESULT(result);
+    EBPF_EXT_RETURN_RESULT(result);
 }
 
 void
-_ntos_ebpf_extension_hook_client_cleanup(_In_opt_ _Frees_ptr_opt_ ntos_ebpf_extension_hook_client_t* hook_client)
+_ebpf_extension_hook_client_cleanup(_In_opt_ _Frees_ptr_opt_ ebpf_extension_hook_client_t* hook_client)
 {
     if (hook_client != NULL) {
         if (hook_client->detach_work_item != NULL) {
@@ -303,7 +305,7 @@ _ntos_ebpf_extension_hook_client_cleanup(_In_opt_ _Frees_ptr_opt_ ntos_ebpf_exte
  * @retval STATUS_INVALID_PARAMETER One or more arguments are incorrect.
  */
 static NTSTATUS
-_ntos_ebpf_extension_hook_provider_attach_client(
+_ebpf_extension_hook_provider_attach_client(
     _In_ HANDLE nmr_binding_handle,
     _In_ const void* provider_context,
     _In_ const NPI_REGISTRATION_INSTANCE* client_registration_instance,
@@ -313,18 +315,17 @@ _ntos_ebpf_extension_hook_provider_attach_client(
     _Outptr_result_maybenull_ const void** provider_dispatch)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    ntos_ebpf_extension_hook_provider_t* local_provider_context =
-        (ntos_ebpf_extension_hook_provider_t*)provider_context;
-    ntos_ebpf_extension_hook_client_t* hook_client = NULL;
+    ebpf_extension_hook_provider_t* local_provider_context = (ebpf_extension_hook_provider_t*)provider_context;
+    ebpf_extension_hook_client_t* hook_client = NULL;
     ebpf_extension_program_dispatch_table_t* client_dispatch_table;
     ebpf_result_t result = EBPF_SUCCESS;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     if ((provider_binding_context == NULL) || (provider_dispatch == NULL) || (local_provider_context == NULL)) {
-        NTOS_EBPF_EXT_LOG_MESSAGE(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
             "Unexpected NULL argument(s). Attach attempt rejected.");
         status = STATUS_INVALID_PARAMETER;
         goto Exit;
@@ -333,12 +334,11 @@ _ntos_ebpf_extension_hook_provider_attach_client(
     *provider_binding_context = NULL;
     *provider_dispatch = NULL;
 
-    hook_client = (ntos_ebpf_extension_hook_client_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(ntos_ebpf_extension_hook_client_t), NTOS_EBPF_EXTENSION_POOL_TAG);
-    NTOS_EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(
-        NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, hook_client, "hook_client", status);
+    hook_client = (ebpf_extension_hook_client_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(ebpf_extension_hook_client_t), EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, hook_client, "hook_client", status);
 
-    memset(hook_client, 0, sizeof(ntos_ebpf_extension_hook_client_t));
+    memset(hook_client, 0, sizeof(ebpf_extension_hook_client_t));
 
     hook_client->detach_work_item = NULL;
     hook_client->nmr_binding_handle = nmr_binding_handle;
@@ -348,9 +348,9 @@ _ntos_ebpf_extension_hook_provider_attach_client(
     client_dispatch_table = (ebpf_extension_program_dispatch_table_t*)client_dispatch;
     if (client_dispatch_table == NULL) {
         status = STATUS_INVALID_PARAMETER;
-        NTOS_EBPF_EXT_LOG_MESSAGE(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
             "client_dispatch_table is NULL. Attach attempt rejected.");
         goto Exit;
     }
@@ -359,9 +359,9 @@ _ntos_ebpf_extension_hook_provider_attach_client(
 
     status = _ebpf_ext_attach_init_rundown(hook_client);
     if (!NT_SUCCESS(status)) {
-        NTOS_EBPF_EXT_LOG_MESSAGE_NTSTATUS(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+        EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
             "_ebpf_ext_attach_init_rundown failed. Attach attempt rejected.",
             status);
         goto Exit;
@@ -375,9 +375,9 @@ _ntos_ebpf_extension_hook_provider_attach_client(
         InsertTailList(&local_provider_context->attached_clients_list, &hook_client->link);
         RELEASE_PUSH_LOCK_EXCLUSIVE(&local_provider_context->lock);
     } else {
-        NTOS_EBPF_EXT_LOG_MESSAGE_UINT32(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+        EBPF_EXT_LOG_MESSAGE_UINT32(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
             "attach_callback returned failure. Attach attempt rejected.",
             result);
         status = STATUS_ACCESS_DENIED;
@@ -388,10 +388,10 @@ Exit:
         *provider_binding_context = hook_client;
         hook_client = NULL;
     } else {
-        _ntos_ebpf_extension_hook_client_cleanup(hook_client);
+        _ebpf_extension_hook_client_cleanup(hook_client);
     }
 
-    NTOS_EBPF_EXT_RETURN_NTSTATUS(status);
+    EBPF_EXT_RETURN_NTSTATUS(status);
 }
 
 /**
@@ -403,21 +403,20 @@ Exit:
  * @retval STATUS_INVALID_PARAMETER One or more parameters are invalid.
  */
 static NTSTATUS
-_ntos_ebpf_extension_hook_provider_detach_client(_In_ const void* provider_binding_context)
+_ebpf_extension_hook_provider_detach_client(_In_ const void* provider_binding_context)
 {
     NTSTATUS status = STATUS_PENDING;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
-    ntos_ebpf_extension_hook_client_t* local_client_context =
-        (ntos_ebpf_extension_hook_client_t*)provider_binding_context;
+    ebpf_extension_hook_client_t* local_client_context = (ebpf_extension_hook_client_t*)provider_binding_context;
 
-    ntos_ebpf_extension_hook_provider_t* local_provider_context = local_client_context->provider_context;
+    ebpf_extension_hook_provider_t* local_provider_context = local_client_context->provider_context;
 
     if (local_client_context == NULL) {
-        NTOS_EBPF_EXT_LOG_MESSAGE(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
             "local_client_context is NULL. Detach attempt rejected.");
         status = STATUS_INVALID_PARAMETER;
         goto Exit;
@@ -432,16 +431,16 @@ _ntos_ebpf_extension_hook_provider_detach_client(_In_ const void* provider_bindi
 
     IoQueueWorkItem(
         local_client_context->detach_work_item,
-        _ntos_ebpf_extension_detach_client_completion,
+        _ebpf_extension_detach_client_completion,
         DelayedWorkQueue,
         (void*)local_client_context);
 
 Exit:
-    NTOS_EBPF_EXT_RETURN_NTSTATUS(status);
+    EBPF_EXT_RETURN_NTSTATUS(status);
 }
 
 static void
-_ntos_ebpf_extension_hook_provider_cleanup_binding_context(_Frees_ptr_ void* provider_binding_context)
+_ebpf_extension_hook_provider_cleanup_binding_context(_Frees_ptr_ void* provider_binding_context)
 {
     if (provider_binding_context != NULL) {
         ExFreePool(provider_binding_context);
@@ -449,10 +448,9 @@ _ntos_ebpf_extension_hook_provider_cleanup_binding_context(_Frees_ptr_ void* pro
 }
 
 void
-ntos_ebpf_extension_hook_provider_unregister(
-    _In_opt_ _Frees_ptr_opt_ ntos_ebpf_extension_hook_provider_t* provider_context)
+ebpf_extension_hook_provider_unregister(_In_opt_ _Frees_ptr_opt_ ebpf_extension_hook_provider_t* provider_context)
 {
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
     if (provider_context != NULL) {
         if (provider_context->nmr_provider_handle != NULL) {
             NTSTATUS status = NmrDeregisterProvider(provider_context->nmr_provider_handle);
@@ -461,44 +459,41 @@ ntos_ebpf_extension_hook_provider_unregister(
                 // Wait for clients to detach.
                 NmrWaitForProviderDeregisterComplete(provider_context->nmr_provider_handle);
             } else {
-                NTOS_EBPF_EXT_LOG_NTSTATUS_API_FAILURE(
-                    NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrDeregisterProvider", status);
+                EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrDeregisterProvider", status);
             }
         }
         ExFreePool(provider_context);
     }
-    NTOS_EBPF_EXT_LOG_EXIT();
+    EBPF_EXT_LOG_EXIT();
 }
 
 NTSTATUS
-ntos_ebpf_extension_hook_provider_register(
-    _In_ const ntos_ebpf_extension_hook_provider_parameters_t* parameters,
-    _In_ ntos_ebpf_extension_hook_on_client_attach attach_callback,
-    _In_ ntos_ebpf_extension_hook_on_client_detach detach_callback,
+ebpf_extension_hook_provider_register(
+    _In_ const ebpf_extension_hook_provider_parameters_t* parameters,
+    _In_ ebpf_extension_hook_on_client_attach attach_callback,
+    _In_ ebpf_extension_hook_on_client_detach detach_callback,
     _In_opt_ const void* custom_data,
-    _Outptr_ ntos_ebpf_extension_hook_provider_t** provider_context)
+    _Outptr_ ebpf_extension_hook_provider_t** provider_context)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    ntos_ebpf_extension_hook_provider_t* local_provider_context = NULL;
+    ebpf_extension_hook_provider_t* local_provider_context = NULL;
     NPI_PROVIDER_CHARACTERISTICS* characteristics;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
-    local_provider_context = (ntos_ebpf_extension_hook_provider_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(ntos_ebpf_extension_hook_provider_t), NTOS_EBPF_EXTENSION_POOL_TAG);
-    NTOS_EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(
-        NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, local_provider_context, "local_provider_context", status);
+    EBPF_EXT_LOG_ENTRY();
+    local_provider_context = (ebpf_extension_hook_provider_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(ebpf_extension_hook_provider_t), EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(
+        EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, local_provider_context, "local_provider_context", status);
 
-    memset(local_provider_context, 0, sizeof(ntos_ebpf_extension_hook_provider_t));
+    memset(local_provider_context, 0, sizeof(ebpf_extension_hook_provider_t));
     ExInitializePushLock(&local_provider_context->lock);
     InitializeListHead(&local_provider_context->attached_clients_list);
 
     characteristics = &local_provider_context->characteristics;
     characteristics->Length = sizeof(NPI_PROVIDER_CHARACTERISTICS);
-    characteristics->ProviderAttachClient =
-        (PNPI_PROVIDER_ATTACH_CLIENT_FN)_ntos_ebpf_extension_hook_provider_attach_client;
-    characteristics->ProviderDetachClient =
-        (PNPI_PROVIDER_DETACH_CLIENT_FN)_ntos_ebpf_extension_hook_provider_detach_client;
-    characteristics->ProviderCleanupBindingContext = _ntos_ebpf_extension_hook_provider_cleanup_binding_context;
+    characteristics->ProviderAttachClient = (PNPI_PROVIDER_ATTACH_CLIENT_FN)_ebpf_extension_hook_provider_attach_client;
+    characteristics->ProviderDetachClient = (PNPI_PROVIDER_DETACH_CLIENT_FN)_ebpf_extension_hook_provider_detach_client;
+    characteristics->ProviderCleanupBindingContext = _ebpf_extension_hook_provider_cleanup_binding_context;
     characteristics->ProviderRegistrationInstance.Size = sizeof(NPI_REGISTRATION_INSTANCE);
     characteristics->ProviderRegistrationInstance.NpiId = &EBPF_HOOK_EXTENSION_IID;
     characteristics->ProviderRegistrationInstance.NpiSpecificCharacteristics = parameters->provider_data;
@@ -513,7 +508,7 @@ ntos_ebpf_extension_hook_provider_register(
 
         // The docs don't mention the (out) handle status on failure, so explicitly mark it as invalid.
         local_provider_context->nmr_provider_handle = NULL;
-        NTOS_EBPF_EXT_LOG_NTSTATUS_API_FAILURE(NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
+        EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
         goto Exit;
     }
 
@@ -522,43 +517,43 @@ ntos_ebpf_extension_hook_provider_register(
 
 Exit:
     if (!NT_SUCCESS(status)) {
-        ntos_ebpf_extension_hook_provider_unregister(local_provider_context);
+        ebpf_extension_hook_provider_unregister(local_provider_context);
     }
 
-    NTOS_EBPF_EXT_RETURN_NTSTATUS(status);
+    EBPF_EXT_RETURN_NTSTATUS(status);
 }
 
-ntos_ebpf_extension_hook_client_t*
-ntos_ebpf_extension_hook_get_attached_client(_Inout_ ntos_ebpf_extension_hook_provider_t* provider_context)
+ebpf_extension_hook_client_t*
+ebpf_extension_hook_get_attached_client(_Inout_ ebpf_extension_hook_provider_t* provider_context)
 {
-    ntos_ebpf_extension_hook_client_t* client_context = NULL;
+    ebpf_extension_hook_client_t* client_context = NULL;
     ACQUIRE_PUSH_LOCK_SHARED(&provider_context->lock);
     if (!IsListEmpty(&provider_context->attached_clients_list)) {
-        client_context = (ntos_ebpf_extension_hook_client_t*)CONTAINING_RECORD(
-            provider_context->attached_clients_list.Flink, ntos_ebpf_extension_hook_client_t, link);
+        client_context = (ebpf_extension_hook_client_t*)CONTAINING_RECORD(
+            provider_context->attached_clients_list.Flink, ebpf_extension_hook_client_t, link);
     }
     RELEASE_PUSH_LOCK_SHARED(&provider_context->lock);
     return client_context;
 }
 
-ntos_ebpf_extension_hook_client_t*
-ntos_ebpf_extension_hook_get_next_attached_client(
-    _Inout_ ntos_ebpf_extension_hook_provider_t* provider_context,
-    _In_opt_ const ntos_ebpf_extension_hook_client_t* client_context)
+ebpf_extension_hook_client_t*
+ebpf_extension_hook_get_next_attached_client(
+    _Inout_ ebpf_extension_hook_provider_t* provider_context,
+    _In_opt_ const ebpf_extension_hook_client_t* client_context)
 {
-    ntos_ebpf_extension_hook_client_t* next_client = NULL;
+    ebpf_extension_hook_client_t* next_client = NULL;
     ACQUIRE_PUSH_LOCK_SHARED(&provider_context->lock);
     if (client_context == NULL) {
         // Return the first attached client (if any).
         if (!IsListEmpty(&provider_context->attached_clients_list)) {
-            next_client = (ntos_ebpf_extension_hook_client_t*)CONTAINING_RECORD(
-                provider_context->attached_clients_list.Flink, ntos_ebpf_extension_hook_client_t, link);
+            next_client = (ebpf_extension_hook_client_t*)CONTAINING_RECORD(
+                provider_context->attached_clients_list.Flink, ebpf_extension_hook_client_t, link);
         }
     } else {
         // Return the next client, unless this is the last one.
         if (client_context->link.Flink != &provider_context->attached_clients_list) {
-            next_client = (ntos_ebpf_extension_hook_client_t*)CONTAINING_RECORD(
-                client_context->link.Flink, ntos_ebpf_extension_hook_client_t, link);
+            next_client = (ebpf_extension_hook_client_t*)CONTAINING_RECORD(
+                client_context->link.Flink, ebpf_extension_hook_client_t, link);
         }
     }
     RELEASE_PUSH_LOCK_SHARED(&provider_context->lock);

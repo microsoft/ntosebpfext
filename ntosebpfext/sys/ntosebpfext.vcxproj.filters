@@ -23,22 +23,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ntos_ebpf_ext_drv.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ntos_ebpf_ext.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ntos_ebpf_ext_hook_provider.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ntos_ebpf_ext_prog_info_provider.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ntos_ebpf_ext_tracelog.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\ntos_ebpf_ext_process.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_hook_provider.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_drv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -48,24 +48,7 @@
     </Inf>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\resource\ntos_ext_resource.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\ntos_ebpf_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ntos_ebpf_ext_hook_provider.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ntos_ebpf_ext_prog_info_provider.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\ntos_ebpf_ext_program_info.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ntos_ebpf_ext_tracelog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
@@ -74,8 +57,25 @@
     <ClInclude Include="..\ntos_ebpf_ext_process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_hook_provider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\resource\ebpf_ext_resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

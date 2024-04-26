@@ -5,12 +5,15 @@
 #include "catch_wrapper.hpp"
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
+#include "ebpf_ntos_hooks.h"
 #include "ntos_ebpf_ext_helper.h"
 #include "watchdog.h"
 
 #include <map>
 #include <stop_token>
 #include <thread>
+
+struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
 
 CATCH_REGISTER_LISTENER(_watchdog)
 CATCH_REGISTER_LISTENER(cxplat_passed_test_log)

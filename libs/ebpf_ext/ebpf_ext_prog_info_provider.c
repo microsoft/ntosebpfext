@@ -1,28 +1,28 @@
 // Copyright (c) Microsoft Corporation
 // SPDX-License-Identifier: MIT
 
+#include "ebpf_ext.h"
+#include "ebpf_ext_prog_info_provider.h"
 #include "ebpf_extension_uuids.h"
-#include "ebpf_program_types.h"
-#include "ntos_ebpf_ext_prog_info_provider.h"
 
 /**
  *  @brief This is the per client binding context for program information
  *         NPI provider.
  */
-typedef struct _ntos_ebpf_extension_program_info_client
+typedef struct _ebpf_extension_program_info_client
 {
     HANDLE nmr_binding_handle; ///< NMR binding handle.
     GUID client_module_id;     ///< NMR module Id.
-} ntos_ebpf_extension_program_info_client_t;
+} ebpf_extension_program_info_client_t;
 
 /**
  *  @brief This is the program information NPI provider.
  */
-typedef struct _ntos_ebpf_extension_program_info_provider
+typedef struct _ebpf_extension_program_info_provider
 {
     NPI_PROVIDER_CHARACTERISTICS characteristics; ///< NPI Provider characteristics.
     HANDLE nmr_provider_handle;                   ///< NMR binding handle.
-} ntos_ebpf_extension_program_info_provider_t;
+} ebpf_extension_program_info_provider_t;
 
 /**
  * @brief Callback invoked when an eBPF Program Information NPI client attaches.
@@ -40,7 +40,7 @@ typedef struct _ntos_ebpf_extension_program_info_provider
  * @retval STATUS_INVALID_PARAMETER One or more arguments are incorrect.
  */
 static NTSTATUS
-_ntos_ebpf_extension_program_info_provider_attach_client(
+_ebpf_extension_program_info_provider_attach_client(
     _In_ HANDLE nmr_binding_handle,
     _In_ const void* provider_context,
     _In_ const NPI_REGISTRATION_INSTANCE* client_registration_instance,
@@ -50,18 +50,18 @@ _ntos_ebpf_extension_program_info_provider_attach_client(
     _Outptr_result_maybenull_ const void** provider_dispatch)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    ntos_ebpf_extension_program_info_client_t* program_info_client = NULL;
+    ebpf_extension_program_info_client_t* program_info_client = NULL;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     UNREFERENCED_PARAMETER(provider_context);
     UNREFERENCED_PARAMETER(client_dispatch);
     UNREFERENCED_PARAMETER(client_binding_context);
 
     if ((provider_binding_context == NULL) || (provider_dispatch == NULL)) {
-        NTOS_EBPF_EXT_LOG_MESSAGE(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_EXTENSION,
             "Unexpected NULL argument(s). Attach attempt rejected.");
         status = STATUS_INVALID_PARAMETER;
         goto Exit;
@@ -70,12 +70,12 @@ _ntos_ebpf_extension_program_info_provider_attach_client(
     *provider_binding_context = NULL;
     *provider_dispatch = NULL;
 
-    program_info_client = (ntos_ebpf_extension_program_info_client_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(ntos_ebpf_extension_program_info_client_t), NTOS_EBPF_EXTENSION_POOL_TAG);
-    NTOS_EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(
-        NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, program_info_client, "program_info_client", status);
+    program_info_client = (ebpf_extension_program_info_client_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(ebpf_extension_program_info_client_t), EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(
+        EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, program_info_client, "program_info_client", status);
 
-    memset(program_info_client, 0, sizeof(ntos_ebpf_extension_program_info_client_t));
+    memset(program_info_client, 0, sizeof(ebpf_extension_program_info_client_t));
 
     program_info_client->nmr_binding_handle = nmr_binding_handle;
     program_info_client->client_module_id = client_registration_instance->ModuleId->Guid;
@@ -89,7 +89,7 @@ Exit:
             ExFreePool(program_info_client);
         }
     }
-    NTOS_EBPF_EXT_RETURN_NTSTATUS(status);
+    EBPF_EXT_RETURN_NTSTATUS(status);
 }
 
 /**
@@ -100,7 +100,7 @@ Exit:
  * @retval STATUS_INVALID_PARAMETER One or more parameters are invalid.
  */
 static NTSTATUS
-_ntos_ebpf_extension_program_info_provider_detach_client(_In_ const void* provider_binding_context)
+_ebpf_extension_program_info_provider_detach_client(_In_ const void* provider_binding_context)
 {
     NTSTATUS status = STATUS_SUCCESS;
 
@@ -110,7 +110,7 @@ _ntos_ebpf_extension_program_info_provider_detach_client(_In_ const void* provid
 }
 
 static void
-_ntos_ebpf_extension_program_info_provider_cleanup_binding_context(_Frees_ptr_ void* provider_binding_context)
+_ebpf_extension_program_info_provider_cleanup_binding_context(_Frees_ptr_ void* provider_binding_context)
 {
     if (provider_binding_context != NULL) {
         ExFreePool(provider_binding_context);
@@ -118,8 +118,8 @@ _ntos_ebpf_extension_program_info_provider_cleanup_binding_context(_Frees_ptr_ v
 }
 
 void
-ntos_ebpf_extension_program_info_provider_unregister(
-    _In_opt_ _Frees_ptr_opt_ ntos_ebpf_extension_program_info_provider_t* provider_context)
+ebpf_extension_program_info_provider_unregister(
+    _In_opt_ _Frees_ptr_opt_ ebpf_extension_program_info_provider_t* provider_context)
 {
     if (provider_context != NULL) {
         if (provider_context->nmr_provider_handle != NULL) {
@@ -129,8 +129,7 @@ ntos_ebpf_extension_program_info_provider_unregister(
                 // Wait for clients to detach.
                 NmrWaitForProviderDeregisterComplete(provider_context->nmr_provider_handle);
             } else {
-                NTOS_EBPF_EXT_LOG_NTSTATUS_API_FAILURE(
-                    NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrDeregisterProvider", status);
+                EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrDeregisterProvider", status);
             }
         }
         ExFreePool(provider_context);
@@ -138,30 +137,30 @@ ntos_ebpf_extension_program_info_provider_unregister(
 }
 
 NTSTATUS
-ntos_ebpf_extension_program_info_provider_register(
-    _In_ const ntos_ebpf_extension_program_info_provider_parameters_t* parameters,
-    _Outptr_ ntos_ebpf_extension_program_info_provider_t** provider_context)
+ebpf_extension_program_info_provider_register(
+    _In_ const ebpf_extension_program_info_provider_parameters_t* parameters,
+    _Outptr_ ebpf_extension_program_info_provider_t** provider_context)
 {
-    ntos_ebpf_extension_program_info_provider_t* local_provider_context = NULL;
+    ebpf_extension_program_info_provider_t* local_provider_context = NULL;
     NPI_PROVIDER_CHARACTERISTICS* characteristics;
     NTSTATUS status = STATUS_SUCCESS;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
-    local_provider_context = (ntos_ebpf_extension_program_info_provider_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(ntos_ebpf_extension_program_info_provider_t), NTOS_EBPF_EXTENSION_POOL_TAG);
-    NTOS_EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(
-        NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, local_provider_context, "local_provider_context", status);
+    local_provider_context = (ebpf_extension_program_info_provider_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(ebpf_extension_program_info_provider_t), EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_STATUS(
+        EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, local_provider_context, "local_provider_context", status);
 
-    memset(local_provider_context, 0, sizeof(ntos_ebpf_extension_program_info_provider_t));
+    memset(local_provider_context, 0, sizeof(ebpf_extension_program_info_provider_t));
 
     characteristics = &local_provider_context->characteristics;
     characteristics->Length = sizeof(NPI_PROVIDER_CHARACTERISTICS);
     characteristics->ProviderAttachClient =
-        (PNPI_PROVIDER_ATTACH_CLIENT_FN)_ntos_ebpf_extension_program_info_provider_attach_client;
+        (PNPI_PROVIDER_ATTACH_CLIENT_FN)_ebpf_extension_program_info_provider_attach_client;
     characteristics->ProviderDetachClient =
-        (PNPI_PROVIDER_DETACH_CLIENT_FN)_ntos_ebpf_extension_program_info_provider_detach_client;
-    characteristics->ProviderCleanupBindingContext = _ntos_ebpf_extension_program_info_provider_cleanup_binding_context;
+        (PNPI_PROVIDER_DETACH_CLIENT_FN)_ebpf_extension_program_info_provider_detach_client;
+    characteristics->ProviderCleanupBindingContext = _ebpf_extension_program_info_provider_cleanup_binding_context;
     characteristics->ProviderRegistrationInstance.Size = sizeof(NPI_REGISTRATION_INSTANCE);
     characteristics->ProviderRegistrationInstance.NpiId = &EBPF_PROGRAM_INFO_EXTENSION_IID;
     characteristics->ProviderRegistrationInstance.NpiSpecificCharacteristics = parameters->provider_data;
@@ -172,7 +171,7 @@ ntos_ebpf_extension_program_info_provider_register(
 
         // The docs don't mention the (out) handle status on failure, so explicitly mark it as invalid.
         local_provider_context->nmr_provider_handle = NULL;
-        NTOS_EBPF_EXT_LOG_NTSTATUS_API_FAILURE(NTOS_EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
+        EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
         goto Exit;
     }
 
@@ -181,8 +180,8 @@ ntos_ebpf_extension_program_info_provider_register(
 
 Exit:
     if (!NT_SUCCESS(status)) {
-        ntos_ebpf_extension_program_info_provider_unregister(local_provider_context);
+        ebpf_extension_program_info_provider_unregister(local_provider_context);
     }
 
-    NTOS_EBPF_EXT_RETURN_NTSTATUS(status);
+    EBPF_EXT_RETURN_NTSTATUS(status);
 }

@@ -6,7 +6,9 @@
  * @brief This file implements the process program type hook on eBPF for Windows.
  */
 
+#include "ebpf_ntos_hooks.h"
 #include "ntos_ebpf_ext_process.h"
+#include "ntos_ebpf_ext_program_info.h"
 
 #include <errno.h>
 
@@ -54,11 +56,11 @@ static ebpf_program_data_t _ebpf_process_program_data = {
 };
 
 static ebpf_extension_data_t _ebpf_process_program_info_provider_data = {
-    NTOS_EBPF_EXTENSION_NPI_PROVIDER_VERSION, sizeof(_ebpf_process_program_data), &_ebpf_process_program_data};
+    EBPF_EXTENSION_NPI_PROVIDER_VERSION, sizeof(_ebpf_process_program_data), &_ebpf_process_program_data};
 
 NPI_MODULEID DECLSPEC_SELECTANY _ebpf_process_program_info_provider_moduleid = {sizeof(NPI_MODULEID), MIT_GUID, {0}};
 
-static ntos_ebpf_extension_program_info_provider_t* _ebpf_process_program_info_provider_context = NULL;
+static ebpf_extension_program_info_provider_t* _ebpf_process_program_info_provider_context = NULL;
 
 //
 // Process Hook NPI Provider.
@@ -71,7 +73,7 @@ ebpf_attach_provider_data_t _ntos_ebpf_process_hook_provider_data = {
 
 NPI_MODULEID DECLSPEC_SELECTANY _ebpf_process_hook_provider_moduleid = {sizeof(NPI_MODULEID), MIT_GUID, {0}};
 
-static ntos_ebpf_extension_hook_provider_t* _ebpf_process_hook_provider_context = NULL;
+static ebpf_extension_hook_provider_t* _ebpf_process_hook_provider_context = NULL;
 
 EX_PUSH_LOCK _ebpf_process_hook_provider_lock;
 bool _ebpf_process_hook_provider_registered = FALSE;
@@ -83,13 +85,13 @@ uint64_t _ebpf_process_hook_provider_registration_count = 0;
 
 static ebpf_result_t
 _ntos_ebpf_extension_process_on_client_attach(
-    _In_ const ntos_ebpf_extension_hook_client_t* attaching_client,
-    _In_ const ntos_ebpf_extension_hook_provider_t* provider_context)
+    _In_ const ebpf_extension_hook_client_t* attaching_client,
+    _In_ const ebpf_extension_hook_provider_t* provider_context)
 {
     ebpf_result_t result = EBPF_SUCCESS;
     bool push_lock_acquired = false;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     UNREFERENCED_PARAMETER(attaching_client);
     UNREFERENCED_PARAMETER(provider_context);
@@ -102,9 +104,9 @@ _ntos_ebpf_extension_process_on_client_attach(
         // Register the process create notify routine.
         NTSTATUS status = PsSetCreateProcessNotifyRoutineEx(_ebpf_process_create_process_notify_routine_ex, FALSE);
         if (!NT_SUCCESS(status)) {
-            NTOS_EBPF_EXT_LOG_MESSAGE_NTSTATUS(
-                NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
                 "PsSetCreateProcessNotifyRoutineEx failed",
                 status);
             result = EBPF_OPERATION_NOT_SUPPORTED;
@@ -120,15 +122,15 @@ Exit:
         ExReleasePushLockExclusive(&_ebpf_process_hook_provider_lock);
     }
 
-    NTOS_EBPF_EXT_RETURN_RESULT(result);
+    EBPF_EXT_RETURN_RESULT(result);
 }
 
 static void
-_ntos_ebpf_extension_process_on_client_detach(_In_ const ntos_ebpf_extension_hook_client_t* detaching_client)
+_ntos_ebpf_extension_process_on_client_detach(_In_ const ebpf_extension_hook_client_t* detaching_client)
 {
     ebpf_result_t result = EBPF_SUCCESS;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     UNREFERENCED_PARAMETER(detaching_client);
 
@@ -140,9 +142,9 @@ _ntos_ebpf_extension_process_on_client_detach(_In_ const ntos_ebpf_extension_hoo
     if (_ebpf_process_hook_provider_registered && _ebpf_process_hook_provider_registration_count == 0) {
         NTSTATUS status = PsSetCreateProcessNotifyRoutineEx(_ebpf_process_create_process_notify_routine_ex, TRUE);
         if (!NT_SUCCESS(status)) {
-            NTOS_EBPF_EXT_LOG_MESSAGE_NTSTATUS(
-                NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
                 "PsSetCreateProcessNotifyRoutineEx failed",
                 status);
             result = EBPF_OPERATION_NOT_SUPPORTED;
@@ -152,72 +154,72 @@ _ntos_ebpf_extension_process_on_client_detach(_In_ const ntos_ebpf_extension_hoo
 
     ExReleasePushLockExclusive(&_ebpf_process_hook_provider_lock);
 
-    NTOS_EBPF_EXT_LOG_EXIT();
+    EBPF_EXT_LOG_EXIT();
 }
 
 //
 // NMR Registration Helper Routines.
 //
 
+void
+ebpf_ext_unregister_ntos()
+{
+    if (_ebpf_process_hook_provider_context) {
+        ebpf_extension_hook_provider_unregister(_ebpf_process_hook_provider_context);
+        _ebpf_process_hook_provider_context = NULL;
+    }
+    if (_ebpf_process_program_info_provider_context) {
+        ebpf_extension_program_info_provider_unregister(_ebpf_process_program_info_provider_context);
+        _ebpf_process_program_info_provider_context = NULL;
+    }
+}
+
 NTSTATUS
-ntos_ebpf_ext_process_register_providers()
+ebpf_ext_register_ntos()
 {
     NTSTATUS status = STATUS_SUCCESS;
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
-    const ntos_ebpf_extension_program_info_provider_parameters_t program_info_provider_parameters = {
+    const ebpf_extension_program_info_provider_parameters_t program_info_provider_parameters = {
         &_ebpf_process_program_info_provider_moduleid, &_ebpf_process_program_data};
-    const ntos_ebpf_extension_hook_provider_parameters_t hook_provider_parameters = {
+    const ebpf_extension_hook_provider_parameters_t hook_provider_parameters = {
         &_ebpf_process_hook_provider_moduleid, &_ntos_ebpf_process_hook_provider_data};
 
     // Set the program type as the provider module id.
     _ebpf_process_program_info_provider_moduleid.Guid = EBPF_PROGRAM_TYPE_PROCESS;
     _ebpf_process_hook_provider_moduleid.Guid = EBPF_ATTACH_TYPE_PROCESS;
-    status = ntos_ebpf_extension_program_info_provider_register(
+    status = ebpf_extension_program_info_provider_register(
         &program_info_provider_parameters, &_ebpf_process_program_info_provider_context);
     if (!NT_SUCCESS(status)) {
-        NTOS_EBPF_EXT_LOG_MESSAGE_NTSTATUS(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-            "ntos_ebpf_extension_program_info_provider_register",
+        EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "ebpf_extension_program_info_provider_register",
             status);
         goto Exit;
     }
 
-    status = ntos_ebpf_extension_hook_provider_register(
+    status = ebpf_extension_hook_provider_register(
         &hook_provider_parameters,
         _ntos_ebpf_extension_process_on_client_attach,
         _ntos_ebpf_extension_process_on_client_detach,
         NULL,
         &_ebpf_process_hook_provider_context);
     if (status != EBPF_SUCCESS) {
-        NTOS_EBPF_EXT_LOG_MESSAGE_NTSTATUS(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-            "ntos_ebpf_extension_hook_provider_register",
+        EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "ebpf_extension_hook_provider_register",
             status);
         goto Exit;
     }
 
 Exit:
     if (!NT_SUCCESS(status)) {
-        ntos_ebpf_ext_process_unregister_providers();
+        ebpf_ext_unregister_ntos();
     }
-    NTOS_EBPF_EXT_RETURN_NTSTATUS(status);
-}
-
-void
-ntos_ebpf_ext_process_unregister_providers()
-{
-    if (_ebpf_process_hook_provider_context) {
-        ntos_ebpf_extension_hook_provider_unregister(_ebpf_process_hook_provider_context);
-        _ebpf_process_hook_provider_context = NULL;
-    }
-    if (_ebpf_process_program_info_provider_context) {
-        ntos_ebpf_extension_program_info_provider_unregister(_ebpf_process_program_info_provider_context);
-        _ebpf_process_program_info_provider_context = NULL;
-    }
+    EBPF_EXT_RETURN_NTSTATUS(status);
 }
 
 static ebpf_result_t
@@ -228,23 +230,22 @@ _ebpf_process_context_create(
     size_t context_size_in,
     _Outptr_ void** context)
 {
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
     ebpf_result_t result;
     process_md_t* process_context = NULL;
 
     *context = NULL;
 
     if (context_in == NULL || context_size_in < sizeof(process_md_t)) {
-        NTOS_EBPF_EXT_LOG_MESSAGE(
-            NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR, NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS, "Context is required");
+        EBPF_EXT_LOG_MESSAGE(EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PROCESS, "Context is required");
         result = EBPF_INVALID_ARGUMENT;
         goto Exit;
     }
 
     process_context =
-        (process_md_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, sizeof(process_md_t), NTOS_EBPF_EXTENSION_POOL_TAG);
-    NTOS_EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
-        NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS, process_context, "process_context", result);
+        (process_md_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, sizeof(process_md_t), EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
+        EBPF_EXT_TRACELOG_KEYWORD_PROCESS, process_context, "process_context", result);
 
     // Copy the context from the caller.
     memcpy(process_context, context_in, sizeof(process_md_t));
@@ -262,7 +263,7 @@ Exit:
         ExFreePool(process_context);
         process_context = NULL;
     }
-    NTOS_EBPF_EXT_RETURN_RESULT(result);
+    EBPF_EXT_RETURN_RESULT(result);
 }
 
 static void
@@ -273,7 +274,7 @@ _ebpf_process_context_destroy(
     _Out_writes_bytes_to_(*context_size_out, *context_size_out) uint8_t* context_out,
     _Inout_ size_t* context_size_out)
 {
-    NTOS_EBPF_EXT_LOG_ENTRY();
+    EBPF_EXT_LOG_ENTRY();
 
     process_md_t* process_context = (process_md_t*)context;
     process_md_t* process_context_out = (process_md_t*)context_out;
@@ -305,7 +306,7 @@ _ebpf_process_context_destroy(
     ExFreePool(process_context);
 
 Exit:
-    NTOS_EBPF_EXT_LOG_EXIT();
+    EBPF_EXT_LOG_EXIT();
 }
 
 typedef struct _process_notify_context
@@ -324,8 +325,8 @@ _ebpf_process_create_process_notify_routine_ex(
     process_notify_context_t process_notify_context = {
         .process_md = {0}, .process = process, .create_info = create_info};
 
-    NTOS_EBPF_EXT_LOG_ENTRY();
-    ntos_ebpf_extension_hook_client_t* client_context;
+    EBPF_EXT_LOG_ENTRY();
+    ebpf_extension_hook_client_t* client_context;
 
     if (create_info != NULL) {
         if (create_info->CommandLine != NULL) {
@@ -357,24 +358,24 @@ _ebpf_process_create_process_notify_routine_ex(
 
     // For each attached client call the process hook.
     ebpf_result_t result;
-    client_context = ntos_ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, NULL);
+    client_context = ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, NULL);
     while (client_context != NULL) {
         NTSTATUS status = 0;
-        if (ntos_ebpf_extension_hook_client_enter_rundown(client_context)) {
-            result = ntos_ebpf_extension_hook_invoke_program(
+        if (ebpf_extension_hook_client_enter_rundown(client_context)) {
+            result = ebpf_extension_hook_invoke_program(
                 client_context, &process_notify_context.process_md, (uint32_t*)&status);
             if (result != EBPF_SUCCESS) {
-                NTOS_EBPF_EXT_LOG_MESSAGE(
-                    NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                    NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-                    "ntos_ebpf_extension_hook_invoke_program failed");
+                EBPF_EXT_LOG_MESSAGE(
+                    EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                    EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+                    "ebpf_extension_hook_invoke_program failed");
             }
-            ntos_ebpf_extension_hook_client_leave_rundown(client_context);
+            ebpf_extension_hook_client_leave_rundown(client_context);
         } else {
-            NTOS_EBPF_EXT_LOG_MESSAGE(
-                NTOS_EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                NTOS_EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-                "ntos_ebpf_extension_hook_client_enter_rundown failed");
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+                "ebpf_extension_hook_client_enter_rundown failed");
         }
         // If the client returns a non-zero value, stop calling the other clients.
         if (!NT_SUCCESS(status) && create_info) {
@@ -383,7 +384,7 @@ _ebpf_process_create_process_notify_routine_ex(
         }
 
         client_context =
-            ntos_ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, client_context);
+            ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, client_context);
     }
 
 Exit:
@@ -395,7 +396,7 @@ Exit:
         RtlFreeUTF8String(&process_notify_context.image_file_name_utf8);
     }
 
-    NTOS_EBPF_EXT_LOG_EXIT();
+    EBPF_EXT_LOG_EXIT();
 }
 
 _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
