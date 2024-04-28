@@ -1,12 +1,16 @@
 // Copyright (c) Microsoft Corporation
 // SPDX-License-Identifier: MIT
 
+#define NO_CRT
 // clang-format off
 #include <wdm.h>
 #include <wsk.h>
 // clang-format on
 #include <guiddef.h>
 #include <ntstrsafe.h>
+
+DRIVER_INITIALIZE DriverEntry;
+DRIVER_UNLOAD DriverUnload;
 
 // Define the GUID for the PktMon NPI
 NPIID PKTMON_NPI_ID = {0xcd3d4424, 0x657e, 0x404c, {0x87, 0xb2, 0xac, 0xf9, 0x28, 0x2c, 0xdd, 0x82}};

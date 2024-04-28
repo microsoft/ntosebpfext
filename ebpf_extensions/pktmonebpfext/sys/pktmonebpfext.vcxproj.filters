@@ -69,6 +69,12 @@
     <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\ebpf_pktmon_hooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ebpf_pktmon_program_attach_type_guids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
