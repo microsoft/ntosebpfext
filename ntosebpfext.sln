@@ -3,9 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-<Target Name="BuildSetupBuild" BeforeTargets="Build">
-    <MSBuild Projects=".\scripts\setup_build\setup_build.vcxproj" Targets="Build" />
-</Target>
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "setup_build", "scripts\setup_build\setup_build.vcxproj", "{231EE32B-EBA4-4FE5-A55B-DB18F539D403}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Catch2", "external\Catch2\build\src\Catch2.vcxproj", "{8D538CBE-01BF-4A2E-A98A-6C368FDF13D7}"
@@ -47,6 +44,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pktmonebpfext", "pktmonebpfext", "{C488132C-7C22-4A37-821A-D7656C485372}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntosebpfext", "ebpf_extensions\ntosebpfext\sys\ntosebpfext.vcxproj", "{55499E36-37D4-4F86-B694-9F2990315758}"
+	ProjectSection(ProjectDependencies) = postProject
+		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmon_monitor", "tools\pktmon_monitor\pktmon_monitor.vcxproj", "{1132BFD8-EECA-4372-B08E-D349D86FE616}"
 EndProject
@@ -55,6 +55,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntos_ebpf_ext_export_program_info", "tools\ntos_ebpf_ext_export_program_info\ntos_ebpf_ext_export_program_info.vcxproj", "{FA9BB88D-8259-40C1-9422-BDEDF9E9CE68}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmonebpfext", "ebpf_extensions\pktmonebpfext\sys\pktmonebpfext.vcxproj", "{DB2CE6D8-F3B3-4C35-A585-5C88B4684821}"
+	ProjectSection(ProjectDependencies) = postProject
+		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmonebpfext_user", "ebpf_extensions\pktmonebpfext\user\pktmonebpfext_user.vcxproj", "{AAAB234B-F0E9-4326-91E8-87B98367ACC1}"
 EndProject
