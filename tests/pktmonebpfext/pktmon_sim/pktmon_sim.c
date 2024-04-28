@@ -11,6 +11,7 @@
 
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
+KDEFERRED_ROUTINE timer_dpc_routine;
 
 // Define the GUID for the PktMon NPI
 NPIID PKTMON_NPI_ID = {0xcd3d4424, 0x657e, 0x404c, {0x87, 0xb2, 0xac, 0xf9, 0x28, 0x2c, 0xdd, 0x82}};
