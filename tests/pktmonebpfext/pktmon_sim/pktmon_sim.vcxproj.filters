@@ -9,5 +9,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Trace.h" />
+    <ClInclude Include="pktmon_npi_provider.h" />
+    <ClInclude Include="pktmon_npi_client.h" />
   </ItemGroup>
 </Project>
