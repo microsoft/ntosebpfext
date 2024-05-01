@@ -37,6 +37,7 @@ typedef struct
     uint64_t parent_process_id;
     uint64_t creating_process_id;
     uint64_t creating_thread_id;
+    uint32_t process_exit_code;
     uint64_t operation;
 } process_info_t;
 
@@ -71,7 +72,8 @@ process_monitor_history_callback(void* ctx, void* data, size_t size)
         break;
     }
     case PROCESS_OPERATION_DELETE: {
-        std::cout << "Process deleted: " << event->process_id << "\n" << file_name << std::endl;
+        std::cout << "Process deleted: " << event->process_id << ", exit code: " << event->process_exit_code << " \n"
+                  << file_name << std::endl;
         break;
     }
     default:

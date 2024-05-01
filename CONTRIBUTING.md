@@ -5,6 +5,8 @@ We'd love your help with eBPF for Windows! Here are our contribution guidelines.
 - [Code of Conduct](#code-of-conduct)
 - [Bugs](#bugs)
 - [New Features](#new-features)
+- [Building the code](#building-the-code)
+- [Testing the code](#testing-the-code)
 - [Contributor License Agreement](#contributor-license-agreement)
 - [Contributing Code](#contributing-code)
   - [Tests](#tests)
@@ -55,6 +57,56 @@ If you would like to implement a new feature, please first
 communicate your proposal so that the community can review and provide feedback. Getting
 early feedback will help ensure your implementation work is accepted by the community.
 This will also allow us to better coordinate our efforts and minimize duplicated effort.
+
+## Building the code
+
+To build locally, ensure your environment is set up:
+
+1. Install Visual Studio 2022 with at least the "Desktop development with C++" workload
+1. Install the Windows SDK 10.0.22621.0 with `winget install Microsoft.WindowsSDK.10.0.22621`
+1. Install the Windows DDK 10.0.22621.0 with `winget install Microsoft.WindowsWDK.10.0.22621`
+
+Then do one-time repo setup:
+
+1. Open a Visual Studio 2022 Developer Command Prompt
+1. cd `<root of your clone>`
+1. `powershell -file scripts\initialize_repo.ps1`
+
+Then you can build normally in Visual Studio:
+
+1. Open `ntosebpfext.sln` in Visual Studio.  You may want to run VS as admin if you want to debug in VS.
+
+## Testing the code
+
+### Unit tests
+
+Run the unit tests by going to the binaries output folder (ex: `x64\Debug`) and running `ntosebpfext_unit.exe -d yes`
+
+### E2E tests
+
+The end-to-end tests use a tool called `process_monitor` to take data from the `ntosebpfext` extension and place it in a ring buffer that is visible from user-mode (this happens in `process_monitor.sys`).  Then the `process_monitor.exe` user-mode process prints the events it sees to a file that the tests verify.
+
+To run E2E tests you'll need to install eBPF for Windows and the ntosebpfext extension driver locally.
+
+1. Open a command prompt as admin
+1. `cd <your binaries folder>` (ex: `<root of your clone>\x64\Debug`)
+1. `powershell .\Install-eBpfForWindows.ps1 0.16.0`
+1. `powershell .\Test-ProcessMonitor.ps1`
+
+### Debugging locally
+
+1. Install eBPF for Windows locally
+1. Install `ntosebpfext` locally from an admin command prompt: `sc create ntosebpfext type=kernel start=auto binpath="<your binaries folder>\ntosebpfext\ntosebpfext.sys`
+1. Run Visual Studio as admin
+1. Choose something like `process_monitor` as the startup project and debug.
+
+Note that when you do this, the `ntosebpfext.sys` driver will be loaded, so if you rebuild the solution, it will fail to build because it can't overwrite the in-use driver.  For this you have a couple of options:
+
+1. `sc stop ntosebpfxt`
+1. Build the solution however you like
+1. `sc start ntosebpfext`
+
+Or you can just run `scripts\rebuild_ntosebpfext.cmd` which does those 3 steps.
 
 ## Contributor License Agreement
 
