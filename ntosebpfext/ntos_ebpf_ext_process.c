@@ -12,10 +12,6 @@
 
 #include <errno.h>
 
-// We cannot include ntddk.h here because it conflicts with windows.h that is included already.  But we only need one
-// more function declaration, so just declare it here.
-_IRQL_requires_max_(APC_LEVEL) __declspec(dllimport) NTSTATUS __cdecl PsGetProcessExitStatus(_In_ PEPROCESS process);
-
 static ebpf_result_t
 _ebpf_process_context_create(
     _In_reads_bytes_opt_(data_size_in) const uint8_t* data_in,
