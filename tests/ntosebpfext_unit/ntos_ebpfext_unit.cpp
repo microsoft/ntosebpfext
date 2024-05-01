@@ -84,14 +84,14 @@ TEST_CASE("process_invoke", "[ntosebpfext]")
     REQUIRE((HANDLE)client_context.process_context.creating_process_id == create_info.CreatingThreadId.UniqueProcess);
     REQUIRE((HANDLE)client_context.process_context.creating_thread_id == create_info.CreatingThreadId.UniqueThread);
     REQUIRE(create_info.CreationStatus == STATUS_ACCESS_DENIED);
-    REQUIRE(client_context.process_context.operation == PROCESS_OPERATION_CREATE);
+    REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_CREATE);
 
     // Test process termination.
     // Just verify that it doesn't crash.
     usersime_invoke_process_creation_notify_routine(reinterpret_cast<PEPROCESS>(&fake_eprocess), (HANDLE)1, nullptr);
 
     REQUIRE(client_context.process_context.process_id == 1);
-    REQUIRE(client_context.process_context.operation == PROCESS_OPERATION_DELETE);
+    REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_DELETE);
 }
 
 #pragma endregion process
