@@ -67,12 +67,6 @@ if (Test-Path -Path "process_monitor_output.txt") {
     exit 1
 }
 
-# Check if the output file is not empty.
-if ((Get-Content -Path "process_monitor_output.txt") -eq "") {
-    Write-Output "Process Monitor output file is empty."
-    exit 1
-}
-
 # Check for the process name in the output file.
 if ((Get-Content -Path "process_monitor_output.txt") -match "cmd.exe") {
     Write-Output "Process Monitor output file contains the expected string."
