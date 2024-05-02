@@ -14,13 +14,14 @@ typedef enum _process_operation
 
 typedef struct _process_md
 {
-    uint8_t* command_start;        ///< Pointer to start of the command line as UTF-8 string.
-    uint8_t* command_end;          ///< Pointer to end of the command line as UTF-8 string.
-    uint64_t process_id;           ///< Process ID.
-    uint64_t parent_process_id;    ///< Parent process ID.
-    uint64_t creating_process_id;  ///< Creating process ID.
-    uint64_t creating_thread_id;   ///< Creating thread ID.
-    process_operation_t operation; ///< Operation to do.
+    uint8_t* command_start;            ///< Pointer to start of the command line as UTF-8 string.
+    uint8_t* command_end;              ///< Pointer to end of the command line as UTF-8 string.
+    uint64_t process_id;               ///< Process ID.
+    uint64_t parent_process_id;        ///< Parent process ID.
+    uint64_t creating_process_id;      ///< Creating process ID.
+    uint64_t creating_thread_id;       ///< Creating thread ID.
+    uint32_t process_exit_code;        ///< Process exit status.
+    process_operation_t operation : 8; ///< Operation to do.
 } process_md_t;
 
 /*

@@ -15,6 +15,7 @@ typedef struct
     uint64_t parent_process_id;
     uint64_t creating_process_id;
     uint64_t creating_thread_id;
+    uint32_t process_exit_code;
     uint64_t operation;
 } process_info_t;
 
@@ -54,15 +55,18 @@ SEC("process")
 int
 ProcessMonitor(process_md_t* ctx)
 {
-    process_info_t process_info = {
-        .process_id = ctx->process_id,
-        .parent_process_id = ctx->parent_process_id,
-        .creating_process_id = ctx->creating_process_id,
-        .creating_thread_id = ctx->creating_thread_id,
-        .operation = ctx->operation,
-    };
+    process_info_t process_info;
 
-    if (ctx->operation == PROCESS_OPERATION_CREATE) {
+    memset(&process_info, 0, sizeof(process_info));
+
+    process_info.process_id = ctx->process_id;
+    process_info.parent_process_id = ctx->parent_process_id;
+    process_info.creating_process_id = ctx->creating_process_id;
+    process_info.creating_thread_id = ctx->creating_thread_id;
+    process_info.process_exit_code = ctx->process_exit_code;
+    process_info.operation = ctx->operation;
+
+    if (process_info.operation == PROCESS_OPERATION_CREATE) {
         uint8_t buffer[MAX_PATH];
 
         memset(buffer, 0, sizeof(buffer));

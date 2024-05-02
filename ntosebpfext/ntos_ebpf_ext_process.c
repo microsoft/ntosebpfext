@@ -354,6 +354,7 @@ _ebpf_process_create_process_notify_routine_ex(
     } else {
         process_notify_context.process_md.operation = PROCESS_OPERATION_DELETE;
         process_notify_context.process_md.process_id = (uint64_t)process_id;
+        process_notify_context.process_md.process_exit_code = PsGetProcessExitStatus(process);
     }
 
     // For each attached client call the process hook.
