@@ -28,17 +28,16 @@ PktmonMonitor(pktmon_event_md_t* ctx)
 {
     uint8_t event_type = 0;
 
-    if (ctx != NULL && ctx->event_data_start != NULL) {
+    if (ctx != NULL && ctx->event_data_start != NULL && (ctx->event_data_end - ctx->event_data_start) > 1) {
 
         event_type = *(
-            ctx->event_data_start); // The event type is on the firts byte of the buffer (like for Cilium event buffers)
+            ctx->event_data_start); // The event type is on the first byte of the buffer (like for Cilium event buffers)
 
         if (event_type == NOTIFY_EVENT_TYPE_PKTMON) {
             // Push the event to the pktmon_events_map.
             bpf_ringbuf_output(
-                &pktmon_events_map, ctx->event_data_start, (ctx->event_data_end - ctx->event_data_start + 1), 0);
+                &pktmon_events_map, ctx->event_data_start, (ctx->event_data_end - ctx->event_data_start), 0);
         }
-
         return 0;
     }
 

@@ -5,8 +5,10 @@
 
 typedef struct
 {
+    // Note: the BPF verifier limits the ability to just pass the pointer to the start of the buffer and its length.
     unsigned char* event_data_start; ///< Pointer to start of the data associated with the event.
-    unsigned char* event_data_end;   ///< Pointer to end of the data associated with the event.
+    unsigned char* event_data_end; ///< Pointer to end of the data associated with the event (i.e. first byte *outside*
+                                   ///< the memory range).
 } pktmon_event_info_t;
 
 // Define the NPI client dispatch table
