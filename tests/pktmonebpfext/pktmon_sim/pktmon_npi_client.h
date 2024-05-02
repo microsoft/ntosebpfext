@@ -5,8 +5,8 @@
 
 typedef struct
 {
-    unsigned char* event_data; ///< Data associated with the event.
-    size_t event_data_length;  ///< Length of the event data.
+    unsigned char* event_data_start; ///< Pointer to start of the data associated with the event.
+    unsigned char* event_data_end;   ///< Pointer to end of the data associated with the event.
 } pktmon_event_info_t;
 
 // Define the NPI client dispatch table

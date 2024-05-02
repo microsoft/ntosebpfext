@@ -37,14 +37,14 @@ _ebpf_pktmon_push_event(_In_ pktmon_event_md_t* pktmon_event);
 //
 // Global variables.
 ///
-static const void* _ebpf_pktmon_event_helper_functions[] = {(void*)&_ebpf_pktmon_push_event};
+static const void* _ebpf_pktmon_ext_helper_functions[] = {(void*)&_ebpf_pktmon_push_event};
 
 static ebpf_helper_function_addresses_t _ebpf_pktmon_event_helper_function_address_table = {
     .header =
         {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
          .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
-    .helper_function_count = EBPF_COUNT_OF(_ebpf_pktmon_event_helper_functions),
-    .helper_function_address = (uint64_t*)_ebpf_pktmon_event_helper_functions};
+    .helper_function_count = EBPF_COUNT_OF(_ebpf_pktmon_ext_helper_functions),
+    .helper_function_address = (uint64_t*)_ebpf_pktmon_ext_helper_functions};
 
 //
 // Event Hook NPI Provider.

@@ -97,8 +97,8 @@ timer_dpc_routine(
         NTSTATUS status =
             RtlStringCbPrintfA(message, sizeof(message), "Hello from pktmon - dropping packets! (total %ld)", counter);
         if (NT_SUCCESS(status)) {
-            testPayload.event_data = (unsigned char*)message;
-            testPayload.event_data_length = sizeof(testPayload.event_data);
+            testPayload.event_data_start = (unsigned char*)message;
+            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1; // TBV dealloc
 
             // Invoke the client's dispatch routine
             _pktmon_provider_binding_context.client_dispatch->pktmon_push_event(
