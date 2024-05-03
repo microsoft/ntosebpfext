@@ -50,7 +50,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntosebpfext", "ebpf_extensi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmon_monitor", "tools\pktmon_monitor\pktmon_monitor.vcxproj", "{1132BFD8-EECA-4372-B08E-D349D86FE616}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmon_ebpf_ext_export_program_info", "tools\pktmon_export_program_info\pktmon_export_program_info.vcxproj", "{61896FC2-D314-468E-887B-7B1EBC7F0FEB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmon_ebpf_ext_export_program_info", "tools\pktmon_ebpf_ext_export_program_info\pktmon_ebpf_ext_export_program_info.vcxproj", "{61896FC2-D314-468E-887B-7B1EBC7F0FEB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntos_ebpf_ext_export_program_info", "tools\ntos_ebpf_ext_export_program_info\ntos_ebpf_ext_export_program_info.vcxproj", "{FA9BB88D-8259-40C1-9422-BDEDF9E9CE68}"
 EndProject

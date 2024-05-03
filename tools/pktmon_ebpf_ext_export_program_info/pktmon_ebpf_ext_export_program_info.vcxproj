@@ -200,10 +200,10 @@ $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
     <ClCompile Include="pktmon_export_program_info.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pktmon_export_program_info.h" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ClInclude Include="pktmon_export_program_info.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

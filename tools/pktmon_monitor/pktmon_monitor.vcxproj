@@ -168,7 +168,7 @@ $(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pktmon_export_program_info\pktmon_export_program_info.vcxproj">
+    <ProjectReference Include="..\pktmon_ebpf_ext_export_program_info\pktmon_ebpf_ext_export_program_info.vcxproj">
       <Project>{61896fc2-d314-468e-887b-7b1ebc7f0feb}</Project>
     </ProjectReference>
   </ItemGroup>
