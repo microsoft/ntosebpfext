@@ -97,7 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear
+      <Command>
 $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>

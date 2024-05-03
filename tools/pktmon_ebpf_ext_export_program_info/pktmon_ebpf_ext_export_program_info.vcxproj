@@ -126,6 +126,9 @@
       <Command>$(OutDir)pktmon_ebpf_ext_export_program_info.exe --clear
 $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">
     <ClCompile>
@@ -142,6 +145,9 @@ $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <Command>$(OutDir)pktmon_ebpf_ext_export_program_info.exe --clear
 $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
     <ClCompile>
@@ -158,6 +164,9 @@ $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <Command>$(OutDir)pktmon_ebpf_ext_export_program_info.exe --clear
 $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -176,6 +185,9 @@ $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <Command>$(OutDir)pktmon_ebpf_ext_export_program_info.exe --clear
 $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'">
     <ClCompile>
@@ -194,6 +206,9 @@ $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <Command>$(OutDir)pktmon_ebpf_ext_export_program_info.exe --clear
 $(OutDir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

@@ -97,7 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
+      <Command>
 $(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -170,9 +170,6 @@ $(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
   <ItemGroup>
     <ProjectReference Include="..\pktmon_ebpf_ext_export_program_info\pktmon_ebpf_ext_export_program_info.vcxproj">
       <Project>{61896fc2-d314-468e-887b-7b1ebc7f0feb}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\process_monitor\process_monitor.vcxproj">
-      <Project>{3dbf8a96-3883-448a-8bd3-b8c913a27f09}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
