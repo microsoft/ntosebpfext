@@ -167,10 +167,11 @@ jobs:
       if: steps.skip_check.outputs.should_skip != 'true'
       id: configure_ebpf_store
       working-directory: ./${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}
+      # Clear the store before exporting the program infos!
       run: |
         .\ntos_ebpf_ext_export_program_info.exe --clear
-        .\ntos_ebpf_ext_export_program_info.exe
         .\pktmon_ebpf_ext_export_program_info.exe --clear
+        .\ntos_ebpf_ext_export_program_info.exe
         .\pktmon_ebpf_ext_export_program_info.exe
 
     - name: Run pre test command
