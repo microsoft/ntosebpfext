@@ -170,6 +170,8 @@ jobs:
       run: |
         .\ntos_ebpf_ext_export_program_info.exe --clear
         .\ntos_ebpf_ext_export_program_info.exe
+        .\pktmon_ebpf_ext_export_program_info.exe --clear
+        .\pktmon_ebpf_ext_export_program_info.exe
 
     - name: Run pre test command
       if: steps.skip_check.outputs.should_skip != 'true' && (inputs.environment != 'ebpf_cicd_tests_ws2019' && inputs.environment != 'ebpf_cicd_tests_ws2022' && inputs.environment != 'ebpf_cicd_perf_ws2022')
