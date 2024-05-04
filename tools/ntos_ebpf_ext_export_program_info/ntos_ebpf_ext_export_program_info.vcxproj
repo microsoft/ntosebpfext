@@ -127,7 +127,8 @@
 $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">
@@ -146,7 +147,8 @@ $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
 $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
@@ -165,7 +167,8 @@ $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
 $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -186,7 +189,8 @@ $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
 $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'">
@@ -207,7 +211,8 @@ $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
 $(OutDir)ntos_ebpf_ext_export_program_info.exe</Command>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

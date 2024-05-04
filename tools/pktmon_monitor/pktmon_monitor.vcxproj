@@ -97,7 +97,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">
@@ -111,7 +113,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -128,7 +132,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'">
@@ -145,7 +151,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
+$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -164,6 +172,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\ebpf_extensions\pktmonebpfext\sys\pktmonebpfext.vcxproj">
+      <Project>{db2ce6d8-f3b3-4c35-a585-5c88b4684821}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\pktmon_ebpf_ext_export_program_info\pktmon_ebpf_ext_export_program_info.vcxproj">
       <Project>{61896fc2-d314-468e-887b-7b1ebc7f0feb}</Project>
     </ProjectReference>
