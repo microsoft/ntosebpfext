@@ -13,7 +13,6 @@
 #define BPF_ATTACH_TYPE_PKTMON 99900
 #define BPF_PROG_TYPE_PKTMON 99901
 
-// Process program information.
 static const ebpf_helper_function_prototype_t _pktmon_event_ebpf_extension_helper_function_prototype[] = {
     {.header =
          {.version = EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION,

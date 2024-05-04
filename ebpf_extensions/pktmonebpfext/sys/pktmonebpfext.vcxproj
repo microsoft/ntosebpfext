@@ -225,8 +225,6 @@
     <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_hook_provider.h" />
     <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.h" />
     <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog.h" />
-    <ClInclude Include="..\ebpf_pktmon_hooks.h" />
-    <ClInclude Include="..\ebpf_pktmon_program_attach_type_guids.h" />
     <ClInclude Include="..\pktmon_ebpf_ext_event.h" />
     <ClInclude Include="..\pktmon_ebpf_ext_program_info.h" />
     <ClInclude Include="resource.h" />

@@ -97,8 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>
-$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">
@@ -112,8 +111,7 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear
-$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -130,8 +128,7 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear
-$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'">
@@ -148,8 +145,7 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear
-$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

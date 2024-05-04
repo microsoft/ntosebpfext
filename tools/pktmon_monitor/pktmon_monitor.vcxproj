@@ -97,8 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>
-$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyDebug|x64'">
@@ -112,8 +111,7 @@ $(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
-$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -130,8 +128,7 @@ $(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
-$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='NativeOnlyRelease|x64'">
@@ -148,8 +145,7 @@ $(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe --clear
-$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
+      <Command>$(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -159,7 +155,7 @@ $(Outdir)pktmon_ebpf_ext_export_program_info.exe</Command>
       <Command>
         clang $(ClangFlags) $(ClangIncludes) -I$(SolutionDir)include -c bpf\pktmon_monitor.c -o $(OutputPath)pktmon_monitor.o
         pushd $(OutDir)
-        powershell -NonInteractive -ExecutionPolicy Unrestricted $(EbpfBinPath)\Convert-BpfToNative.ps1 -FileName %(Filename) -Type process -IncludeDir $(EbpfIncludePath) -Platform $(Platform) -Configuration $(Configuration)
+        powershell -NonInteractive -ExecutionPolicy Unrestricted $(EbpfBinPath)\Convert-BpfToNative.ps1 -FileName %(Filename) -Type pktmon_monitor -IncludeDir $(EbpfIncludePath) -Platform $(Platform) -Configuration $(Configuration)
         popd
       </Command>
     </CustomBuild>
