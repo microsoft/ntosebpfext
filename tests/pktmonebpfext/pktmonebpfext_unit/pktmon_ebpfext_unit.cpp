@@ -254,7 +254,7 @@ pktmon_monitor_event_callback(void* ctx, void* data, size_t size)
 {
     UNREFERENCED_PARAMETER(ctx);
 
-    if (size != sizeof(pktmon_event_info_t)) {
+    if (data == nullptr || size == 0) {
         return 0;
     }
 
