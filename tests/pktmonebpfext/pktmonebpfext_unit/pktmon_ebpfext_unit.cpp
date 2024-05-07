@@ -259,11 +259,8 @@ pktmon_monitor_event_callback(void* ctx, void* data, size_t size)
     }
 
     // Check id this event is actually a pktmon event (i.e. first byte is NOTIFY_EVENT_TYPE_PKTMON)
-    pktmon_event_info_t* pktmon_event = (pktmon_event_info_t*)data;
-    if (pktmon_event->event_data_start == nullptr || pktmon_event->event_data_end == nullptr) {
-        return 0;
-    }
-    if (*pktmon_event->event_data_start != NOTIFY_EVENT_TYPE_PKTMON) {
+    uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
+    if (event_type != NOTIFY_EVENT_TYPE_PKTMON) {
         return 0;
     }
 
