@@ -31,11 +31,48 @@ struct bpf_map* pktmon_event_map;
 struct bpf_map* command_map;
 static uint32_t event_count = 0;
 
-// Function to start a driver service
-bool
-start_driver_service(const char* service_name, const char* driver_path)
+// Lock-free event ring buffer, used to store events without blocking the the eBPF callback.
+struct event_t
 {
-    SC_HANDLE scm, service;
+    size_t size;
+    uint8_t* data;
+};
+template <typename T, size_t max_size, bool overwrite> class event_ring_buffer
+{
+  private:
+    std::array<T, max_size> buffer = {};
+    std::atomic<size_t> write_index = 0;
+    std::atomic<size_t> read_index = 0;
+
+  public:
+    void
+    write(const T& item)
+    {
+        size_t next_write_index = write_index + 1;
+        if (!overwrite && next_write_index - read_index == max_size) {
+            return;
+        }
+        buffer[write_index++ % max_size] = item;
+    }
+
+    bool
+    read(T& item)
+    {
+        if (read_index == write_index) {
+            return false;
+        }
+        item = buffer[read_index++ % max_size];
+        return true;
+    }
+};
+event_ring_buffer<event_t, 10000, false> event_buffer; // 10K events, no overwriting
+std::atomic<bool> stop_worker = false;                 // Stop flag for the event processing worker thread.
+
+// Function to create a driver service
+bool
+create_driver_service(const char* service_name, const char* driver_path, SC_HANDLE& service)
+{
+    SC_HANDLE scm;
 
     // Convert narrow strings to wide strings
     std::wstring wide_service_name;
@@ -71,54 +108,41 @@ start_driver_service(const char* service_name, const char* driver_path)
         return false;
     }
 
+    // Close handle
+    CloseServiceHandle(scm);
+
+    return true;
+}
+
+// Function to start a driver service
+bool
+start_driver_service(SC_HANDLE& service)
+{
     // Start the service
     if (!StartService(service, 0, nullptr)) {
         std::cerr << "Failed to start service." << std::endl;
         CloseServiceHandle(service);
-        CloseServiceHandle(scm);
         return false;
     }
 
     std::cout << "Service started successfully." << std::endl;
 
-    // Close handles
+    // Close handle
     CloseServiceHandle(service);
-    CloseServiceHandle(scm);
 
     return true;
 }
 
 // Function to stop a driver service
 bool
-stop_driver_service(const char* service_name)
+stop_driver_service(SC_HANDLE& service)
 {
-    SC_HANDLE scm, service;
     SERVICE_STATUS status;
-
-    // Convert narrow string to wide string
-    std::wstring wide_service_name;
-    wide_service_name.assign(service_name, service_name + strlen(service_name));
-
-    // Open the Service Control Manager
-    scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
-    if (!scm) {
-        std::cerr << "Failed to open Service Control Manager." << std::endl;
-        return false;
-    }
-
-    // Open the driver service
-    service = OpenService(scm, wide_service_name.c_str(), SERVICE_STOP | SERVICE_QUERY_STATUS);
-    if (!service) {
-        std::cerr << "Failed to open service." << std::endl;
-        CloseServiceHandle(scm);
-        return false;
-    }
 
     // Send a stop control to the service
     if (!ControlService(service, SERVICE_CONTROL_STOP, &status)) {
         std::cerr << "Failed to stop service." << std::endl;
         CloseServiceHandle(service);
-        CloseServiceHandle(scm);
         return false;
     }
 
@@ -126,45 +150,28 @@ stop_driver_service(const char* service_name)
 
     // Close handles
     CloseServiceHandle(service);
-    CloseServiceHandle(scm);
 
     return true;
 }
 
 // Function to unload/delete a driver service
 bool
-unload_driver(const char* service_name)
+unload_driver(SC_HANDLE& service)
 {
-    SC_HANDLE scm, service;
     SERVICE_STATUS status;
-
-    // Convert narrow string to wide string
-    std::wstring wide_service_name;
-    wide_service_name.assign(service_name, service_name + strlen(service_name));
-
-    // Open the Service Control Manager
-    scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
-    if (!scm) {
-        std::cerr << "Failed to open Service Control Manager." << std::endl;
-        return false;
-    }
-
-    // Open the driver service
-    service = OpenService(scm, wide_service_name.c_str(), SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS);
-    if (!service) {
-        std::cerr << "Failed to open service." << std::endl;
-        CloseServiceHandle(scm);
-        return false;
-    }
 
     // Send a stop control to the service
     ControlService(service, SERVICE_CONTROL_STOP, &status);
+    if (status.dwCurrentState != SERVICE_STOPPED) {
+        std::cerr << "Failed to stop service." << std::endl;
+        CloseServiceHandle(service);
+        return false;
+    }
 
     // Delete the service
     if (!DeleteService(service)) {
         std::cerr << "Failed to delete service." << std::endl;
         CloseServiceHandle(service);
-        CloseServiceHandle(scm);
         return false;
     }
 
@@ -172,7 +179,6 @@ unload_driver(const char* service_name)
 
     // Close handles
     CloseServiceHandle(service);
-    CloseServiceHandle(scm);
 
     return true;
 }
@@ -228,29 +234,62 @@ _dump_event(const char* event_descr, void* data, size_t size)
     std::cout << std::dec; // Reset to decimal.
 }
 
+// Worker thread to process events that are stored in the ring buffer
+void
+process_events()
+{
+    event_t event;
+    while (!stop_worker) {
+        while (event_buffer.read(event)) {
+            _dump_event("pktmon_event", event.data, event.size);
+            delete[] event.data; // Delete the data after processing the event
+        }
+        // Yield to other threads when buffer is empty
+        std::this_thread::yield();
+    }
+}
+
 int
 pktmon_monitor_event_callback(void* ctx, void* data, size_t size)
 {
     UNREFERENCED_PARAMETER(ctx);
+
     if (size != sizeof(pktmon_event_info_t)) {
         return 0;
     }
 
-    // Trace the event
-    event_count++;
-    pktmon_event_info_t* event = (pktmon_event_info_t*)data;
-    _dump_event("pktmon_event", event->event_data_start, event->event_data_end - event->event_data_start);
+    // Check id this event is actually a pktmon event (i.e. first byte is NOTIFY_EVENT_TYPE_PKTMON)
+    pktmon_event_info_t* pktmon_event = (pktmon_event_info_t*)data;
+    if (pktmon_event->event_data_start == nullptr || pktmon_event->event_data_end == nullptr) {
+        return 0;
+    }
+    if (*pktmon_event->event_data_start != NOTIFY_EVENT_TYPE_PKTMON) {
+        return 0;
+    }
 
-    return 0;
+    // Queue the event for deferred processing
+    event_count++;
+    uint8_t* data_copy = new uint8_t[size];
+    if (data_copy != nullptr) {
+        memcpy(data_copy, data, size);
+        event_buffer.write({size, data_copy});
+        return 0;
+    }
+
+    return -1;
 }
 
 TEST_CASE("pktmon_event_simulate", "[pktmonebpfext]")
 {
     // Load and start pktmon simulator driver.
-    REQUIRE(start_driver_service("pktmon_sim", "pktmon_sim.sys"));
+    SC_HANDLE pktmon_sim_driver_handle;
+    REQUIRE(create_driver_service("pktmon_sim", "pktmon_sim.sys", pktmon_sim_driver_handle) == true);
+    REQUIRE(start_driver_service(pktmon_sim_driver_handle) == true);
 
     // Load and start pktmonebpfext extension driver.
-    REQUIRE(start_driver_service("pktmonebpfext", "pktmonebpfext.sys"));
+    SC_HANDLE pktmonebpfext_driver_handle;
+    REQUIRE(create_driver_service("pktmonebpfext", "pktmonebpfext.sys", pktmonebpfext_driver_handle) == true);
+    REQUIRE(start_driver_service(pktmonebpfext_driver_handle) == true);
 
     // Load pktmon_monitor.sys BPF program.
     struct bpf_object* object = bpf_object__open("pktmon_monitor.sys");
@@ -271,6 +310,9 @@ TEST_CASE("pktmon_event_simulate", "[pktmonebpfext]")
     auto ring = ring_buffer__new(bpf_map__fd(pktmon_events_map), pktmon_monitor_event_callback, nullptr, nullptr);
     REQUIRE(ring != nullptr);
 
+    // Start worker thread for processing incoming events that are stored in the ring buffer by the callback
+    std::thread worker(process_events);
+
     // Wait for the number of expected events or a timeout.
     int timeout = PKTMON_EVENT_TEST_TIMEOUT_SEC;
     while (event_count < MAX_EVENTS_COUNT && timeout > 0) {
@@ -280,12 +322,12 @@ TEST_CASE("pktmon_event_simulate", "[pktmonebpfext]")
     REQUIRE(timeout > 0);
 
     // First, stop and unload the pktmon simulator driver (NPI provider).
-    REQUIRE(stop_driver_service("pktmon_sim"));
-    REQUIRE(unload_driver("pktmon_sim"));
+    REQUIRE(stop_driver_service(pktmon_sim_driver_handle) == true);
+    REQUIRE(unload_driver(pktmon_sim_driver_handle) == true);
 
     // Stop and unload the pktmonebpfext extension driver (NPI client).
-    REQUIRE(stop_driver_service("pktmonebpfext"));
-    REQUIRE(unload_driver("pktmonebpfext"));
+    REQUIRE(stop_driver_service(pktmonebpfext_driver_handle) == true);
+    REQUIRE(unload_driver(pktmonebpfext_driver_handle) == true);
 
     // Detach from the attach point.
     int link_fd = bpf_link__fd(pktmon_monitor_link);
@@ -297,4 +339,8 @@ TEST_CASE("pktmon_event_simulate", "[pktmonebpfext]")
 
     // Free the BPF object.
     bpf_object__close(object);
+
+    // Stop the event processing worker thread.
+    stop_worker = true;
+    worker.join();
 }

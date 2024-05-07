@@ -16,6 +16,9 @@ DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
 KDEFERRED_ROUTINE timer_dpc_routine;
 
+// As defined in \include\ebpf_pktmon_hooks.h
+#define NOTIFY_EVENT_TYPE_PKTMON 100
+
 // Function prototypes
 static NTSTATUS
 _pktmon_provider_attach_client(
@@ -93,9 +96,10 @@ timer_dpc_routine(
         // Create the test payload
         pktmon_event_info_t testPayload;
         char message[200] = {0};
+        message[0] = (unsigned char)NOTIFY_EVENT_TYPE_PKTMON;
         LONG counter = InterlockedIncrement(&_event_counter);
-        NTSTATUS status =
-            RtlStringCbPrintfA(message, sizeof(message), "Hello from pktmon - dropping packets! (total %ld)", counter);
+        NTSTATUS status = RtlStringCbPrintfA(
+            message + 1, sizeof(message) - 1, "Hello from pktmon - dropping packets! (total %ld)", counter);
         if (NT_SUCCESS(status)) {
             testPayload.event_data_start = (unsigned char*)message;
             testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1; // TBV dealloc
