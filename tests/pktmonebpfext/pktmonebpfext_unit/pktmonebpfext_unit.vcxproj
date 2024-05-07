@@ -145,6 +145,9 @@
     <ProjectReference Include="..\..\..\external\usersim\src\usersim.vcxproj">
       <Project>{030a7ac6-14dc-45cf-af34-891057ab1402}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\tools\process_monitor\process_monitor.vcxproj">
+      <Project>{3dbf8a96-3883-448a-8bd3-b8c913a27f09}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\pktmon_sim\pktmon_sim.vcxproj">
       <Project>{b42ab575-67a9-4ba1-8aa1-471aa3fd810c}</Project>
     </ProjectReference>

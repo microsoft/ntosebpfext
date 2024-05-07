@@ -202,10 +202,19 @@ TEST_CASE("pktmon_event_invoke", "[pktmonebpfext]")
     ebpf_extension_data_t npi_specific_characteristics = {};
     test_pktmon_event_client_context_t client_context = {};
 
+    // Load and start pktmonebpfext extension driver.
+    SC_HANDLE pktmonebpfext_driver_handle;
+    REQUIRE(create_driver_service("pktmonebpfext", "pktmonebpfext.sys", pktmonebpfext_driver_handle) == true);
+    REQUIRE(start_driver_service(pktmonebpfext_driver_handle) == true);
+
     pktmonebpf_ext_helper_t helper(
         &npi_specific_characteristics,
         (_ebpf_extension_dispatch_function)pktmonebpfext_unit_invoke_pktmon_event_program,
         (pktmonebpfext_helper_base_client_context_t*)&client_context);
+
+    // Stop and unload the pktmonebpfext extension driver (NPI client).
+    REQUIRE(stop_driver_service(pktmonebpfext_driver_handle) == true);
+    REQUIRE(unload_driver(pktmonebpfext_driver_handle) == true);
 }
 
 void
@@ -273,7 +282,7 @@ pktmon_monitor_event_callback(void* ctx, void* data, size_t size)
 
 TEST_CASE("pktmon_event_simulation", "[pktmonebpfext]")
 {
-    // Load and start pktmon simulator driver.
+    // First, load the pktmon simulator driver (NPI provider).
     SC_HANDLE pktmon_sim_driver_handle;
     REQUIRE(create_driver_service("pktmon_sim", "pktmon_sim.sys", pktmon_sim_driver_handle) == true);
     REQUIRE(start_driver_service(pktmon_sim_driver_handle) == true);
