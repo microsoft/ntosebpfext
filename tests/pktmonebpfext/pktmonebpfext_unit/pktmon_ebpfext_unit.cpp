@@ -69,18 +69,33 @@ template <typename T, size_t max_size, bool overwrite> class event_ring_buffer
 event_ring_buffer<event_t, 10000, false> event_buffer; // 10K events, no overwriting.
 std::atomic<bool> stop_worker = false;                 // Stop flag for the event processing worker thread.
 
+// Function to get the full path to the given driver file.
+std::wstring
+get_driver_path(const char* driver_name)
+{
+    wchar_t exePath[MAX_PATH];
+    GetModuleFileName(nullptr, exePath, MAX_PATH);
+
+    std::wstring driverPath(exePath);
+
+    // Find the last backslash in the executable path to get the directory
+    size_t pos = driverPath.find_last_of(L"\\");
+    if (pos != std::wstring::npos) {
+        // Replace the executable name with the driver name
+        std::wstring driverNameWide;
+        driverNameWide.assign(driver_name, driver_name + strlen(driver_name));
+        driverPath = driverPath.substr(0, pos + 1) + driverNameWide;
+    }
+
+    return driverPath;
+}
+
 // Function to create a driver service.
 bool
-create_driver_service(const char* service_name, const char* driver_path, SC_HANDLE& service)
+create_driver_service(const wchar_t* service_name, const wchar_t* driver_path, SC_HANDLE& service)
 {
     bool ret = true;
     SC_HANDLE scm;
-
-    // Convert narrow strings to wide strings.
-    std::wstring wide_service_name;
-    wide_service_name.assign(service_name, service_name + strlen(service_name));
-    std::wstring wide_driver_path;
-    wide_driver_path.assign(driver_path, driver_path + strlen(driver_path));
 
     // Open the Service Control Manager
     scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
@@ -92,13 +107,13 @@ create_driver_service(const char* service_name, const char* driver_path, SC_HAND
     // Create the driver service.
     service = CreateService(
         scm,
-        wide_service_name.c_str(),
-        wide_service_name.c_str(),
+        service_name,
+        service_name,
         SERVICE_ALL_ACCESS,
         SERVICE_KERNEL_DRIVER,
         SERVICE_DEMAND_START,
         SERVICE_ERROR_NORMAL,
-        wide_driver_path.c_str(),
+        driver_path,
         nullptr,
         nullptr,
         nullptr,
@@ -121,7 +136,7 @@ start_driver_service(SC_HANDLE& service)
 {
     // Start the service
     if (!StartService(service, 0, nullptr)) {
-        std::cerr << "Failed to start service." << std::endl;
+        std::cerr << "Failed to start service. Last error: " << GetLastError() << std::endl;
         return false;
     }
     std::cout << "Service started successfully." << std::endl;
@@ -137,7 +152,7 @@ stop_driver_service(SC_HANDLE& service)
 
     // Send a stop control to the service
     if (!ControlService(service, SERVICE_CONTROL_STOP, &status)) {
-        std::cerr << "Failed to stop service." << std::endl;
+        std::cerr << "Failed to stop service. Last error: " << GetLastError() << std::endl;
         return false;
     }
     std::cout << "Service stopped successfully." << std::endl;
@@ -154,13 +169,13 @@ unload_driver(SC_HANDLE& service)
     // Send a stop control to the service
     ControlService(service, SERVICE_CONTROL_STOP, &status);
     if (status.dwCurrentState != SERVICE_STOPPED) {
-        std::cerr << "Failed to stop service." << std::endl;
+        std::cerr << "Failed to stop service. Last error: " << GetLastError() << std::endl;
         return false;
     }
 
     // Delete the service
     if (!DeleteService(service)) {
-        std::cerr << "Failed to delete service." << std::endl;
+        std::cerr << "Failed to delete service. Last error: " << GetLastError() << std::endl;
         return false;
     }
     std::cout << "Service deleted successfully." << std::endl;
@@ -204,7 +219,9 @@ TEST_CASE("pktmon_event_invoke", "[pktmonebpfext]")
 
     // Load and start pktmonebpfext extension driver.
     SC_HANDLE pktmonebpfext_driver_handle;
-    REQUIRE(create_driver_service("pktmonebpfext", "pktmonebpfext.sys", pktmonebpfext_driver_handle) == true);
+    REQUIRE(
+        create_driver_service(
+            L"pktmonebpfext", get_driver_path("pktmonebpfext.sys").c_str(), pktmonebpfext_driver_handle) == true);
     REQUIRE(start_driver_service(pktmonebpfext_driver_handle) == true);
 
     pktmonebpf_ext_helper_t helper(
@@ -284,15 +301,19 @@ TEST_CASE("pktmon_event_simulation", "[pktmonebpfext]")
 {
     // First, load the pktmon simulator driver (NPI provider).
     SC_HANDLE pktmon_sim_driver_handle;
-    REQUIRE(create_driver_service("pktmon_sim", "pktmon_sim.sys", pktmon_sim_driver_handle) == true);
+    REQUIRE(
+        create_driver_service(L"pktmon_sim", get_driver_path("pktmon_sim.sys").c_str(), pktmon_sim_driver_handle) ==
+        true);
     REQUIRE(start_driver_service(pktmon_sim_driver_handle) == true);
 
     // Load and start pktmonebpfext extension driver.
     SC_HANDLE pktmonebpfext_driver_handle;
-    REQUIRE(create_driver_service("pktmonebpfext", "pktmonebpfext.sys", pktmonebpfext_driver_handle) == true);
+    REQUIRE(
+        create_driver_service(
+            L"pktmonebpfext", get_driver_path("pktmonebpfext.sys").c_str(), pktmonebpfext_driver_handle) == true);
     REQUIRE(start_driver_service(pktmonebpfext_driver_handle) == true);
 
-    // Load pktmon_monitor.sys BPF program.
+    // Load the PktmonMonitor native BPF program.
     struct bpf_object* object = bpf_object__open("pktmon_monitor.sys");
     REQUIRE(object != nullptr);
 
