@@ -168,7 +168,7 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ntos_ebpf_ext_export_program_info\ntos_ebpf_ext_export_program_info.vcxproj">
+    <ProjectReference Include="..\export_program_info\export_program_info.vcxproj">
       <Project>{fa9bb88d-8259-40c1-9422-bdedf9e9ce68}</Project>
     </ProjectReference>
   </ItemGroup>
