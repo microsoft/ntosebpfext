@@ -160,4 +160,75 @@ TEST_CASE("process exit codes", "[ntosebpfext]")
     REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_DELETE);
 }
 
+TEST_CASE("process create and exit times", "[ntosebpfext]")
+{
+    ebpf_extension_data_t npi_specific_characteristics = {};
+    test_process_client_context_t client_context = {};
+
+    ntosebpf_ext_helper_t helper(
+        &npi_specific_characteristics,
+        (_ebpf_extension_dispatch_function)ntosebpfext_unit_invoke_process_program,
+        (ntosebpfext_helper_base_client_context_t*)&client_context);
+
+    // Test process creation.
+    std::wstring process_name = L"notepad.exe";
+    std::wstring command_line = L"notepad.exe foo.txt";
+    UNICODE_STRING process_name_unicode = {};
+    UNICODE_STRING command_line_unicode = {};
+
+    PS_CREATE_NOTIFY_INFO create_info = {};
+    create_info.CommandLine = &command_line_unicode;
+    create_info.ImageFileName = &process_name_unicode;
+    create_info.ParentProcessId = (HANDLE)4;
+    create_info.CreatingThreadId.UniqueProcess = (HANDLE)5;
+    create_info.CreatingThreadId.UniqueThread = (HANDLE)6;
+    create_info.CreationStatus = STATUS_SUCCESS;
+
+    RtlInitUnicodeString(&process_name_unicode, process_name.c_str());
+    RtlInitUnicodeString(&command_line_unicode, command_line.c_str());
+
+    const uint64_t expectedCreateTime = 123456789;
+    const uint64_t expectedExitTime = 987654321;
+
+    usersime_set_process_create_time_quadpart_callback(
+        [](PEPROCESS /*process*/) -> LONGLONG { return expectedCreateTime; });
+    usersime_set_process_exit_time_callback([]() -> LARGE_INTEGER {
+        LARGE_INTEGER time = {0};
+        time.QuadPart = expectedExitTime;
+        return time;
+    });
+
+    struct
+    {
+        uint64_t some_value;
+    } fake_eprocess = {};
+
+    usersime_invoke_process_creation_notify_routine(
+        reinterpret_cast<PEPROCESS>(&fake_eprocess), (HANDLE)1, &create_info);
+
+    std::string test_command_line = std::string(
+        reinterpret_cast<char*>(client_context.process_context.command_start),
+        reinterpret_cast<char*>(client_context.process_context.command_end));
+
+    REQUIRE(test_command_line == std::string("notepad.exe foo.txt"));
+
+    REQUIRE(client_context.process_context.process_id == 1);
+    REQUIRE((HANDLE)client_context.process_context.parent_process_id == create_info.ParentProcessId);
+    REQUIRE((HANDLE)client_context.process_context.creating_process_id == create_info.CreatingThreadId.UniqueProcess);
+    REQUIRE((HANDLE)client_context.process_context.creating_thread_id == create_info.CreatingThreadId.UniqueThread);
+    REQUIRE(client_context.process_context.creation_time == expectedCreateTime);
+    REQUIRE(client_context.process_context.exit_time == 0); // Should be 0 for creation events
+    REQUIRE(create_info.CreationStatus == STATUS_ACCESS_DENIED);
+    REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_CREATE);
+
+    // Test process termination.
+    // Just verify that it doesn't crash.
+    usersime_invoke_process_creation_notify_routine(reinterpret_cast<PEPROCESS>(&fake_eprocess), (HANDLE)1, nullptr);
+
+    REQUIRE(client_context.process_context.process_id == 1);
+    REQUIRE(client_context.process_context.creation_time == expectedCreateTime);
+    REQUIRE(client_context.process_context.exit_time == expectedExitTime);
+    REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_DELETE);
+}
+
 #pragma endregion process

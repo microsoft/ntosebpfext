@@ -76,8 +76,8 @@ jobs:
     uses: ./.github/workflows/reusable-test.yml
     with:
       name: process_monitor
-      pre_test: powershell .\Install-eBpfForWindows.ps1 0.16.0
-      test_command: powershell .\Test-ProcessMonitor.ps1
+      pre_test: powershell .\Install-eBpfForWindows.ps1 0.16.0 && powershell .\Setup-ProcessMonitorTests.ps1
+      test_command: dotnet test process_monitor.Tests.dll
       build_artifact: Build-x64
       environment: windows-2022
       capture_etw: true

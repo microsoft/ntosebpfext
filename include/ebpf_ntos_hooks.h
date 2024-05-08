@@ -20,7 +20,9 @@ typedef struct _process_md
     uint64_t parent_process_id;        ///< Parent process ID.
     uint64_t creating_process_id;      ///< Creating process ID.
     uint64_t creating_thread_id;       ///< Creating thread ID.
-    uint32_t process_exit_code;        ///< Process exit status.
+    uint64_t creation_time;            ///< Process creation time (as a FILETIME).
+    uint64_t exit_time;                ///< Process exit time (as a FILETIME).  Set only for PROCESS_OPERATION_DELETE.
+    uint32_t process_exit_code;        ///< Process exit status.  Set only for PROCESS_OPERATION_DELETE.
     process_operation_t operation : 8; ///< Operation to do.
 } process_md_t;
 

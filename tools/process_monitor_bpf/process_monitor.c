@@ -9,14 +9,17 @@
 #include "ebpf_ntos_hooks.h"
 
 // The non variable fields from the process_md_t struct.
+// Note: this must be kept in sync with the C# version in process_monitor.Library's ProcessMonitorBPFLoader.cs
 typedef struct
 {
-    uint64_t process_id;
-    uint64_t parent_process_id;
-    uint64_t creating_process_id;
-    uint64_t creating_thread_id;
+    uint32_t process_id; // TODO: improve alignment
+    uint32_t parent_process_id;
+    uint32_t creating_process_id;
+    uint32_t creating_thread_id;
+    uint64_t creation_time; ///< Process creation time.
+    uint64_t exit_time;     ///< Process exit time.
     uint32_t process_exit_code;
-    uint64_t operation;
+    uint8_t operation;
 } process_info_t;
 
 #define MAX_PATH (496 - sizeof(process_info_t))
@@ -25,7 +28,7 @@ typedef struct
 struct
 {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __type(key, uint64_t);
+    __type(key, uint32_t); // key is the process id.
     __type(value, char[MAX_PATH]);
     __uint(max_entries, 1024);
 } process_map SEC(".maps");
@@ -34,7 +37,7 @@ struct
 struct
 {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __type(key, uint64_t);
+    __type(key, uint32_t); // key is the process id.
     __type(value, char[MAX_PATH]);
     __uint(max_entries, 1024);
 } command_map SEC(".maps");
@@ -63,6 +66,8 @@ ProcessMonitor(process_md_t* ctx)
     process_info.parent_process_id = ctx->parent_process_id;
     process_info.creating_process_id = ctx->creating_process_id;
     process_info.creating_thread_id = ctx->creating_thread_id;
+    process_info.creation_time = ctx->creation_time;
+    process_info.exit_time = ctx->exit_time;
     process_info.process_exit_code = ctx->process_exit_code;
     process_info.operation = ctx->operation;
 

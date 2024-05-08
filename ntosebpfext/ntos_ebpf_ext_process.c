@@ -328,6 +328,9 @@ _ebpf_process_create_process_notify_routine_ex(
     EBPF_EXT_LOG_ENTRY();
     ebpf_extension_hook_client_t* client_context;
 
+    process_notify_context.process_md.process_id = (uint64_t)process_id;
+    process_notify_context.process_md.creation_time = PsGetProcessCreateTimeQuadPart(process);
+
     if (create_info != NULL) {
         if (create_info->CommandLine != NULL) {
             NTSTATUS status =
@@ -344,7 +347,6 @@ _ebpf_process_create_process_notify_routine_ex(
             }
         }
         process_notify_context.process_md.operation = PROCESS_OPERATION_CREATE;
-        process_notify_context.process_md.process_id = (uint64_t)process_id;
         process_notify_context.process_md.parent_process_id = (uint64_t)create_info->ParentProcessId;
         process_notify_context.process_md.creating_process_id = (uint64_t)create_info->CreatingThreadId.UniqueProcess;
         process_notify_context.process_md.creating_thread_id = (uint64_t)create_info->CreatingThreadId.UniqueThread;
@@ -353,7 +355,7 @@ _ebpf_process_create_process_notify_routine_ex(
             (uint8_t*)process_notify_context.command_line_utf8.Buffer + process_notify_context.command_line_utf8.Length;
     } else {
         process_notify_context.process_md.operation = PROCESS_OPERATION_DELETE;
-        process_notify_context.process_md.process_id = (uint64_t)process_id;
+        process_notify_context.process_md.exit_time = PsGetProcessExitTime().QuadPart;
         process_notify_context.process_md.process_exit_code = PsGetProcessExitStatus(process);
     }
 
