@@ -101,6 +101,15 @@ Then do this each time you want to re-run the tests:
 1. `cd tests\process_monitor.Tests`
 1. `dotnet test`
 
+#### Running the E2E tests in Visual Studio
+
+You can also run the tests in Visual Studio if it's running as admin.  To do that:
+
+1. Open the Test Explorer window (`Test -> Test Explorer`)
+1. You may need to select the gear icon (which could be hidden behind a right arrow in the toolbar), and select the runsettings file (`RunSettings.runsettings` in the repo root). VS should auto-detect this though.
+1. You may also want to select the gear icon and choose "run tests after build" to re-run each time you build.
+1. Then just run the tests in Test Explorer by clicking the green "play" button.  Or you can right-click a specific test and run/debug it.
+
 ### Debugging locally
 
 1. Install eBPF for Windows locally
