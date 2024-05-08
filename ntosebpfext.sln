@@ -13,6 +13,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntosebpfext_user", "ntosebpfext\user\ntosebpfext_user.vcxproj", "{630BB78F-6211-41D8-8E3A-096E22E169EF}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ebpf_store_helper", "libs\store_helper\user\ebpf_store_helper_um.vcxproj", "{AA933B9F-B5D8-4AA8-AC18-98FE1A161E8A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntosebpfext_unit", "tests\ntosebpfext_unit\ntosebpfext_unit.vcxproj", "{E619B985-44B3-4292-A585-5CD0C4315ED3}"
 EndProject
@@ -31,6 +34,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{FD22C885-E280-4166-AE1C-79D71BD006A7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntos_ebpf_ext_export_program_info", "tools\export_program_info\export_program_info.vcxproj", "{FA9BB88D-8259-40C1-9422-BDEDF9E9CE68}"
+	ProjectSection(ProjectDependencies) = postProject
+		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "process_monitor_bpf", "tools\process_monitor_bpf\process_monitor_bpf.vcxproj", "{3DBF8A96-3883-448A-8BD3-B8C913A27F09}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -46,6 +52,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "process_monitor", "tools\process_monitor\process_monitor.csproj", "{BA4A284E-2BCC-4326-AEDF-771EC53C4037}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "process_monitor.Tests", "tests\process_monitor.Tests\process_monitor.Tests.csproj", "{2EB8B3FA-CC0B-44D1-8D9C-8525CD9490C5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{73D81F11-2594-4B3B-BC39-5E208A70C3DA}"
 	ProjectSection(SolutionItems) = preProject
