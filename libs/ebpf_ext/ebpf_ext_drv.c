@@ -17,7 +17,11 @@
 #include <wdf.h>
 #pragma warning(pop)
 
-#define EBPF_EXT_DEVICE_NAME L"\\Device\\EbpfExt"
+#define CONCATENATE_STRING(x, y) x##y
+
+#define EBPF_EXT_DEVICE_NAME_TEMPLATE(PROVIDER_NAME) L"\\device\\ebpf_ext_" L#PROVIDER_NAME
+
+#define EBPF_EXT_DEVICE_NAME EBPF_EXT_DEVICE_NAME_TEMPLATE(PROVIDER_NAME)
 
 // Driver global variables
 static WDFDEVICE _ebpf_ext_device = NULL;

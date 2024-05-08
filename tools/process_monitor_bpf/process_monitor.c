@@ -12,7 +12,7 @@
 // Note: this must be kept in sync with the C# version in process_monitor.Library's ProcessMonitorBPFLoader.cs
 typedef struct
 {
-    uint32_t process_id; // TODO: improve alignment
+    uint32_t process_id;
     uint32_t parent_process_id;
     uint32_t creating_process_id;
     uint32_t creating_thread_id;
