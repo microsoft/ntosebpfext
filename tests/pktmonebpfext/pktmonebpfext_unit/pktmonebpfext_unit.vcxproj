@@ -63,15 +63,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)libs\ebpf_ext;$(SolutionDir)ebpf_extensions\pktmonebpfext;$(SolutionDir)include\user;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)libs\ebpf_ext;$(SolutionDir)ebpf_extensions\pktmonebpfext;$(SolutionDir)include\user;$(SolutionDir)tools\utils;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)libs\ebpf_ext;$(SolutionDir)ebpf_extensions\pktmonebpfext;$(SolutionDir)include\user;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)libs\ebpf_ext;$(SolutionDir)ebpf_extensions\pktmonebpfext;$(SolutionDir)include\user;$(SolutionDir)tools\utils;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)libs\ebpf_ext;$(SolutionDir)ebpf_extensions\pktmonebpfext;$(SolutionDir)include\user;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)libs\ebpf_ext;$(SolutionDir)ebpf_extensions\pktmonebpfext;$(SolutionDir)include\user;$(SolutionDir)tools\utils;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -144,6 +144,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\external\usersim\src\usersim.vcxproj">
       <Project>{030a7ac6-14dc-45cf-af34-891057ab1402}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\tools\utils\utils.vcxproj">
+      <Project>{52440d8b-c623-48c4-a2a3-527245139e19}</Project>
     </ProjectReference>
     <ProjectReference Include="..\pktmon_sim\pktmon_sim.vcxproj">
       <Project>{b42ab575-67a9-4ba1-8aa1-471aa3fd810c}</Project>
