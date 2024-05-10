@@ -5,6 +5,7 @@
 
 #include "framework.h"
 
+#include <atomic>
 #include <string>
 
 /// @brief
