@@ -21,7 +21,8 @@ namespace process_monitor.Library
 
         internal void RaiseProcessCreated(in ProcessCreatedEventArgs e)
         {
-            _logger.LogDebug("Process created: PID:{0}, Image:{1}, CommandLine:{2}, ParentPID:{3}, Create Time:{4}", e.ProcessId, e.ImageFileName, e.CommandLine, e.ParentProcessId, e.CreateTime);
+            _logger.LogDebug("Process created: PID:{pid}, Image:{imageFileName}, CommandLine:{commandLine}, ParentPID:{parentPid}, Create Time:{createTime}",
+                e.ProcessId, e.ImageFileName, e.CommandLine, e.ParentProcessId, e.CreateTime);
 
             try
             {
@@ -32,7 +33,8 @@ namespace process_monitor.Library
 
         internal void RaiseProcessDestroyed(in ProcessDestroyedEventArgs e)
         {
-            _logger.LogDebug("Process destroyed: PID:{0}, Image:{1}, CommandLine:{2}, Exit Time:{4}, Exit Code:{5}", e.ProcessId, e.ImageFileName, e.CommandLine, e.ExitTime, e.ExitCode);
+            _logger.LogDebug("Process destroyed: PID:{pid}, Image:{imageFileName}, CommandLine:{commandLine}, Exit Time:{exitTime}, Exit Code:{exitCode}",
+                e.ProcessId, e.ImageFileName, e.CommandLine, e.ExitTime, e.ExitCode);
 
             try
             {

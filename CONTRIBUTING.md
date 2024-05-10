@@ -92,7 +92,7 @@ To run E2E tests you'll need to install eBPF for Windows and the ntosebpfext ext
 Do the following once:
 1. Open a command prompt as admin
 1. `cd <your local clone root>`
-1. `cd tests\process_monitor.Tests\bin\x64\Debug\net8.0-windows\win-x64`
+1. `cd x64\Debug\bin\process_monitor.Tests\win-x64`
 1. `powershell -file .\Install-eBpfForWindows.ps1 0.16.0`
 1. `powershell -file .\Setup-ProcessMonitorTests.ps1`
 

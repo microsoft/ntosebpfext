@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using process_monitor.Library;
 
 namespace process_monitor.Tests;
@@ -12,7 +13,7 @@ namespace process_monitor.Tests;
 [TestClass]
 public class ProcessMonitorTests
 {
-    public static ILoggerFactory LoggerFactory { get; set; }
+    public static ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
 
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
@@ -21,7 +22,9 @@ public class ProcessMonitorTests
     // but we won't attempt to unload and reload the driver which is currently nondeterministic in timing.
     private static ProcessMonitor? _processMonitorToPinDriver;
     [ClassInitialize]
+#pragma warning disable IDE0060 // Remove unused parameter - this parameter is required to be present by MSTest
     public static void ClassInitialize(TestContext context)
+#pragma warning restore IDE0060 // Remove unused parameter
     {
         LoggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
         {
@@ -76,7 +79,7 @@ public class ProcessMonitorTests
         Assert.IsTrue(destroyedArgs.ExitTime - createdArgs.CreateTime < TimeSpan.FromSeconds(4));
     }
 
-    private async Task<(ProcessCreatedEventArgs created, ProcessDestroyedEventArgs destroyed)>
+    private static async Task<(ProcessCreatedEventArgs created, ProcessDestroyedEventArgs destroyed)>
         RunProcessAndWaitForEventsAsync(string exeName, string arguments)
     {
         using var pm = new ProcessMonitor(LoggerFactory.CreateLogger<ProcessMonitor>());

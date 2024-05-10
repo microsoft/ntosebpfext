@@ -19,12 +19,14 @@ namespace process_monitor.Library
         private static int command_map_fd = 0;
         private static bool _isShutdown;
         private static readonly object _lock = new();
-        private static readonly List<ProcessMonitor> _processMonitors = new();
+        private static readonly List<ProcessMonitor> _processMonitors = [];
         private static readonly IntPtr process_info_t_process_id_offset = Marshal.OffsetOf<process_info_t>(nameof(process_info_t.process_id));
 
         // Note: this must be kept in sync with the C version in process_monitor.sys (process_monitor.c)
         [StructLayout(LayoutKind.Sequential)]
+#pragma warning disable IDE1006 // Naming Styles - this matches the native definition's name
         internal readonly struct process_info_t
+#pragma warning restore IDE1006 // Naming Styles
         {
             internal readonly UInt32 process_id;
             internal readonly UInt32 parent_process_id;
@@ -84,7 +86,7 @@ namespace process_monitor.Library
                 }
                 else
                 {
-                    logger.LogDebug($"SUCCESS: bpf_object__load succeeded!  result: {loadResult}");
+                    logger.LogDebug("SUCCESS: bpf_object__load succeeded!  result: {loadResult}", loadResult);
                 }
                 (process_map, process_map_fd) = LoadMapByName("process_map", logger);
                 (command_map, command_map_fd) = LoadMapByName("command_map", logger);
@@ -110,8 +112,8 @@ namespace process_monitor.Library
                 }
 
                 // Attach to ring buffer
-                (var process_ringbuf_map, var process_ringbuf_map_fd) = LoadMapByName("process_ringbuf", logger);
-                process_ringbuf = PInvokes.ring_buffer__new(process_ringbuf_map_fd, &process_monitor_history_callback, IntPtr.Zero, IntPtr.Zero);
+                (_, var process_ringbuf_map_fd) = LoadMapByName("process_ringbuf", logger);
+                process_ringbuf = PInvokes.ring_buffer__new(process_ringbuf_map_fd, &ProcessMonitor_history_callback, IntPtr.Zero, IntPtr.Zero);
                 if (process_ringbuf == IntPtr.Zero)
                 {
                     throw new InvalidOperationException("ring_buffer__new(process_ringbuf) failed!");
@@ -130,12 +132,12 @@ namespace process_monitor.Library
             if (map == IntPtr.Zero)
             {
                 var ex = new InvalidOperationException($"bpf_object__find_map_by_name(\"{mapName}\") failed!");
-                logger.LogError(ex, String.Empty);
+                logger.LogError(ex, "");
                 throw ex;
             }
             else
             {
-                logger.LogDebug($"SUCCESS: bpf_object__find_map_by_name(\"{mapName}\") succeeded!");
+                logger.LogDebug("SUCCESS: bpf_object__find_map_by_name(\"{mapName}\") succeeded!", mapName);
             }
 
             var mapFD = PInvokes.bpf_map__fd(map);
@@ -157,7 +159,7 @@ namespace process_monitor.Library
         }
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-        internal unsafe static int process_monitor_history_callback(IntPtr ctx, IntPtr data, IntPtr size)
+        internal unsafe static int ProcessMonitor_history_callback(IntPtr ctx, IntPtr data, IntPtr size)
         {
             if (size != Marshal.SizeOf<process_info_t>())
             {
@@ -171,10 +173,16 @@ namespace process_monitor.Library
 
             if (evt->operation == 0 /* 0 == PROCESS_OPERATION_COMPLETE */)
             {
-                var createdArgs = new ProcessCreatedEventArgs(processId: evt->process_id, imageFileName: file_name_str,
-                                                              commandLine: command_line_str, parentProcessId: evt->parent_process_id,
-                                                              creatingProcessId: evt->creating_process_id, creatingThreadId: evt->creating_thread_id,
-                                                              createTime: DateTime.FromFileTime((long)evt->creation_time));
+                var createdArgs = new ProcessCreatedEventArgs()
+                {
+                    ProcessId = evt->process_id,
+                    ImageFileName = file_name_str,
+                    CommandLine = command_line_str,
+                    ParentProcessId = evt->parent_process_id,
+                    CreatingProcessId = evt->creating_process_id,
+                    CreatingThreadId = evt->creating_thread_id,
+                    CreateTime = DateTime.FromFileTime((long)evt->creation_time)
+                };
 
                 lock (_lock)
                 {
@@ -186,11 +194,15 @@ namespace process_monitor.Library
             }
             else if (evt->operation == 1 /* 1 == PROCESS_OPERATION_DESTROY */)
             {
-                var destroyedArgs = new ProcessDestroyedEventArgs(processId: evt->process_id, imageFileName: file_name_str,
-                                                                  commandLine: command_line_str,
-                                                                  createTime: DateTime.FromFileTime((long)evt->creation_time),
-                                                                  exitTime: DateTime.FromFileTime((long)evt->exit_time),
-                                                                  exitCode: evt->process_exit_code);
+                var destroyedArgs = new ProcessDestroyedEventArgs()
+                {
+                    ProcessId = evt->process_id,
+                    ImageFileName = file_name_str,
+                    CommandLine = command_line_str,
+                    CreateTime = DateTime.FromFileTime((long)evt->creation_time),
+                    ExitTime = DateTime.FromFileTime((long)evt->exit_time),
+                    ExitCode = evt->process_exit_code
+                };
 
                 lock (_lock)
                 {

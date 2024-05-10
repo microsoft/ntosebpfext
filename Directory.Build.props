@@ -89,5 +89,8 @@
     <Platform>x64</Platform>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)\$(Platform)\$(Configuration)</ArtifactsPath>
+    <ArtifactsPivots>$(RuntimeIdentifier)</ArtifactsPivots>
   </PropertyGroup>
 </Project>

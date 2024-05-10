@@ -7,7 +7,7 @@ using process_monitor.Library;
 using System.Text;
 
 var exitCode = 0;
-ManualResetEvent shutdownEvent = new ManualResetEvent(false);
+ManualResetEvent shutdownEvent = new(false);
 
 Console.OutputEncoding = Encoding.UTF8;
 
@@ -36,12 +36,14 @@ Console.CancelKeyPress += (sender, e) =>
 
         processMonitor.ProcessCreated += (sender, e) =>
         {
-            programLogger.LogInformation("Process created: PID:{0}, Image:{1}, CommandLine:{2}, ParentPID:{3}, Create Time:{4}", e.ProcessId, e.ImageFileName, e.CommandLine, e.ParentProcessId, e.CreateTime);
+            programLogger.LogInformation("Process created: PID:{pid}, Image:{imageFileName}, CommandLine:{commandLine}, ParentPID:{parentPid}, Create Time:{createTime}",
+                e.ProcessId, e.ImageFileName, e.CommandLine, e.ParentProcessId, e.CreateTime);
         };
 
         processMonitor.ProcessDestroyed += (sender, e) =>
         {
-            programLogger.LogInformation("Process destroyed: PID:{0}, Image:{1}, CommandLine:{2}, Exit Time:{4}, Exit Code:{5}", e.ProcessId, e.ImageFileName, e.CommandLine, e.ExitTime, e.ExitCode);
+            programLogger.LogInformation("Process destroyed: PID:{pid}, Image:{imageFileName}, CommandLine:{commandLine}, Exit Time:{exitTime}, Exit Code:{exitCode}",
+                e.ProcessId, e.ImageFileName, e.CommandLine, e.ExitTime, e.ExitCode);
         };
 
         // Wait for Ctrl-C.
@@ -49,7 +51,7 @@ Console.CancelKeyPress += (sender, e) =>
     }
     catch (Exception ex)
     {
-        programLogger.LogError(ex, String.Empty);
+        programLogger.LogError(ex, "");
         exitCode = 1;
     }
 } // At this point the logger factory is disposed, we have flushed all logs
