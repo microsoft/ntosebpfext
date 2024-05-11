@@ -22,8 +22,10 @@ $service_status = Get-Service -Name "ntosebpfext" -ErrorAction SilentlyContinue
 
 # If the service is not present create and start the service.
 if ($service_status -eq $null) {
-    Write-Output "Creating and starting the ntosebpfext service."
-    Start-Process -FilePath "sc" -ArgumentList "create ntosebpfext type= kernel binPath= $ArtifactsRoot\ntosebpfext.sys start= auto " -Wait
+    $ArtifactsRootFullPath = (Get-Item -Path $ArtifactsRoot).FullName
+
+    Write-Output "Creating and starting the ntosebpfext service from $ArtifactsRootFullPath\ntosebpfext.sys."
+    Start-Process -FilePath "sc" -ArgumentList "create ntosebpfext type= kernel binPath= $ArtifactsRootFullPath\ntosebpfext.sys start= auto " -Wait
     Start-Service -Name "ntosebpfext"
 }
 
