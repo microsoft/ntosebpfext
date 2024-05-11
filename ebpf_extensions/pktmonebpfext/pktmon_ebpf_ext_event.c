@@ -64,6 +64,7 @@ uint64_t _ebpf_pktmon_event_hook_provider_registration_count = 0;
 // Event Program Information NPI Provider.
 //
 static ebpf_program_data_t _ebpf_pktmon_event_program_data = {
+    .header = {.version = EBPF_PROGRAM_DATA_CURRENT_VERSION, .size = EBPF_PROGRAM_DATA_CURRENT_VERSION_SIZE},
     .program_info = &_ebpf_pktmon_event_program_info,
     .program_type_specific_helper_function_addresses = &_ebpf_pktmon_event_helper_function_address_table,
     .context_create = _ebpf_pktmon_program_context_create,
