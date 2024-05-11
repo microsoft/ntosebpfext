@@ -142,11 +142,6 @@ jobs:
       with:
         dotnet-version: 8.x
 
-    - name: NuGet Restore
-      if: steps.skip_check.outputs.should_skip != 'true'
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: dotnet restore ${{env.SOLUTION_FILE_PATH}}
-
     - name: Cache nuget packages
       if: steps.skip_check.outputs.should_skip != 'true'
       uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
@@ -164,6 +159,11 @@ jobs:
         LDFLAGS: ${{env.LD_FLAGS}}
       run: |
         .\scripts\initialize_repo.ps1
+
+    - name: NuGet Restore
+      if: steps.skip_check.outputs.should_skip != 'true'
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: dotnet restore ${{env.SOLUTION_FILE_PATH}}
 
     - name: Build
       if: steps.skip_check.outputs.should_skip != 'true'
