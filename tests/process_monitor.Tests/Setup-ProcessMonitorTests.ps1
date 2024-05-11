@@ -4,6 +4,10 @@
 # .SYNOPSIS
 # Set up the environment for testing the Process Monitor tool functionality.
 
+param(
+    [string]$ArtifactsRoot
+)
+
 # Check if eBPF for Windows is installed.
 $service_status = Get-Service -Name "ebpfcore" -ErrorAction SilentlyContinue
 
@@ -19,7 +23,7 @@ $service_status = Get-Service -Name "ntosebpfext" -ErrorAction SilentlyContinue
 # If the service is not present create and start the service.
 if ($service_status -eq $null) {
     Write-Output "Creating and starting the ntosebpfext service."
-    Start-Process -FilePath "sc" -ArgumentList "create ntosebpfext type= kernel binPath= $PSScriptRoot\ntosebpfext.sys start= auto " -Wait
+    Start-Process -FilePath "sc" -ArgumentList "create ntosebpfext type= kernel binPath= $ArtifactsRoot\ntosebpfext.sys start= auto " -Wait
     Start-Service -Name "ntosebpfext"
 }
 
