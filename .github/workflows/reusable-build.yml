@@ -163,7 +163,7 @@ jobs:
     - name: NuGet Restore
       if: steps.skip_check.outputs.should_skip != 'true'
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: dotnet restore ${{env.SOLUTION_FILE_PATH}}
+      run: dotnet restore ${{env.SOLUTION_FILE_PATH}} /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{env.BUILD_PLATFORM}}
 
     - name: Build
       if: steps.skip_check.outputs.should_skip != 'true'
