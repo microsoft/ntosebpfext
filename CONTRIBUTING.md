@@ -62,7 +62,8 @@ This will also allow us to better coordinate our efforts and minimize duplicated
 
 To build locally, ensure your environment is set up:
 
-1. Install Visual Studio 2022 with at least the "Desktop development with C++" workload
+1. Install Visual Studio 2022 with at least the "Desktop development with C++" and ".NET desktop development" workloads
+1. Install the .NET 8 SDK from https://dotnet.microsoft.com/en-us/download/dotnet/8.0
 1. Install the Windows SDK 10.0.22621.0 with `winget install Microsoft.WindowsSDK.10.0.22621`
 1. Install the Windows DDK 10.0.22621.0 with `winget install Microsoft.WindowsWDK.10.0.22621`
 
@@ -84,14 +85,30 @@ Run the unit tests by going to the binaries output folder (ex: `x64\Debug`) and 
 
 ### E2E tests
 
-The end-to-end tests use a tool called `process_monitor` to take data from the `ntosebpfext` extension and place it in a ring buffer that is visible from user-mode (this happens in `process_monitor.sys`).  Then the `process_monitor.exe` user-mode process prints the events it sees to a file that the tests verify.
+The end-to-end tests use a tool called `process_monitor` to take data from the `ntosebpfext` extension and place it in a ring buffer that is visible from user-mode (this happens in `process_monitor.sys`).  Then the `process_monitor.exe` user-mode process prints the events it sees to the console.  The `process_monitor.Tests` project contains MSTest tests that exercise the `process_monitor` code with an MSTest head instead of console output.
 
 To run E2E tests you'll need to install eBPF for Windows and the ntosebpfext extension driver locally.
 
+Do the following once:
 1. Open a command prompt as admin
-1. `cd <your binaries folder>` (ex: `<root of your clone>\x64\Debug`)
-1. `powershell .\Install-eBpfForWindows.ps1 0.16.0`
-1. `powershell .\Test-ProcessMonitor.ps1`
+1. `cd <your local clone root>`
+1. `cd x64\Debug\bin\process_monitor.Tests\win-x64`
+1. `powershell -file .\Install-eBpfForWindows.ps1 0.16.0`
+1. `powershell -file .\Setup-ProcessMonitorTests.ps1`
+
+Then do this each time you want to re-run the tests:
+1. `cd <your local clone root>`
+1. `cd tests\process_monitor.Tests`
+1. `dotnet test`
+
+#### Running the E2E tests in Visual Studio
+
+You can also run the tests in Visual Studio if it's running as admin.  To do that:
+
+1. Open the Test Explorer window (`Test -> Test Explorer`)
+1. You may need to select the gear icon (which could be hidden behind a right arrow in the toolbar), and select the runsettings file (`RunSettings.runsettings` in the repo root). VS should auto-detect this though.
+1. You may also want to select the gear icon and choose "run tests after build" to re-run each time you build.
+1. Then just run the tests in Test Explorer by clicking the green "play" button.  Or you can right-click a specific test and run/debug it.
 
 ### Debugging locally
 

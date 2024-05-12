@@ -19,20 +19,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="process_monitor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="bpf\process_monitor.c">
+    <CustomBuild Include="process_monitor.c">
       <Filter>Source Files</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="..\..\scripts\Install-eBpfForWindows.ps1" />
-    <CopyFileToFolders Include="Test-ProcessMonitor.ps1" />
   </ItemGroup>
 </Project>
