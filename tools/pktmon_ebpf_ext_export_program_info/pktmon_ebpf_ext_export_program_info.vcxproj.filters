@@ -16,16 +16,16 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Hesder Files">
-      <UniqueIdentifier>{8f6c2b90-1e73-4d3a-b1dd-65f5198af2e6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4737d755-f8d6-4cd4-b7f4-5507a7d2ea2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8f6c2b90-1e73-4d3a-b1dd-65f5198af2e6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pktmon_export_program_info.h">
-      <Filter>Hesder Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

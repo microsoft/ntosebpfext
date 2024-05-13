@@ -26,7 +26,7 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 #define EVENTS_MAP_SIZE \
     (512 * 1024) // NOTE: must be kept in sync with the Cilium BPF code, in 'cnc\cilium\bpf\lib\events.h'.
 #define MAX_EVENTS_COUNT 10000
-#define PKTMON_EVENT_TEST_TIMEOUT_SEC 90
+#define PKTMON_EVENT_TEST_TIMEOUT_SEC 10
 
 struct bpf_map* pktmon_event_map;
 struct bpf_map* command_map;
@@ -190,8 +190,13 @@ TEST_CASE("pktmon_event_simulation", "[pktmonebpfext]")
 
     // Wait for the number of expected events or the test's max run time.
     int timeout = PKTMON_EVENT_TEST_TIMEOUT_SEC;
-    while (event_count < MAX_EVENTS_COUNT && timeout > 0) {
+    while (event_count < MAX_EVENTS_COUNT && timeout-- > 0) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    // Stop the event processing worker thread.
+    if (worker.joinable()) {
+        stop_worker = true;
+        worker.join();
     }
     REQUIRE(event_count >= MAX_EVENTS_COUNT);
     REQUIRE(timeout > 0); // Ensure the test didn't time out.
@@ -214,10 +219,4 @@ TEST_CASE("pktmon_event_simulation", "[pktmonebpfext]")
     // Stop and unload the pktmonebpfext extension driver (NPI client).
     REQUIRE(pktmonebpfext_driver.stop() == true);
     REQUIRE(pktmonebpfext_driver.unload() == true);
-
-    // Stop the event processing worker thread.
-    if (worker.joinable()) {
-        stop_worker = true;
-        worker.join();
-    }
 }

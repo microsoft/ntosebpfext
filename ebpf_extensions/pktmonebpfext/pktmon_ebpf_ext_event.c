@@ -49,7 +49,11 @@ static ebpf_helper_function_addresses_t _ebpf_pktmon_event_helper_function_addre
 //
 // Event Hook NPI Provider.
 //
-ebpf_attach_provider_data_t _pktmon_ebpf_pktmon_event_hook_provider_data;
+ebpf_attach_provider_data_t _pktmon_ebpf_pktmon_event_hook_provider_data = {
+    .header =
+        {.version = EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION, .size = EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION_SIZE},
+    .supported_program_type = EBPF_PROGRAM_TYPE_PKTMON_GUID,
+    .bpf_attach_type = (bpf_attach_type_t)BPF_ATTACH_TYPE_PKTMON};
 ebpf_extension_data_t _pktmon_ebpf_extension_pktmon_event_hook_provider_data = {
     .header =
         {.version = EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION, .size = EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION_SIZE},
