@@ -37,6 +37,13 @@ _ebpf_pktmon_push_event(_In_ pktmon_event_md_t* pktmon_event);
 //
 // Global variables.
 ///
+static HANDLE _pktmon_client_handle;
+// Define the GUID for the PktMon NPI (mist match the one of the provider)
+const NPIID pktmon_npiid = {0xcd3d4424, 0x657e, 0x404c, {0x87, 0xb2, 0xac, 0xf9, 0x28, 0x2c, 0xdd, 0x82}};
+// Define the client module's identification
+const NPI_MODULEID pktmon_client_module_id = {
+    sizeof(NPI_MODULEID), MIT_GUID, {0x8a9a5ef1, 0x2aa1, 0x42e9, {0x89, 0x5, 0xd1, 0xcf, 0x6, 0xc5, 0x77, 0x64}}};
+
 static const void* _ebpf_pktmon_ext_helper_functions[] = {(void*)&_ebpf_pktmon_push_event};
 
 static ebpf_helper_function_addresses_t _ebpf_pktmon_event_helper_function_address_table = {
@@ -45,6 +52,67 @@ static ebpf_helper_function_addresses_t _ebpf_pktmon_event_helper_function_addre
          .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
     .helper_function_count = EBPF_COUNT_OF(_ebpf_pktmon_ext_helper_functions),
     .helper_function_address = (uint64_t*)_ebpf_pktmon_ext_helper_functions};
+
+// Context structure for the client module's registration
+typedef struct CLIENT_REGISTRATION_CONTEXT_
+{
+    // Client-specific members
+    HANDLE client_registration_handle; // Registration handle (TBD)
+
+} CLIENT_REGISTRATION_CONTEXT, *PCLIENT_REGISTRATION_CONTEXT;
+static CLIENT_REGISTRATION_CONTEXT _pktmon_client_registration_context = {
+    .client_registration_handle = NULL
+    // TBD: Add any other client-specific information here
+};
+
+// Structure for the client module's NPI-specific characteristics
+// typedef struct PKTMON_CLIENT_CHARACTERISTICS_ {
+//    // The NPI-specific characteristics of the client module
+//    int dummy;
+//} PKTMON_CLIENT_CHARACTERISTICS, PPKTMON_CLIENT_CHARACTERISTICS;
+// const PKTMON_CLIENT_CHARACTERISTICS _pktmon_client_characteristics = {0};
+
+typedef struct PKTMON_NPI_CLIENT_CHARACTERISTICS_
+{
+    int dummy; // The client module's specific characteristics can be added here (none for now)
+
+} PKTMON_NPI_CLIENT_CHARACTERISTICS, *PPKTMON_NPI_CLIENT_CHARACTERISTICS;
+const PKTMON_NPI_CLIENT_CHARACTERISTICS _pktmon_client_specific_characteristics = {0};
+
+NTSTATUS
+_pktmon_ebpf_extension_attach_provider(
+    _In_ HANDLE nmr_binding_handle,
+    _In_ PVOID client_context,
+    _In_ PNPI_REGISTRATION_INSTANCE provider_registration_instance)
+{
+    UNREFERENCED_PARAMETER(nmr_binding_handle);
+    UNREFERENCED_PARAMETER(client_context);
+    UNREFERENCED_PARAMETER(provider_registration_instance);
+
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS
+_pktmon_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle)
+{
+    UNREFERENCED_PARAMETER(nmr_binding_handle);
+
+    return STATUS_SUCCESS;
+}
+
+// Structure for the extension NMR client module's characteristics
+const NPI_CLIENT_CHARACTERISTICS _pktmon_client_characteristics = {
+    0,
+    sizeof(NPI_CLIENT_CHARACTERISTICS),
+    _pktmon_ebpf_extension_attach_provider,
+    _pktmon_ebpf_extension_detach_provider,
+    NULL,
+    {0,
+     sizeof(NPI_REGISTRATION_INSTANCE),
+     &pktmon_npiid,
+     &pktmon_client_module_id,
+     0,
+     &_pktmon_client_specific_characteristics}};
 
 //
 // Event Hook NPI Provider.
@@ -106,8 +174,9 @@ _pktmon_ebpf_extension_pktmon_event_on_client_attach(
     push_lock_acquired = true;
 
     if (!_ebpf_pktmon_event_hook_provider_registered) {
-        // Register the push event routine.
-        NTSTATUS status = 0; // TBD(_ebpf_pktmon_push_event, FALSE);
+        // TBD: Register and attach the pktmonebpfext extension to PktMon as an NMR Client
+        NTSTATUS status = NmrRegisterClient(
+            &_pktmon_client_characteristics, &_pktmon_client_registration_context, &_pktmon_client_handle);
         if (!NT_SUCCESS(status)) {
             EBPF_EXT_LOG_MESSAGE_NTSTATUS(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PKTMON, "Attach to pktmon failed", status);
@@ -142,7 +211,8 @@ _pktmon_ebpf_extension_pktmon_event_on_client_detach(_In_ const ebpf_extension_h
     _ebpf_pktmon_event_hook_provider_registration_count--;
 
     if (_ebpf_pktmon_event_hook_provider_registered && _ebpf_pktmon_event_hook_provider_registration_count == 0) {
-        NTSTATUS status = 0; // TBD(_ebpf_pktmon_push_event, TRUE);
+        // TBD: Deregister the push event routine as an NMR Client
+        NTSTATUS status = NmrDeregisterProvider(_pktmon_client_handle);
         if (!NT_SUCCESS(status)) {
             EBPF_EXT_LOG_MESSAGE_NTSTATUS(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PKTMON, "Detach from pktmon failed", status);

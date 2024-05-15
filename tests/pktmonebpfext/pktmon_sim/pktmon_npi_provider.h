@@ -17,7 +17,7 @@ const NPI_MODULEID pktmon_module_id = {
 // Define the provider characteristics structure
 typedef struct PKTMON_NPI_PROVIDER_CHARACTERISTICS_
 {
-    int dummy; // The provide module's specific characteristics can be added here (none for now)
+    int dummy; // The provider module's specific characteristics can be added here (none for now)
 
 } PKTMON_NPI_PROVIDER_CHARACTERISTICS, *PPKTMON_NPI_PROVIDER_CHARACTERISTICS;
 
