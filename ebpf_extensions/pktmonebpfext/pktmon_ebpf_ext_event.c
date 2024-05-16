@@ -126,12 +126,13 @@ _pktmon_ebpf_extension_attach_provider(
     _pktmon_client_binding_context.nmr_binding_handle = nmr_binding_handle;
 
     // Attach to the PktMon provider module.
+    PVOID provider_binding_context = NULL;
     NTSTATUS status = NmrClientAttachProvider(
         nmr_binding_handle,
         &_pktmon_client_binding_context,
         &_pktmon_client_npi_specific_characteristics._ebpf_pktmon_client_dispatch,
-        NULL, // TBV: provider binding context not used
-        NULL  // TBV: provider dispatch not used
+        &provider_binding_context, // Although the provider binding context is not used, NMR will bugcheck if NULL
+        NULL                       // TBV: provider dispatch not used
     );
     if (!NT_SUCCESS(status)) {
 
