@@ -148,8 +148,12 @@ _pktmon_provider_attach_client(
     }
 
     // Return success
-    *provider_binding_context = &_pktmon_provider_binding_context;
-    *provider_dispatch = NULL; // This provider does not have any dispatch routines
+    if (provider_binding_context != NULL) {
+        *provider_binding_context = &_pktmon_provider_binding_context;
+    }
+    if (provider_dispatch != NULL) {
+        *provider_dispatch = NULL; // This provider does not have any dispatch routines
+    }
 
     return STATUS_SUCCESS;
 }
