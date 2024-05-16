@@ -12,7 +12,7 @@ typedef struct
 } pktmon_event_info_t;
 
 // Define the NPI client dispatch table
-typedef struct _PKTMON__NPI_CLIENT_DISPATCH
+typedef struct _PKTMON_NPI_CLIENT_DISPATCH
 {
     VOID (*pktmon_push_event)(HANDLE, pktmon_event_info_t, size_t);
 } PKTMON_NPI_CLIENT_DISPATCH, *PPKTMON_NPI_CLIENT_DISPATCH;

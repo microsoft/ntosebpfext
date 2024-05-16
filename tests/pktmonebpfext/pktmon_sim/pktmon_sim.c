@@ -122,43 +122,43 @@ timer_dpc_routine(
 // Callback function to attach a client to the provider
 static NTSTATUS
 _pktmon_provider_attach_client(
-    _In_ HANDLE NmrBindingHandle,
+    _In_ HANDLE nmr_binding_handle,
     _In_ PVOID provider_context,
-    _In_ PNPI_REGISTRATION_INSTANCE ClientRegistrationInstance,
-    _In_ PVOID ClientBindingContext,
-    _In_ CONST VOID* ClientDispatch,
-    _Out_ PVOID* ProviderBindingContext,
-    _Out_ CONST VOID** ProviderDispatch)
+    _In_ PNPI_REGISTRATION_INSTANCE client_registration_instance,
+    _In_ PVOID client_binding_context,
+    _In_ CONST VOID* client_dispatch,
+    _Out_ PVOID* provider_binding_context,
+    _Out_ CONST VOID** provider_dispatch)
 {
     UNREFERENCED_PARAMETER(provider_context);
 
     // Save the client's binding handle and dispatch routines in the provider context
-    _pktmon_provider_binding_context.client_binding_handle = NmrBindingHandle;
-    _pktmon_provider_binding_context.client_registration_instance = ClientRegistrationInstance;
-    _pktmon_provider_binding_context.client_binding_context = ClientBindingContext;
-    _pktmon_provider_binding_context.client_dispatch = ClientDispatch;
+    _pktmon_provider_binding_context.client_binding_handle = nmr_binding_handle;
+    _pktmon_provider_binding_context.client_registration_instance = client_registration_instance;
+    _pktmon_provider_binding_context.client_binding_context = client_binding_context;
+    _pktmon_provider_binding_context.client_dispatch = client_dispatch;
 
     // Start the timer only if it's not already running
     if (!KeCancelTimer(&_timer)) {
-        // Timer is not already running, so initialize and start it
-        LARGE_INTEGER dueTime;
-        dueTime.QuadPart = -100; // 100 nanoseconds
+        // Timer is not yet running, so initialize and start it
+        LARGE_INTEGER due_time;
+        due_time.QuadPart = -100; // 100 nanoseconds
         KeInitializeTimerEx(&_timer, NotificationTimer);
-        KeSetTimerEx(&_timer, dueTime, 100, &_timer_dpc);
+        KeSetTimerEx(&_timer, due_time, 100, &_timer_dpc);
     }
 
     // Return success
-    *ProviderBindingContext = &_pktmon_provider_binding_context;
-    *ProviderDispatch = NULL; // This provider does not have any dispatch routines
+    *provider_binding_context = &_pktmon_provider_binding_context;
+    *provider_dispatch = NULL; // This provider does not have any dispatch routines
 
     return STATUS_SUCCESS;
 }
 
 // Callback function to detach a client from the provider
 NTSTATUS
-_pktmon_provider_detach_client(_In_ HANDLE ProviderBindingContext)
+_pktmon_provider_detach_client(_In_ HANDLE provider_binding_context)
 {
-    UNREFERENCED_PARAMETER(ProviderBindingContext);
+    UNREFERENCED_PARAMETER(provider_binding_context);
 
     // Stop the timer if it's running
     KeCancelTimer(&_timer);
@@ -168,9 +168,9 @@ _pktmon_provider_detach_client(_In_ HANDLE ProviderBindingContext)
 
 // Callback function to clean up the binding context
 VOID
-_pktmon_provider_cleanup_binding_context(_In_ HANDLE ProviderBindingContext)
+_pktmon_provider_cleanup_binding_context(_In_ HANDLE provider_binding_context)
 {
-    UNREFERENCED_PARAMETER(ProviderBindingContext);
+    UNREFERENCED_PARAMETER(provider_binding_context);
 }
 
 // Driver unload routine
