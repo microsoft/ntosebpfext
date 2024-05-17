@@ -77,10 +77,16 @@ typedef struct CLIENT_BINDING_CONTEXT_
 {
     HANDLE nmr_binding_handle;
     PVOID client_context;
+    PVOID provider_binding_context;
+    PVOID provider_dispatch;
     PNPI_REGISTRATION_INSTANCE provider_registration_instance;
 } CLIENT_BINDING_CONTEXT, *PCLIENT_BINDING_CONTEXT;
 CLIENT_BINDING_CONTEXT _pktmon_client_binding_context = {
-    .nmr_binding_handle = NULL, .client_context = NULL, .provider_registration_instance = NULL};
+    .nmr_binding_handle = NULL,
+    .client_context = NULL,
+    .provider_binding_context = NULL,
+    .provider_dispatch = NULL,
+    .provider_registration_instance = NULL};
 
 // Structure for the client module's NPI-specific characteristics
 typedef struct PKTMON_NPI_CLIENT_CHARACTERISTICS_
@@ -126,14 +132,12 @@ _pktmon_ebpf_extension_attach_provider(
     _pktmon_client_binding_context.nmr_binding_handle = nmr_binding_handle;
 
     // Attach to the PktMon provider module.
-    PVOID provider_binding_context = NULL;
     NTSTATUS status = NmrClientAttachProvider(
         nmr_binding_handle,
         &_pktmon_client_binding_context,
         &_pktmon_client_npi_specific_characteristics._ebpf_pktmon_client_dispatch,
-        &provider_binding_context, // Although the provider binding context is not used, NMR will bugcheck if NULL
-        NULL                       // TBV: provider dispatch not used
-    );
+        &_pktmon_client_binding_context.provider_binding_context,
+        &_pktmon_client_binding_context.provider_dispatch);
     if (!NT_SUCCESS(status)) {
 
         // The docs don't mention the (out) handle status on failure, so explicitly mark it as invalid.
