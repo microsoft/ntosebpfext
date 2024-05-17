@@ -45,7 +45,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event);
 NTSTATUS
 _netevent_ebpf_extension_attach_provider(
     _In_ HANDLE nmr_binding_handle,
-    _In_ PVOID client_context,
+    _In_ void* client_context,
     _In_ PNPI_REGISTRATION_INSTANCE provider_registration_instance);
 
 NTSTATUS
@@ -76,9 +76,9 @@ static CLIENT_REGISTRATION_CONTEXT _netevent_client_registration_context = {.cli
 typedef struct CLIENT_BINDING_CONTEXT_
 {
     HANDLE nmr_binding_handle;
-    PVOID client_context;
-    PVOID provider_binding_context;
-    PVOID provider_dispatch;
+    void* client_context;
+    void* provider_binding_context;
+    const void* provider_dispatch;
     PNPI_REGISTRATION_INSTANCE provider_registration_instance;
 } CLIENT_BINDING_CONTEXT, *PCLIENT_BINDING_CONTEXT;
 CLIENT_BINDING_CONTEXT _netevent_client_binding_context = {
@@ -92,7 +92,7 @@ CLIENT_BINDING_CONTEXT _netevent_client_binding_context = {
 typedef struct NETEVENT_NPI_CLIENT_CHARACTERISTICS_
 {
     // ebpf_helper_function_addresses_t *_ebpf_netevent_client_dispatch;
-    PVOID _ebpf_netevent_client_dispatch;
+    void* _ebpf_netevent_client_dispatch;
 
 } NETEVENT_NPI_CLIENT_CHARACTERISTICS, *PNETEVENT_NPI_CLIENT_CHARACTERISTICS;
 const NETEVENT_NPI_CLIENT_CHARACTERISTICS _netevent_client_npi_specific_characteristics = {
@@ -118,18 +118,24 @@ const NPI_CLIENT_CHARACTERISTICS _netevent_client_characteristics = {
 NTSTATUS
 _netevent_ebpf_extension_attach_provider(
     _In_ HANDLE nmr_binding_handle,
-    _In_ PVOID client_context,
+    _In_ void* client_context,
     _In_ PNPI_REGISTRATION_INSTANCE provider_registration_instance)
 {
     EBPF_EXT_LOG_ENTRY();
+
+    UNREFERENCED_PARAMETER(nmr_binding_handle);
+    UNREFERENCED_PARAMETER(client_context);
+    UNREFERENCED_PARAMETER(provider_registration_instance);
 
     // If the client module determines that it will attach to the provider module,
     // the client module's ClientAttachProvider callback function allocates and initializes a binding context structure
     // for the attachment to the provider module and then calls the NmrClientAttachProvider function to continue the
     // attachment process.
-
-    // Save the binding handle for later use.
-    _netevent_client_binding_context.nmr_binding_handle = nmr_binding_handle;
+    // Although, if the client does not rely on any state of the provider, like for this application,
+    // there is no need to persist this data, moreover in a distinguished manner for multiple providers.
+    // Therefore we just provide the mandatory pointers required by NMR.
+    // Should per-provider context be required for the future, the '_netevent_client_npi_specific_characteristics'
+    // Can just be declared e.g. as an 'nmr_binding_handle' key-based hash map.
 
     // Attach to the NetEvent provider module.
     NTSTATUS status = NmrClientAttachProvider(
@@ -137,18 +143,16 @@ _netevent_ebpf_extension_attach_provider(
         &_netevent_client_binding_context,
         &_netevent_client_npi_specific_characteristics._ebpf_netevent_client_dispatch,
         &_netevent_client_binding_context.provider_binding_context,
-        NULL);
+        &_netevent_client_binding_context.provider_dispatch);
     if (!NT_SUCCESS(status)) {
-
-        // The docs don't mention the (out) handle status on failure, so explicitly mark it as invalid.
-        _netevent_client_binding_context.nmr_binding_handle = NULL;
         EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
         goto Exit;
     }
 
     // Save the client context and provider registration instance for later use.
-    _netevent_client_binding_context.client_context = client_context;
-    _netevent_client_binding_context.provider_registration_instance = provider_registration_instance;
+    // _netevent_client_binding_context.nmr_binding_handle = nmr_binding_handle;
+    // _netevent_client_binding_context.client_context = client_context;
+    // _netevent_client_binding_context.provider_registration_instance = provider_registration_instance;
 
 Exit:
     EBPF_EXT_RETURN_NTSTATUS(status);
@@ -160,7 +164,7 @@ _netevent_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle)
     EBPF_EXT_LOG_ENTRY();
 
     UNREFERENCED_PARAMETER(nmr_binding_handle);
-    // TBV: rundown necessary?
+    // No rundown , since there no state dependency from the provider (i.e. netevent_sim).
 
     EBPF_EXT_RETURN_NTSTATUS(STATUS_SUCCESS);
 }
@@ -189,7 +193,7 @@ uint64_t _ebpf_netevent_event_hook_provider_registration_count = 0;
 static ebpf_program_data_t _ebpf_netevent_event_program_data = {
     .header = {.version = EBPF_PROGRAM_DATA_CURRENT_VERSION, .size = EBPF_PROGRAM_DATA_CURRENT_VERSION_SIZE},
     .program_info = &_ebpf_netevent_event_program_info,
-    .program_type_specific_helper_function_addresses = NULL, // TBV: not needed?
+    .program_type_specific_helper_function_addresses = NULL, // No helper functions exposed to client eBPF programs.
     .context_create = _ebpf_netevent_program_context_create,
     .context_destroy = _ebpf_netevent_program_context_destroy,
     .required_irql = PASSIVE_LEVEL,
@@ -459,23 +463,25 @@ typedef struct _netevent_event_notify_context
 void
 _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 {
-    // TBV: logging may delay the event processing, consider removing.
+    // Logging may delay the event processing, consider enavling only is the calling frequency is low.
     // EBPF_EXT_LOG_ENTRY();
 
-    // Copy the event data to the context.
-    netevent_event_notify_context_t* netevent_event_notify_context = (netevent_event_notify_context_t*)netevent_event;
-    if (netevent_event_notify_context != NULL) {
+    // Unfortunately, the verifier does not support read-only contexts, so we need to copy the event data.
+    // For optimal performance, we use the stack.
+    // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
+    netevent_event_notify_context_t netevent_event_notify_context = {0};
+    if (netevent_event != NULL) {
 
-        netevent_event_notify_context->netevent_event_md.event_data_start = netevent_event->event_data_start;
-        netevent_event_notify_context->netevent_event_md.event_data_end = netevent_event->event_data_end;
+        netevent_event_notify_context.netevent_event_md.event_data_start = netevent_event->event_data_start;
+        netevent_event_notify_context.netevent_event_md.event_data_end = netevent_event->event_data_end;
         memcpy(
-            netevent_event_notify_context->netevent_event_md.event_data_start,
+            netevent_event_notify_context.netevent_event_md.event_data_start,
             netevent_event->event_data_start,
             netevent_event->event_data_end - netevent_event->event_data_start + 1);
 
     } else {
-        netevent_event_notify_context->netevent_event_md.event_data_start = 0;
-        netevent_event_notify_context->netevent_event_md.event_data_end = 0;
+        netevent_event_notify_context.netevent_event_md.event_data_start = 0;
+        netevent_event_notify_context.netevent_event_md.event_data_end = 0;
     }
 
     // For each attached client call the netevent hook.
@@ -486,7 +492,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
         NTSTATUS status = 0;
         if (ebpf_extension_hook_client_enter_rundown(client_context)) {
             result = ebpf_extension_hook_invoke_program(
-                client_context, &netevent_event_notify_context->netevent_event_md, (uint32_t*)&status);
+                client_context, &netevent_event_notify_context.netevent_event_md, (uint32_t*)&status);
             if (result != EBPF_SUCCESS) {
                 EBPF_EXT_LOG_MESSAGE(
                     EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -507,10 +513,6 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 
         client_context =
             ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, client_context);
-    }
-
-    if (netevent_event_notify_context->netevent_event_md.event_data_start != NULL) {
-        ExFreePool(netevent_event_notify_context->netevent_event_md.event_data_start);
     }
 
     // EBPF_EXT_LOG_EXIT();

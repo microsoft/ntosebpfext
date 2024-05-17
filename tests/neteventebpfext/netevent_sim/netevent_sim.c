@@ -23,12 +23,12 @@ KDEFERRED_ROUTINE timer_dpc_routine;
 static NTSTATUS
 _netevent_provider_attach_client(
     _In_ HANDLE NmrBindingHandle,
-    _In_ PVOID provider_context,
+    _In_ void* provider_context,
     _In_ PNPI_REGISTRATION_INSTANCE ClientRegistrationInstance,
-    _In_ PVOID ClientBindingContext,
-    _In_ CONST VOID* ClientDispatch,
-    _Out_ PVOID* ProviderBindingContext,
-    _Out_ CONST VOID** ProviderDispatch);
+    _In_ void* ClientBindingContext,
+    _In_ const void* ClientDispatch,
+    _Out_ void** ProviderBindingContext,
+    _Out_ const void** ProviderDispatch);
 static NTSTATUS
 _netevent_provider_detach_client(_In_ HANDLE ProviderBindingContext);
 static VOID
@@ -36,9 +36,9 @@ _netevent_provider_cleanup_binding_context(_In_ HANDLE ProviderBindingContext);
 VOID
 timer_dpc_routine(
     _In_ struct _KDPC* Dpc,
-    _In_opt_ PVOID DeferredContext,
-    _In_opt_ PVOID SystemArgument1,
-    _In_opt_ PVOID SystemArgument2);
+    _In_opt_ void* DeferredContext,
+    _In_opt_ void* SystemArgument1,
+    _In_opt_ void* SystemArgument2);
 
 // Globals
 static KTIMER _timer;
@@ -76,9 +76,9 @@ PROVIDER_BINDING_CONTEXT _netevent_provider_binding_context = {
 VOID
 timer_dpc_routine(
     _In_ struct _KDPC* Dpc,
-    _In_opt_ PVOID DeferredContext,
-    _In_opt_ PVOID SystemArgument1,
-    _In_opt_ PVOID SystemArgument2)
+    _In_opt_ void* DeferredContext,
+    _In_opt_ void* SystemArgument1,
+    _In_opt_ void* SystemArgument2)
 {
     UNREFERENCED_PARAMETER(Dpc);
     UNREFERENCED_PARAMETER(DeferredContext);
@@ -124,12 +124,12 @@ timer_dpc_routine(
 static NTSTATUS
 _netevent_provider_attach_client(
     _In_ HANDLE nmr_binding_handle,
-    _In_ PVOID provider_context,
+    _In_ void* provider_context,
     _In_ PNPI_REGISTRATION_INSTANCE client_registration_instance,
-    _In_ PVOID client_binding_context,
-    _In_ CONST VOID* client_dispatch,
-    _Out_ PVOID* provider_binding_context,
-    _Out_ CONST VOID** provider_dispatch)
+    _In_ void* client_binding_context,
+    _In_ const void* client_dispatch,
+    _Out_ void** provider_binding_context,
+    _Out_ const void** provider_dispatch)
 {
     UNREFERENCED_PARAMETER(provider_context);
 
