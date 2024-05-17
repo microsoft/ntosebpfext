@@ -27,39 +27,39 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "process_monitor", "tools\pr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ntosebpfext", "ntosebpfext", "{E8184DFB-C7EA-4913-9F63-6E61D4B9CBB1}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pktmonebpfext", "pktmonebpfext", "{1808952B-4865-4EDF-9393-8E52F60D4D20}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "neteventebpfext", "neteventebpfext", "{1808952B-4865-4EDF-9393-8E52F60D4D20}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{C9EAA3D8-0D9C-4E28-BD1F-13017476EAE5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntosebpfext_user", "ebpf_extensions\ntosebpfext\user\ntosebpfext_user.vcxproj", "{630BB78F-6211-41D8-8E3A-096E22E169EF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmon_sim", "tests\pktmonebpfext\pktmon_sim\pktmon_sim.vcxproj", "{B42AB575-67A9-4BA1-8AA1-471AA3FD810C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netevent_sim", "tests\neteventebpfext\netevent_sim\netevent_sim.vcxproj", "{B42AB575-67A9-4BA1-8AA1-471AA3FD810C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntosebpfext_unit", "tests\ntosebpfext\ntosebpfext_unit\ntosebpfext_unit.vcxproj", "{E619B985-44B3-4292-A585-5CD0C4315ED3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmonebpfext_unit", "tests\pktmonebpfext\pktmonebpfext_unit\pktmonebpfext_unit.vcxproj", "{32DA760D-1A43-4940-BECE-59AE0B817ED9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "neteventebpfext_unit", "tests\neteventebpfext\neteventebpfext_unit\neteventebpfext_unit.vcxproj", "{32DA760D-1A43-4940-BECE-59AE0B817ED9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ntosebpfext", "ntosebpfext", "{ED8BFFE5-778D-4254-9800-6506F0C9CA5B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pktmonebpfext", "pktmonebpfext", "{C488132C-7C22-4A37-821A-D7656C485372}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "neteventebpfext", "neteventebpfext", "{C488132C-7C22-4A37-821A-D7656C485372}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntosebpfext", "ebpf_extensions\ntosebpfext\sys\ntosebpfext.vcxproj", "{55499E36-37D4-4F86-B694-9F2990315758}"
 	ProjectSection(ProjectDependencies) = postProject
 		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmon_monitor", "tools\pktmon_monitor\pktmon_monitor.vcxproj", "{1132BFD8-EECA-4372-B08E-D349D86FE616}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netevent_monitor", "tools\netevent_monitor\netevent_monitor.vcxproj", "{1132BFD8-EECA-4372-B08E-D349D86FE616}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmon_ebpf_ext_export_program_info", "tools\pktmon_ebpf_ext_export_program_info\pktmon_ebpf_ext_export_program_info.vcxproj", "{61896FC2-D314-468E-887B-7B1EBC7F0FEB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netevent_ebpf_ext_export_program_info", "tools\netevent_ebpf_ext_export_program_info\netevent_ebpf_ext_export_program_info.vcxproj", "{61896FC2-D314-468E-887B-7B1EBC7F0FEB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ntos_ebpf_ext_export_program_info", "tools\ntos_ebpf_ext_export_program_info\ntos_ebpf_ext_export_program_info.vcxproj", "{FA9BB88D-8259-40C1-9422-BDEDF9E9CE68}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmonebpfext", "ebpf_extensions\pktmonebpfext\sys\pktmonebpfext.vcxproj", "{DB2CE6D8-F3B3-4C35-A585-5C88B4684821}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "neteventebpfext", "ebpf_extensions\neteventebpfext\sys\neteventebpfext.vcxproj", "{DB2CE6D8-F3B3-4C35-A585-5C88B4684821}"
 	ProjectSection(ProjectDependencies) = postProject
 		{231EE32B-EBA4-4FE5-A55B-DB18F539D403} = {231EE32B-EBA4-4FE5-A55B-DB18F539D403}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktmonebpfext_user", "ebpf_extensions\pktmonebpfext\user\pktmonebpfext_user.vcxproj", "{AAAB234B-F0E9-4326-91E8-87B98367ACC1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "neteventebpfext_user", "ebpf_extensions\neteventebpfext\user\neteventebpfext_user.vcxproj", "{AAAB234B-F0E9-4326-91E8-87B98367ACC1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{7DF55BD7-0D40-4610-8A7A-71BA2314526C}"
 EndProject
