@@ -132,27 +132,28 @@ _netevent_provider_attach_client(
 {
     UNREFERENCED_PARAMETER(provider_context);
 
-    // Save the client's binding handle and dispatch routines in the provider context
+    // Save the client's binding handle and dispatch routines in the provider binding context
     _netevent_provider_binding_context.client_binding_handle = nmr_binding_handle;
     _netevent_provider_binding_context.client_registration_instance = client_registration_instance;
     _netevent_provider_binding_context.client_binding_context = client_binding_context;
     _netevent_provider_binding_context.client_dispatch = client_dispatch;
 
-    // Start the timer only if it's not already running
+    // Assign the output values
+    if (provider_binding_context != NULL) {
+        *provider_binding_context = &_netevent_provider_binding_context;
+    }
+    if (provider_dispatch != NULL) {
+        // This provider does not have any dispatch routines
+        *provider_dispatch = NULL;
+    }
+
+    // Lastly,start the timer (if it's not already running)
     if (!KeCancelTimer(&_timer)) {
         // Timer is not yet running, so initialize and start it
         LARGE_INTEGER due_time;
         due_time.QuadPart = -100; // 100 nanoseconds
         KeInitializeTimerEx(&_timer, NotificationTimer);
         KeSetTimerEx(&_timer, due_time, 100, &_timer_dpc);
-    }
-
-    // Return success
-    if (provider_binding_context != NULL) {
-        *provider_binding_context = &_netevent_provider_binding_context;
-    }
-    if (provider_dispatch != NULL) {
-        *provider_dispatch = NULL; // This provider does not have any dispatch routines
     }
 
     return STATUS_SUCCESS;
@@ -167,6 +168,12 @@ _netevent_provider_detach_client(_In_ HANDLE provider_binding_context)
     // Stop the timer if it's running
     KeCancelTimer(&_timer);
 
+    // Reset the binding context
+    _netevent_provider_binding_context.client_binding_handle = NULL;
+    _netevent_provider_binding_context.client_registration_instance = NULL;
+    _netevent_provider_binding_context.client_binding_context = NULL;
+    _netevent_provider_binding_context.client_dispatch = NULL;
+
     return STATUS_SUCCESS;
 }
 
@@ -174,7 +181,13 @@ _netevent_provider_detach_client(_In_ HANDLE provider_binding_context)
 VOID
 _netevent_provider_cleanup_binding_context(_In_ HANDLE provider_binding_context)
 {
-    UNREFERENCED_PARAMETER(provider_binding_context);
+    if (provider_binding_context != NULL) {
+
+        ((PROVIDER_BINDING_CONTEXT*)provider_binding_context)->client_binding_handle = NULL;
+        ((PROVIDER_BINDING_CONTEXT*)provider_binding_context)->client_registration_instance = NULL;
+        ((PROVIDER_BINDING_CONTEXT*)provider_binding_context)->client_binding_context = NULL;
+        ((PROVIDER_BINDING_CONTEXT*)provider_binding_context)->client_dispatch = NULL;
+    }
 }
 
 // Driver unload routine
