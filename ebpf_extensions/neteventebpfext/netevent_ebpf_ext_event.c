@@ -463,7 +463,7 @@ typedef struct _netevent_event_notify_context
 void
 _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 {
-    // Logging may delay the event processing, consider enavling only is the calling frequency is low.
+    // Logging may delay the event processing, consider enabling only is the calling frequency is low.
     // EBPF_EXT_LOG_ENTRY();
 
     // Unfortunately, the verifier does not support read-only contexts, so we need to copy the event data.

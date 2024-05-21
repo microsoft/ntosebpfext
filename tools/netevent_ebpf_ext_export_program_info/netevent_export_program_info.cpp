@@ -24,7 +24,7 @@ static const ebpf_program_info_t* _program_information_array[] = {&_ebpf_neteven
 // ebpf_program_section_info_t _mock_netevent_event_section_info[] = {
 //    {.header =
 //         {.version = EBPF_PROGRAM_SECTION_INFORMATION_CURRENT_VERSION, .size = sizeof(ebpf_program_section_info_t)},
-//     .section_name = L"event",
+//     .section_name = L"netevent_monitor",
 //     .program_type = &EBPF_PROGRAM_TYPE_NETEVENT,
 //     .attach_type = &EBPF_ATTACH_TYPE_NETEVENT,
 //     .bpf_program_type = BPF_PROG_TYPE_NETEVENT,

@@ -14,5 +14,5 @@ typedef struct
 // Define the NPI client dispatch table
 typedef struct _NETEVENT_NPI_CLIENT_DISPATCH
 {
-    VOID (*netevent_push_event)(HANDLE, netevent_event_info_t, size_t);
+    VOID (*netevent_push_event)(netevent_event_info_t*);
 } NETEVENT_NPI_CLIENT_DISPATCH, *PNETEVENT_NPI_CLIENT_DISPATCH;

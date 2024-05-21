@@ -103,11 +103,10 @@ timer_dpc_routine(
             message + 1, sizeof(message) - 1, "Hello from netevent - dropping packets! (total %ld)", counter);
         if (NT_SUCCESS(status)) {
             testPayload.event_data_start = (unsigned char*)message;
-            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1; // TBV dealloc
+            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1;
 
             // Invoke the client's dispatch routine
-            _netevent_provider_binding_context.client_dispatch->netevent_push_event(
-                _netevent_provider_binding_context.client_binding_context, testPayload, sizeof(testPayload));
+            _netevent_provider_binding_context.client_dispatch->netevent_push_event(&testPayload);
             // DbgPrintEx(DPFLTR_IHVNETWORK_ID, DPFLTR_INFO_LEVEL, "%s\n", message);
         } else {
             // Failed to format the message
