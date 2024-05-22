@@ -466,28 +466,27 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     // Logging may delay the event processing, consider enabling only is the calling frequency is low.
     // EBPF_EXT_LOG_ENTRY();
 
-    // Unfortunately, the verifier does not support read-only contexts, so we need to copy the event data.
-    // For optimal performance, we use the stack.
-    // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
-    netevent_event_notify_context_t netevent_event_notify_context = {0};
-    if (netevent_event != NULL) {
-
-        netevent_event_notify_context.netevent_event_md.event_data_start = netevent_event->event_data_start;
-        netevent_event_notify_context.netevent_event_md.event_data_end = netevent_event->event_data_end;
-        memcpy(
-            netevent_event_notify_context.netevent_event_md.event_data_start,
-            netevent_event->event_data_start,
-            netevent_event->event_data_end - netevent_event->event_data_start + 1);
-
-    } else {
-        netevent_event_notify_context.netevent_event_md.event_data_start = 0;
-        netevent_event_notify_context.netevent_event_md.event_data_end = 0;
+    if (netevent_event == NULL) {
+        return;
     }
 
-    // For each attached client call the netevent hook.
+    // Currently, the verifier does not support read-only contexts, so we need to copy the event data.
+    // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
     ebpf_result_t result;
-    ebpf_extension_hook_client_t* client_context =
-        ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, NULL);
+    ebpf_extension_hook_client_t* client_context = NULL;
+    uint8_t* event_data = NULL;
+    netevent_event_notify_context_t netevent_event_notify_context = {0};
+    uint64_t event_size = netevent_event->event_data_end - netevent_event->event_data_start;
+
+    event_data = (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, event_size, EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, event_data, "event_data", result);
+
+    memcpy(event_data, netevent_event->event_data_start, event_size);
+    netevent_event_notify_context.netevent_event_md.event_data_start = event_data;
+    netevent_event_notify_context.netevent_event_md.event_data_end = event_data + event_size;
+
+    // For each attached client call the netevent hook.
+    client_context = ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, NULL);
     while (client_context != NULL) {
         NTSTATUS status = 0;
         if (ebpf_extension_hook_client_enter_rundown(client_context)) {
@@ -513,6 +512,12 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 
         client_context =
             ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, client_context);
+    }
+
+Exit:
+    if (event_data) {
+        ExFreePool(event_data);
+        event_data = NULL;
     }
 
     // EBPF_EXT_LOG_EXIT();

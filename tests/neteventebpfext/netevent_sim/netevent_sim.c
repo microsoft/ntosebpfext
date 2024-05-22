@@ -15,7 +15,7 @@
 // Registry key path and value name for the event interval
 #define EVENT_INTERVAL_KEY_PATH L"\\Registry\\Machine\\Software\\eBPF\\Parameters"
 #define EVENT_INTERVAL_VALUE_NAME L"NetEventInterval"
-#define DEFAULT_EVENT_INTERVAL 1000000000 // 1 second in nanoseconds
+#define DEFAULT_EVENT_INTERVAL 1000000 // 1ms in nanoseconds
 
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
@@ -105,11 +105,11 @@ timer_dpc_routine(
         char message[200] = {0};
         message[0] = (unsigned char)NOTIFY_EVENT_TYPE_NETEVENT;
         LONG counter = InterlockedIncrement(&_event_counter);
-        NTSTATUS status = RtlStringCbPrintfA(
-            message + 1, sizeof(message) - 1, "Hello from netevent - dropping packets! (total %ld)", counter);
+        NTSTATUS status =
+            RtlStringCbPrintfA(message + 1, sizeof(message) - 1, "Network event simulation (total %ld)", counter);
         if (NT_SUCCESS(status)) {
             testPayload.event_data_start = (unsigned char*)message;
-            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1;
+            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 2;
 
             // Invoke the client's dispatch routine
             netevent_dispatch_address_table_t* dispatch_table =

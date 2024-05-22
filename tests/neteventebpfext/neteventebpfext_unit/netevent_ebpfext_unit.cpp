@@ -30,16 +30,7 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 
 struct bpf_map* netevent_event_map;
 struct bpf_map* command_map;
-static uint32_t event_count = 0;
-
-// Lock-free event ring buffer, used to store events without blocking the the eBPF callback.
-struct event_t
-{
-    size_t size;
-    uint8_t* data;
-};
-typed_ring_buffer<event_t, MAX_EVENTS_COUNT, false> event_buffer; // MAX_EVENTS_COUNT events, no overwriting.
-std::atomic<bool> stop_worker = false;                            // Stop flag for the event processing worker thread.
+static volatile uint32_t event_count = 0;
 
 void
 _dump_event(const char* event_descr, void* data, size_t size, bool print_str = false)
@@ -48,33 +39,17 @@ _dump_event(const char* event_descr, void* data, size_t size, bool print_str = f
     uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
 
     if (print_str) {
-        std::cout << std::endl
-                  << ">>>" << event_descr << " - type[" << event_type << "], " << size << " message: { " << data << " }"
-                  << std::endl;
+        std::cout << ">>>" << event_descr << " - type[" << (int)event_type << "], " << size << " bytes - message: { "
+                  << ((char*)data + 1) << " }" << std::endl;
     } else {
-        std::cout << std::endl << ">>>" << event_descr << " - type[" << event_type << "], " << size << " bytes: { ";
+        std::cout << std::endl
+                  << ">>>" << event_descr << " - type[" << (int)event_type << "], " << size << " bytes: { ";
         for (size_t i = 0; i < size; ++i) {
             std::cout << std::setw(2) << std::setfill('0') << std::hex
                       << static_cast<int>(reinterpret_cast<const std::byte*>(data)[i]) << " ";
         }
-    }
-
-    std::cout << "}" << std::endl;
-    std::cout << std::dec; // Reset to decimal.
-}
-
-// Worker thread to process events that are stored in the deferred ring buffer storage.
-void
-process_events()
-{
-    while (!stop_worker) {
-        event_t event;
-        while (event_buffer.read(event)) {
-            _dump_event("netevent_event", event.data, event.size, true);
-            delete[] event.data;
-        }
-        // Yield to avoid busy waiting.
-        std::this_thread::yield();
+        std::cout << "}" << std::endl;
+        std::cout << std::dec; // Reset to decimal.
     }
 }
 
@@ -92,21 +67,8 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
     if (event_type != NOTIFY_EVENT_TYPE_NETEVENT) {
         return 0;
     }
-
-    // Queue the event for deferred processing, unblocking the eBPF callback.
     event_count++;
-    uint8_t* data_copy = new uint8_t[size];
-    if (data_copy != nullptr) {
-        memcpy(
-            data_copy,
-            data,
-            size); // In a real scenario, memory management would need to be more sophisticated, to avoid fragmentation.
-        if (!event_buffer.write({size, data_copy})) {
-            delete[] data_copy;
-            return -1;
-        }
-        return 0;
-    }
+    _dump_event("netevent_event", data, size, true);
 
     return -1;
 }
@@ -140,9 +102,6 @@ TEST_CASE("netevent_event_simulation", "[neteventebpfext]")
     auto netevent_monitor_link = bpf_program__attach(netevent_monitor);
     REQUIRE(netevent_monitor_link != nullptr);
 
-    // Start worker thread for processing incoming events that are stored in the ring buffer by the callback.
-    std::thread worker(process_events);
-
     // Attach to the eBPF ring buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
@@ -154,11 +113,7 @@ TEST_CASE("netevent_event_simulation", "[neteventebpfext]")
     while (event_count < MAX_EVENTS_COUNT && timeout-- > 0) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    // Stop the event processing worker thread.
-    if (worker.joinable()) {
-        stop_worker = true;
-        worker.join();
-    }
+
     REQUIRE(event_count >= MAX_EVENTS_COUNT);
     REQUIRE(timeout > 0); // Ensure the test didn't time out.
 
