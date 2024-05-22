@@ -92,7 +92,7 @@ CLIENT_BINDING_CONTEXT _netevent_client_binding_context = {
 typedef struct NETEVENT_NPI_CLIENT_CHARACTERISTICS_
 {
     // ebpf_helper_function_addresses_t *_ebpf_netevent_client_dispatch;
-    void* _ebpf_netevent_client_dispatch;
+    const void* _ebpf_netevent_client_dispatch;
 
 } NETEVENT_NPI_CLIENT_CHARACTERISTICS, *PNETEVENT_NPI_CLIENT_CHARACTERISTICS;
 const NETEVENT_NPI_CLIENT_CHARACTERISTICS _netevent_client_npi_specific_characteristics = {

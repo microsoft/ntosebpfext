@@ -11,8 +11,16 @@ typedef struct
                                    ///< the memory range).
 } netevent_event_info_t;
 
+typedef void (*netevent_push_event)(netevent_event_info_t*);
+
+typedef struct
+{
+
+    const void* netevent_ext_helper_functions_t[];
+} netevent_dispatch_address_table_t;
+
 // Define the NPI client dispatch table
 typedef struct _NETEVENT_NPI_CLIENT_DISPATCH
 {
-    VOID (*netevent_push_event)(netevent_event_info_t*);
+    void* netevent_dispatch;
 } NETEVENT_NPI_CLIENT_DISPATCH, *PNETEVENT_NPI_CLIENT_DISPATCH;

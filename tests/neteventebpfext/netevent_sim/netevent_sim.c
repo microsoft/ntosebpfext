@@ -31,9 +31,9 @@ _netevent_provider_attach_client(
     _Out_ const void** ProviderDispatch);
 static NTSTATUS
 _netevent_provider_detach_client(_In_ HANDLE ProviderBindingContext);
-static VOID
+static void
 _netevent_provider_cleanup_binding_context(_In_ HANDLE ProviderBindingContext);
-VOID
+void
 timer_dpc_routine(
     _In_ struct _KDPC* Dpc,
     _In_opt_ void* DeferredContext,
@@ -73,7 +73,7 @@ PROVIDER_BINDING_CONTEXT _netevent_provider_binding_context = {
     .client_binding_context = NULL};
 
 // Timer DPC routine
-VOID
+void
 timer_dpc_routine(
     _In_ struct _KDPC* Dpc,
     _In_opt_ void* DeferredContext,
@@ -106,7 +106,12 @@ timer_dpc_routine(
             testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1;
 
             // Invoke the client's dispatch routine
-            _netevent_provider_binding_context.client_dispatch->netevent_push_event(&testPayload);
+            netevent_dispatch_address_table_t* dispatch_table =
+                ((NETEVENT_NPI_CLIENT_DISPATCH*)_netevent_provider_binding_context.client_dispatch)->netevent_dispatch;
+            netevent_push_event push_event_helper =
+                (netevent_push_event)dispatch_table->netevent_ext_helper_functions_t[0];
+            push_event_helper(&testPayload);
+
             // DbgPrintEx(DPFLTR_IHVNETWORK_ID, DPFLTR_INFO_LEVEL, "%s\n", message);
         } else {
             // Failed to format the message
@@ -178,7 +183,7 @@ _netevent_provider_detach_client(_In_ HANDLE provider_binding_context)
 }
 
 // Callback function to clean up the binding context
-VOID
+void
 _netevent_provider_cleanup_binding_context(_In_ HANDLE provider_binding_context)
 {
     if (provider_binding_context != NULL) {
@@ -191,7 +196,7 @@ _netevent_provider_cleanup_binding_context(_In_ HANDLE provider_binding_context)
 }
 
 // Driver unload routine
-_Use_decl_annotations_ VOID
+_Use_decl_annotations_ void
 DriverUnload(_In_ PDRIVER_OBJECT DriverObject)
 {
     UNREFERENCED_PARAMETER(DriverObject);
