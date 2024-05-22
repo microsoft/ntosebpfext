@@ -57,12 +57,12 @@ _netevent_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle);
 
 // Dispatch table for the client module's helper functions
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
-// static ebpf_helper_function_addresses_t _ebpf_netevent_event_helper_function_address_table = {
-//    .header =
-//        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
-//         .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
-//    .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
-//    .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
+static ebpf_helper_function_addresses_t _ebpf_netevent_event_helper_function_address_table = {
+    .header =
+        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
+         .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
+    .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
+    .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
 
 // Context structure for the client module's registration
 typedef struct CLIENT_REGISTRATION_CONTEXT_
@@ -96,7 +96,7 @@ typedef struct NETEVENT_NPI_CLIENT_CHARACTERISTICS_
 
 } NETEVENT_NPI_CLIENT_CHARACTERISTICS, *PNETEVENT_NPI_CLIENT_CHARACTERISTICS;
 const NETEVENT_NPI_CLIENT_CHARACTERISTICS _netevent_client_npi_specific_characteristics = {
-    ._ebpf_netevent_client_dispatch = &_ebpf_netevent_ext_helper_functions};
+    ._ebpf_netevent_client_dispatch = &_ebpf_netevent_event_helper_function_address_table};
 
 // Structure for the extension NMR client module's characteristics
 const NPI_CLIENT_CHARACTERISTICS _netevent_client_characteristics = {

@@ -68,10 +68,7 @@ const NPI_PROVIDER_CHARACTERISTICS _netevent_provider_characteristics = {
         .Number = 0,
         .NpiSpecificCharacteristics = &_netevent_provider_specific_characteristics // optional
     }};
-PROVIDER_REGISTRATION_CONTEXT _netevent_provider_registration_context = {
-    .provider_registration_handle = NULL
-    // TBD: Add any other provider-specific information here
-};
+PROVIDER_REGISTRATION_CONTEXT _netevent_provider_registration_context = {.provider_registration_handle = NULL};
 PROVIDER_BINDING_CONTEXT _netevent_provider_binding_context = {
     .client_binding_handle = NULL,
     .client_dispatch = NULL,
@@ -112,10 +109,9 @@ timer_dpc_routine(
             testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 2;
 
             // Invoke the client's dispatch routine
-            netevent_dispatch_address_table_t* dispatch_table =
+            ebpf_helper_function_addresses_t* dispatch_table =
                 ((NETEVENT_NPI_CLIENT_DISPATCH*)_netevent_provider_binding_context.client_dispatch)->netevent_dispatch;
-            netevent_push_event push_event_helper =
-                (netevent_push_event)dispatch_table->netevent_ext_helper_functions_t[0];
+            netevent_push_event push_event_helper = (netevent_push_event)dispatch_table->helper_function_address[0];
             push_event_helper(&testPayload);
 
             // DbgPrintEx(DPFLTR_IHVNETWORK_ID, DPFLTR_INFO_LEVEL, "%s\n", message);

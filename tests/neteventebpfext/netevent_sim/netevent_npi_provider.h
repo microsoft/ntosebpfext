@@ -17,14 +17,15 @@ const NPI_MODULEID netevent_module_id = {
 // Define the provider characteristics structure
 typedef struct NETEVENT_NPI_PROVIDER_CHARACTERISTICS_
 {
-    int dummy; // The provider module's specific characteristics can be added here (none for now)
+    // The provider module's specific characteristics can be added here (none for now)
+    int dummy;
 
 } NETEVENT_NPI_PROVIDER_CHARACTERISTICS, *PNETEVENT_NPI_PROVIDER_CHARACTERISTICS;
 
 // Define th context structure for the provider module's registration
 typedef struct PROVIDER_REGISTRATION_CONTEXT_
 {
-    HANDLE provider_registration_handle; // Registration handle (TBD)
+    HANDLE provider_registration_handle; // Registration handle
 } PROVIDER_REGISTRATION_CONTEXT, *PPROVIDER_REGISTRATION_CONTEXT;
 
 // Define the context structure for the provider module's binding to a client module
