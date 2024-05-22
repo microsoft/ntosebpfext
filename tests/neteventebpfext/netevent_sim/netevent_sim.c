@@ -12,9 +12,15 @@
 #include <guiddef.h>
 #include <ntstrsafe.h>
 
+// Registry key path and value name for the event interval
+#define EVENT_INTERVAL_KEY_PATH L"\\Registry\\Machine\\Software\\eBPF\\Parameters"
+#define EVENT_INTERVAL_VALUE_NAME L"NetEventInterval"
+#define DEFAULT_EVENT_INTERVAL 1000000000 // 1 second in nanoseconds
+
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
 KDEFERRED_ROUTINE timer_dpc_routine;
+ULONG g_event_interval = 0;
 
 // As defined in \include\ebpf_netevent_hooks.h
 #define NOTIFY_EVENT_TYPE_NETEVENT 100
@@ -195,6 +201,27 @@ _netevent_provider_cleanup_binding_context(_In_ HANDLE provider_binding_context)
     }
 }
 
+NTSTATUS
+read_event_interval(
+    _In_ PWSTR value_name,
+    _In_ ULONG value_type,
+    _In_ PVOID value_data,
+    _In_ ULONG value_length,
+    _Inout_ PVOID context,
+    _In_ PVOID entry_context)
+{
+    UNREFERENCED_PARAMETER(value_name);
+    UNREFERENCED_PARAMETER(context);
+    UNREFERENCED_PARAMETER(entry_context);
+
+    if (value_type == REG_DWORD && value_length == sizeof(ULONG)) {
+        g_event_interval = *(PULONG)value_data;
+        return STATUS_SUCCESS;
+    }
+
+    return STATUS_INVALID_PARAMETER;
+}
+
 // Driver unload routine
 _Use_decl_annotations_ void
 DriverUnload(_In_ PDRIVER_OBJECT DriverObject)
@@ -223,6 +250,24 @@ DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING RegistryPath)
 {
     UNREFERENCED_PARAMETER(RegistryPath);
     NTSTATUS status;
+
+    // Define the registry query table, to retrieve the registry value for the event interval
+    RTL_QUERY_REGISTRY_TABLE query_table[] = {
+        {
+            .QueryRoutine = read_event_interval, // Query routine
+            .Flags = RTL_QUERY_REGISTRY_DIRECT,  // Flags
+            .Name = EVENT_INTERVAL_VALUE_NAME,   // Name
+            .EntryContext = &g_event_interval,   // Entry context
+            .DefaultType = REG_DWORD,            // Default type
+            .DefaultData = &g_event_interval,    // Default data
+            .DefaultLength = sizeof(ULONG)       // Default length
+        },
+        {0} // Terminating null entry
+    };
+    status = RtlQueryRegistryValues(RTL_REGISTRY_ABSOLUTE, EVENT_INTERVAL_KEY_PATH, query_table, NULL, NULL);
+    if (!NT_SUCCESS(status)) {
+        g_event_interval = DEFAULT_EVENT_INTERVAL;
+    }
 
     // Specify the driver unload function
     DriverObject->DriverUnload = DriverUnload;

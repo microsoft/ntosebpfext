@@ -25,8 +25,8 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 #define DEFAULT_MAP_PIN_PATH_PREFIX "/ebpf/global/"
 #define EVENTS_MAP_SIZE \
     (512 * 1024) // NOTE: must be kept in sync with the Cilium BPF code, in 'cnc\cilium\bpf\lib\events.h'.
-#define MAX_EVENTS_COUNT 10000
-#define NETEVENT_EVENT_TEST_TIMEOUT_SEC 10
+#define MAX_EVENTS_COUNT 1000
+#define NETEVENT_EVENT_TEST_TIMEOUT_SEC 90
 
 struct bpf_map* netevent_event_map;
 struct bpf_map* command_map;
@@ -38,20 +38,27 @@ struct event_t
     size_t size;
     uint8_t* data;
 };
-typed_ring_buffer<event_t, 1000, false> event_buffer; // 1K events, no overwriting.
-std::atomic<bool> stop_worker = false;                // Stop flag for the event processing worker thread.
+typed_ring_buffer<event_t, MAX_EVENTS_COUNT, false> event_buffer; // MAX_EVENTS_COUNT events, no overwriting.
+std::atomic<bool> stop_worker = false;                            // Stop flag for the event processing worker thread.
 
 void
-_dump_event(const char* event_descr, void* data, size_t size)
+_dump_event(const char* event_descr, void* data, size_t size, bool print_str = false)
 {
     // Simply dump the event data as hex bytes.
     uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
 
-    std::cout << std::endl << ">>>" << event_descr << " - type[" << event_type << "], " << size << " bytes: { ";
-    for (size_t i = 0; i < size; ++i) {
-        std::cout << std::setw(2) << std::setfill('0') << std::hex
-                  << static_cast<int>(reinterpret_cast<const std::byte*>(data)[i]) << " ";
+    if (print_str) {
+        std::cout << std::endl
+                  << ">>>" << event_descr << " - type[" << event_type << "], " << size << " message: { " << data << " }"
+                  << std::endl;
+    } else {
+        std::cout << std::endl << ">>>" << event_descr << " - type[" << event_type << "], " << size << " bytes: { ";
+        for (size_t i = 0; i < size; ++i) {
+            std::cout << std::setw(2) << std::setfill('0') << std::hex
+                      << static_cast<int>(reinterpret_cast<const std::byte*>(data)[i]) << " ";
+        }
     }
+
     std::cout << "}" << std::endl;
     std::cout << std::dec; // Reset to decimal.
 }
@@ -63,7 +70,7 @@ process_events()
     while (!stop_worker) {
         event_t event;
         while (event_buffer.read(event)) {
-            _dump_event("netevent_event", event.data, event.size);
+            _dump_event("netevent_event", event.data, event.size, true);
             delete[] event.data;
         }
         // Yield to avoid busy waiting.
