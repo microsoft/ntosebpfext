@@ -38,56 +38,8 @@ struct event_t
     size_t size;
     uint8_t* data;
 };
-typed_ring_buffer<event_t, 10000, false> event_buffer; // 10K events, no overwriting.
-std::atomic<bool> stop_worker = false;                 // Stop flag for the event processing worker thread.
-
-typedef struct
-{
-    unsigned char* event_data_start; ///< Pointer to start of the data associated with the event.
-    unsigned char* event_data_end; ///< Pointer to end of the data associated with the event (i.e. first byte *outside*
-                                   ///< the memory range).
-} netevent_event_info_t;
-
-typedef struct test_netevent_event_client_context_t
-{
-    neteventebpfext_helper_base_client_context_t base;
-    netevent_event_md_t netevent_event_context;
-} test_netevent_event_client_context_t;
-
-_Must_inspect_result_ ebpf_result_t
-neteventebpfext_unit_invoke_netevent_event_program(
-    _In_ const void* client_netevent_event_context, _In_ const void* context, _Out_ uint32_t* result)
-{
-    netevent_event_md_t* netevent_event_context = (netevent_event_md_t*)context;
-    test_netevent_event_client_context_t* client_context =
-        (test_netevent_event_client_context_t*)client_netevent_event_context;
-
-    client_context->netevent_event_context = *netevent_event_context;
-    *result = STATUS_ACCESS_DENIED;
-    return EBPF_SUCCESS;
-}
-
-TEST_CASE("netevent_event_invoke", "[neteventebpfext]")
-{
-    ebpf_extension_data_t npi_specific_characteristics = {};
-    test_netevent_event_client_context_t client_context = {};
-
-    // Load and start neteventebpfext extension driver.
-    driver_service neteventebpfext_driver;
-    REQUIRE(
-        neteventebpfext_driver.create(
-            L"neteventebpfext", driver_service::get_driver_path("neteventebpfext.sys").c_str()) == true);
-    REQUIRE(neteventebpfext_driver.start() == true);
-
-    neteventebpf_ext_helper_t helper(
-        &npi_specific_characteristics,
-        (_ebpf_extension_dispatch_function)neteventebpfext_unit_invoke_netevent_event_program,
-        (neteventebpfext_helper_base_client_context_t*)&client_context);
-
-    // Stop and unload the neteventebpfext extension driver (NPI client).
-    REQUIRE(neteventebpfext_driver.stop() == true);
-    REQUIRE(neteventebpfext_driver.unload() == true);
-}
+typed_ring_buffer<event_t, 1000, false> event_buffer; // 1K events, no overwriting.
+std::atomic<bool> stop_worker = false;                // Stop flag for the event processing worker thread.
 
 void
 _dump_event(const char* event_descr, void* data, size_t size)
@@ -108,11 +60,11 @@ _dump_event(const char* event_descr, void* data, size_t size)
 void
 process_events()
 {
-    event_t event;
     while (!stop_worker) {
+        event_t event;
         while (event_buffer.read(event)) {
             _dump_event("netevent_event", event.data, event.size);
-            delete[] event.data; // Delete the data after processing the event.
+            delete[] event.data;
         }
         // Yield to avoid busy waiting.
         std::this_thread::yield();

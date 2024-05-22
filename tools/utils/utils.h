@@ -9,7 +9,7 @@
 #include <string>
 
 /// @brief
-/// Generic lock-free ring buffer template.
+/// General purpose lock-free typed ring-buffer template.
 /// @tparam T Type of the record to store in the buffer.
 /// @tparam max_size Maximum size of the buffer.
 /// @tparam overwrite Flag to indicate if the buffer should overwrite the oldest record when full.
@@ -24,21 +24,31 @@ template <typename T, size_t max_size, bool overwrite> class typed_ring_buffer
     bool
     write(const T& item)
     {
-        size_t next_write_index = write_index + 1;
-        if (!overwrite && next_write_index - read_index == max_size) {
-            return false;
+        size_t current_write_index = write_index.load(std::memory_order_relaxed);
+        size_t next_write_index = current_write_index + 1;
+
+        if (!overwrite) {
+            size_t current_read_index = read_index.load(std::memory_order_acquire);
+            if (next_write_index - current_read_index > max_size) {
+                return false;
+            }
         }
-        buffer[write_index++ % max_size] = item;
+
+        buffer[current_write_index % max_size] = item;
+        write_index.store(next_write_index, std::memory_order_release);
         return true;
     }
 
     bool
     read(T& item)
     {
-        if (read_index == write_index) {
+        size_t current_read_index = read_index.load(std::memory_order_relaxed);
+        if (current_read_index == write_index.load(std::memory_order_acquire)) {
             return false;
         }
-        item = buffer[read_index++ % max_size];
+
+        item = buffer[current_read_index % max_size];
+        read_index.store(current_read_index + 1, std::memory_order_release);
         return true;
     }
 };
