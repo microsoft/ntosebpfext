@@ -109,12 +109,11 @@ timer_dpc_routine(
             testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 2;
 
             // Retrieve the client's dispatch routine
-            // Invoke the client's dispatch routine
             netevent_dispatch_address_table_t* dispatch_table =
                 ((NETEVENT_NPI_CLIENT_DISPATCH*)_netevent_provider_binding_context.client_dispatch)->netevent_dispatch;
             netevent_push_event push_event_helper = (netevent_push_event)dispatch_table->helper_function_addresses[0];
 
-            // Call the function
+            // Invoke the client's dispatch routine
             push_event_helper(&testPayload);
 
             // DbgPrintEx(DPFLTR_IHVNETWORK_ID, DPFLTR_INFO_LEVEL, "%s\n", message);

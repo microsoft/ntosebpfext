@@ -85,16 +85,16 @@ CLIENT_BINDING_CONTEXT _netevent_client_binding_context = {
 // Structure for the client module's NPI-specific characteristics
 typedef struct NETEVENT_NPI_CLIENT_CHARACTERISTICS_
 {
-    ebpf_extension_header_t header;
-    uint32_t helper_function_count;
-    const void* helper_function_addresses;
+    // ebpf_extension_header_t header;
+    // uint32_t helper_function_count;
+    const void* helper_function_addresses[];
 
 } NETEVENT_NPI_CLIENT_CHARACTERISTICS, *PNETEVENT_NPI_CLIENT_CHARACTERISTICS;
 const NETEVENT_NPI_CLIENT_CHARACTERISTICS _netevent_client_npi_specific_characteristics = {
-    .header =
-        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
-         .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
-    .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
+    //.header =
+    //    {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
+    //     .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
+    //.helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
     .helper_function_addresses = &_ebpf_netevent_ext_helper_functions};
 
 // Structure for the extension NMR client module's characteristics
