@@ -3,6 +3,9 @@
 
 #pragma once
 
+// As defined in \include\ebpf_netevent_hooks.h
+#define NOTIFY_EVENT_TYPE_NETEVENT 100
+
 // Specific Event type to the neteventebpfext extension.
 typedef struct
 {
@@ -24,10 +27,11 @@ typedef struct _ebpf_extension_header
     size_t size;    ///< Size of the extension data structure.
 } ebpf_extension_header_t;
 
-// Define the NPI client dispatch table
-typedef struct _NETEVENT_NPI_CLIENT_DISPATCH
+// This is the type definition for the eBPF helper function addresses
+// when version is EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION.
+typedef struct _ebpf_helper_function_addresses
 {
-    // ebpf_extension_header_t header;
+    ebpf_extension_header_t header;
     UINT32 helper_function_count;
-    const void* helper_function_addresses[];
-} NETEVENT_NPI_CLIENT_DISPATCH, *PNETEVENT_NPI_CLIENT_DISPATCH;
+    UINT64* helper_function_address;
+} ebpf_helper_function_addresses_t;

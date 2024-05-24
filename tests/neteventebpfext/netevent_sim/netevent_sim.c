@@ -15,36 +15,33 @@
 // Registry key path and value name for the event interval
 #define EVENT_INTERVAL_KEY_PATH L"\\Registry\\Machine\\Software\\eBPF\\Parameters"
 #define EVENT_INTERVAL_VALUE_NAME L"NetEventInterval"
-#define DEFAULT_EVENT_INTERVAL 1000000 // 1ms in nanoseconds
+#define DEFAULT_EVENT_INTERVAL 1000000U // 1ms in nanoseconds
 
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
 KDEFERRED_ROUTINE timer_dpc_routine;
 ULONG g_event_interval = 0;
 
-// As defined in \include\ebpf_netevent_hooks.h
-#define NOTIFY_EVENT_TYPE_NETEVENT 100
-
 // Function prototypes
 static NTSTATUS
 _netevent_provider_attach_client(
-    _In_ HANDLE NmrBindingHandle,
+    _In_ HANDLE nmr_binding_handle,
     _In_ void* provider_context,
-    _In_ PNPI_REGISTRATION_INSTANCE ClientRegistrationInstance,
-    _In_ void* ClientBindingContext,
-    _In_ const void* ClientDispatch,
-    _Out_ void** ProviderBindingContext,
-    _Out_ const void** ProviderDispatch);
+    _In_ PNPI_REGISTRATION_INSTANCE client_registration_instance,
+    _In_ void* client_binding_context,
+    _In_ const void* client_dispatch,
+    _Out_ void** provider_binding_context,
+    _Out_ const void** provider_dispatch);
 static NTSTATUS
-_netevent_provider_detach_client(_In_ HANDLE ProviderBindingContext);
+_netevent_provider_detach_client(_In_ HANDLE provider_binding_context);
 static void
-_netevent_provider_cleanup_binding_context(_In_ HANDLE ProviderBindingContext);
+_netevent_provider_cleanup_binding_context(_In_ HANDLE provider_binding_context);
 void
 timer_dpc_routine(
-    _In_ struct _KDPC* Dpc,
-    _In_opt_ void* DeferredContext,
-    _In_opt_ void* SystemArgument1,
-    _In_opt_ void* SystemArgument2);
+    _In_ struct _KDPC* dpc,
+    _In_opt_ void* deferred_context,
+    _In_opt_ void* system_argument1,
+    _In_opt_ void* system_argument2);
 
 // Globals
 static KTIMER _timer;
@@ -52,7 +49,6 @@ static KDPC _timer_dpc;
 static EX_RUNDOWN_REF _rundown_ref;
 volatile LONG _event_counter = 0;
 static HANDLE _netevent_provider_handle;
-const NETEVENT_NPI_PROVIDER_CHARACTERISTICS _netevent_provider_specific_characteristics = {0};
 const NPI_PROVIDER_CHARACTERISTICS _netevent_provider_characteristics = {
     .Version = NPI_PROVIDER_CHARACTERISTICS_VERSION,
     .Length = sizeof(NPI_PROVIDER_CHARACTERISTICS),
@@ -66,8 +62,7 @@ const NPI_PROVIDER_CHARACTERISTICS _netevent_provider_characteristics = {
         .NpiId = &netevent_npiid,
         .ModuleId = &netevent_module_id,
         .Number = 0,
-        .NpiSpecificCharacteristics = &_netevent_provider_specific_characteristics // optional
-    }};
+        .NpiSpecificCharacteristics = NULL}};
 PROVIDER_REGISTRATION_CONTEXT _netevent_provider_registration_context = {.provider_registration_handle = NULL};
 PROVIDER_BINDING_CONTEXT _netevent_provider_binding_context = {
     .client_binding_handle = NULL,
@@ -78,15 +73,15 @@ PROVIDER_BINDING_CONTEXT _netevent_provider_binding_context = {
 // Timer DPC routine
 void
 timer_dpc_routine(
-    _In_ struct _KDPC* Dpc,
-    _In_opt_ void* DeferredContext,
-    _In_opt_ void* SystemArgument1,
-    _In_opt_ void* SystemArgument2)
+    _In_ struct _KDPC* dpc,
+    _In_opt_ void* deferred_context,
+    _In_opt_ void* system_argument1,
+    _In_opt_ void* system_argument2)
 {
-    UNREFERENCED_PARAMETER(Dpc);
-    UNREFERENCED_PARAMETER(DeferredContext);
-    UNREFERENCED_PARAMETER(SystemArgument1);
-    UNREFERENCED_PARAMETER(SystemArgument2);
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(deferred_context);
+    UNREFERENCED_PARAMETER(system_argument1);
+    UNREFERENCED_PARAMETER(system_argument2);
 
     // Send the payload to the attached NMR client (if any)
     if (_netevent_provider_binding_context.client_dispatch != NULL) {
@@ -108,12 +103,9 @@ timer_dpc_routine(
             testPayload.event_data_start = (unsigned char*)message;
             testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 2;
 
-            // Retrieve the client's dispatch routine
-            NETEVENT_NPI_CLIENT_DISPATCH* dispatch_table =
-                (NETEVENT_NPI_CLIENT_DISPATCH*)_netevent_provider_binding_context.client_dispatch;
-
             // Invoke the client's push_event_helper routine
-            netevent_push_event push_event_helper = (netevent_push_event)(dispatch_table->helper_function_addresses[0]);
+            netevent_push_event push_event_helper =
+                (netevent_push_event)(_netevent_provider_binding_context.client_dispatch->helper_function_address[0]);
             push_event_helper(&testPayload);
 
             // DbgPrintEx(DPFLTR_IHVNETWORK_ID, DPFLTR_INFO_LEVEL, "%s\n", message);
@@ -246,8 +238,8 @@ DriverUnload(_In_ PDRIVER_OBJECT DriverObject)
 _Use_decl_annotations_ NTSTATUS
 DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING RegistryPath)
 {
-    UNREFERENCED_PARAMETER(RegistryPath);
     NTSTATUS status;
+    UNREFERENCED_PARAMETER(RegistryPath);
 
     // Define the registry query table, to retrieve the registry value for the event interval
     RTL_QUERY_REGISTRY_TABLE query_table[] = {

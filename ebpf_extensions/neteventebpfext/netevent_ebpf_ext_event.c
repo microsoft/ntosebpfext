@@ -57,6 +57,12 @@ _netevent_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle);
 
 // Dispatch table for the client module's helper functions
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
+const ebpf_helper_function_addresses_t _netevent_client_dispatch = {
+    .header =
+        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
+         .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
+    .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
+    .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
 
 // Context structure for the client module's registration
 typedef struct CLIENT_REGISTRATION_CONTEXT_
@@ -81,21 +87,6 @@ CLIENT_BINDING_CONTEXT _netevent_client_binding_context = {
     .provider_binding_context = NULL,
     .provider_dispatch = NULL,
     .provider_registration_instance = NULL};
-
-// Structure for the client module's NPI-specific characteristics
-typedef struct NETEVENT_NPI_CLIENT_DISPATCH_
-{
-    // ebpf_extension_header_t header;
-    uint32_t helper_function_count;
-    const void* helper_function_addresses[];
-
-} NETEVENT_NPI_CLIENT_DISPATCH;
-const NETEVENT_NPI_CLIENT_DISPATCH _netevent_client_dispatch = {
-    //.header =
-    //    {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
-    //     .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
-    .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
-    .helper_function_addresses = &_ebpf_netevent_ext_helper_functions};
 
 // Structure for the extension NMR client module's characteristics
 const NPI_CLIENT_CHARACTERISTICS _netevent_client_characteristics = {
@@ -158,7 +149,7 @@ _netevent_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle)
     EBPF_EXT_LOG_ENTRY();
 
     UNREFERENCED_PARAMETER(nmr_binding_handle);
-    // No rundown , since there no state dependency from the provider (i.e. netevent_sim).
+    // No rundown, since there no state dependency from the provider (i.e. netevent_sim).
 
     EBPF_EXT_RETURN_NTSTATUS(STATUS_SUCCESS);
 }
