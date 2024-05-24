@@ -24,16 +24,10 @@ typedef struct _ebpf_extension_header
     size_t size;    ///< Size of the extension data structure.
 } ebpf_extension_header_t;
 
-// This is the type definition for the NetEventEbpfExt extension's dispatch table.
-typedef struct _netevent_dispatch_address_table
-{
-    // ebpf_extension_header_t header;
-    // UINT32 helper_function_count;
-    const void* helper_function_addresses[];
-} netevent_dispatch_address_table_t;
-
 // Define the NPI client dispatch table
 typedef struct _NETEVENT_NPI_CLIENT_DISPATCH
 {
-    void* netevent_dispatch;
+    // ebpf_extension_header_t header;
+    UINT32 helper_function_count;
+    const void* helper_function_addresses[];
 } NETEVENT_NPI_CLIENT_DISPATCH, *PNETEVENT_NPI_CLIENT_DISPATCH;
