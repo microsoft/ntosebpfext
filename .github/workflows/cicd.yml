@@ -68,22 +68,6 @@ jobs:
       capture_etw: true
       leak_detection: true
 
-  # Run the neteventebpfext unit tests in GitHub.
-  neteventebpfext_units:
-    # Always run this job.
-    needs: regular
-    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/reusable-test.yml
-    with:
-      name: neteventebpfext unit tests
-      test_command: .\neteventebpfext_unit.exe -d yes
-      build_artifact: Build-x64
-      environment: windows-2022
-      code_coverage: true
-      gather_dumps: true
-      capture_etw: true
-      leak_detection: true
-
   # Process_Monitor test
   process_monitor:
     # Always run this job.
@@ -97,6 +81,23 @@ jobs:
       build_artifact: Build-x64
       environment: windows-2022
       capture_etw: true
+
+  # Run the neteventebpfext unit tests in GitHub.
+  neteventebpfext_units:
+    # Always run this job.
+    needs: regular
+    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      name: neteventebpfext unit tests
+      pre_test: powershell -file .\scripts\Install-eBpfForWindows.ps1 0.16.0
+      test_command: .\neteventebpfext_unit.exe -d yes
+      build_artifact: Build-x64
+      environment: windows-2022
+      code_coverage: true
+      gather_dumps: true
+      capture_etw: true
+      leak_detection: true
 
   ossar:
     # Always run this job.
