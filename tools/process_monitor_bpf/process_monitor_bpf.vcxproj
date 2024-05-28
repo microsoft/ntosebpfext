@@ -103,6 +103,9 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\ebpf_extensions\ntosebpfext\sys\ntosebpfext.vcxproj">
+      <Project>{55499e36-37d4-4f86-b694-9f2990315758}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\ntos_ebpf_ext_export_program_info\ntos_ebpf_ext_export_program_info.vcxproj">
       <Project>{fa9bb88d-8259-40c1-9422-bdedf9e9ce68}</Project>
     </ProjectReference>
