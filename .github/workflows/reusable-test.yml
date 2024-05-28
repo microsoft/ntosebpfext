@@ -85,7 +85,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+      uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
       with:
         egress-policy: audit
 
@@ -96,7 +96,7 @@ jobs:
         paths_ignore: '["**.md", "**/docs/**"]'
 
     # Checking out the branch is needed to gather correct code coverage data.
-    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+    - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b
       # Only check out source code if code coverage is being gathered.
       if: (inputs.code_coverage == true) && (steps.skip_check.outputs.should_skip != 'true')
       with:
@@ -135,7 +135,7 @@ jobs:
 
     - name: Download build artifact
       if: (steps.skip_check.outputs.should_skip != 'true') && success()
-      uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+      uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
       id: download_artifact
       with:
         name: ${{inputs.build_artifact}}-${{matrix.configurations}}
@@ -231,7 +231,7 @@ jobs:
 
     - name: Upload Report to Codecov attempt 1
       if: (steps.skip_check.outputs.should_skip != 'true') && (steps.check_coverage.outputs.files_exists == 'true')
-      uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
+      uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be
       id: upload_code_coverage_report_1
       continue-on-error: true
       with:
@@ -246,7 +246,7 @@ jobs:
 
     - name: Upload Report to Codecov attempt 2
       if: (steps.skip_check.outputs.should_skip != 'true') && (steps.upload_code_coverage_report_1.outcome == 'failure')
-      uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
+      uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be
       id: upload_code_coverage_report_2
       continue-on-error: true
       with:
@@ -261,7 +261,7 @@ jobs:
 
     - name: Upload Report to Codecov attempt 3
       if: (steps.skip_check.outputs.should_skip != 'true') && (steps.upload_code_coverage_report_2.outcome == 'failure')
-      uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
+      uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be
       id: upload_code_coverage_report_3
       continue-on-error: true
       with:
@@ -276,7 +276,7 @@ jobs:
 
     - name: Upload Report to Codecov attempt 4
       if: (steps.skip_check.outputs.should_skip != 'true') && (steps.upload_code_coverage_report_3.outcome == 'failure')
-      uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
+      uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be
       id: upload_code_coverage_report_4
       continue-on-error: true
       with:
@@ -359,7 +359,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           disable-sudo: true
           egress-policy: block

@@ -64,3 +64,6 @@ artifacts/
 
 # Visual Code.
 **/.vscode/**/*
+
+# MSBuild Binary Logs
+*.binlog
