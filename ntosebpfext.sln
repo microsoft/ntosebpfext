@@ -21,7 +21,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{FD22C885
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "process_monitor_bpf", "tools\process_monitor_bpf\process_monitor_bpf.vcxproj", "{3DBF8A96-3883-448A-8BD3-B8C913A27F09}"
 	ProjectSection(ProjectDependencies) = postProject
-		{AA933B9F-B5D8-4AA8-AC18-98FE1A161E8A} = {AA933B9F-B5D8-4AA8-AC18-98FE1A161E8A}
 		{FA9BB88D-8259-40C1-9422-BDEDF9E9CE68} = {FA9BB88D-8259-40C1-9422-BDEDF9E9CE68}
 	EndProjectSection
 EndProject
