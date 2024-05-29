@@ -39,16 +39,18 @@ _dump_event(const char* event_descr, void* data, size_t size, bool print_str = f
     uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
 
     if (print_str) {
-        std::cout << ">>>" << event_descr << " - type[" << (int)event_type << "], " << size << " bytes - message: { "
-                  << ((char*)data + 1) << " }" << std::endl;
+        // Print the buffer as a string
+        std::cout << "\r>>> " << event_descr << " - type[" << (int)event_type << "], " << size << " bytes - message: { "
+                  << ((char*)data + 1) << " }" << std::flush;
     } else {
+        // Simply dump the event data as hex bytes.
         std::cout << std::endl
-                  << ">>>" << event_descr << " - type[" << (int)event_type << "], " << size << " bytes: { ";
+                  << "\r>>> " << event_descr << " - type[" << (int)event_type << "], " << size << " bytes: { ";
         for (size_t i = 0; i < size; ++i) {
             std::cout << std::setw(2) << std::setfill('0') << std::hex
                       << static_cast<int>(reinterpret_cast<const std::byte*>(data)[i]) << " ";
         }
-        std::cout << "}" << std::endl;
+        std::cout << "}" << std::flush;
         std::cout << std::dec; // Reset to decimal.
     }
 }
@@ -70,7 +72,7 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
     event_count++;
     _dump_event("netevent_event", data, size, true);
 
-    return -1;
+    return 0;
 }
 
 TEST_CASE("netevent_event_simulation", "[neteventebpfext]")
@@ -114,8 +116,9 @@ TEST_CASE("netevent_event_simulation", "[neteventebpfext]")
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
+    // Test the event count and ensure the test didn't time out.
     REQUIRE(event_count >= MAX_EVENTS_COUNT);
-    REQUIRE(timeout > 0); // Ensure the test didn't time out.
+    REQUIRE(timeout > 0);
 
     // Detach the program (link) from the attach point.
     int link_fd = bpf_link__fd(netevent_monitor_link);

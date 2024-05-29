@@ -15,7 +15,7 @@
 // Registry key path and value name for the event interval
 #define EVENT_INTERVAL_KEY_PATH L"\\Registry\\Machine\\Software\\eBPF\\Parameters"
 #define EVENT_INTERVAL_VALUE_NAME L"NetEventInterval"
-#define DEFAULT_EVENT_INTERVAL 1000000U // 1ms in nanoseconds
+#define DEFAULT_EVENT_INTERVAL 1U // milliseconds
 
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
@@ -107,8 +107,6 @@ timer_dpc_routine(
             netevent_push_event push_event_helper =
                 (netevent_push_event)(_netevent_provider_binding_context.client_dispatch->helper_function_address[0]);
             push_event_helper(&testPayload);
-
-            // DbgPrintEx(DPFLTR_IHVNETWORK_ID, DPFLTR_INFO_LEVEL, "%s\n", message);
         } else {
             // Failed to format the message
             InterlockedDecrement(&_event_counter);
@@ -169,12 +167,6 @@ _netevent_provider_detach_client(_In_ HANDLE provider_binding_context)
     // Stop the timer if it's running
     KeCancelTimer(&_timer);
 
-    // Reset the binding context
-    _netevent_provider_binding_context.client_binding_handle = NULL;
-    _netevent_provider_binding_context.client_registration_instance = NULL;
-    _netevent_provider_binding_context.client_binding_context = NULL;
-    _netevent_provider_binding_context.client_dispatch = NULL;
-
     return STATUS_SUCCESS;
 }
 
@@ -229,8 +221,6 @@ DriverUnload(_In_ PDRIVER_OBJECT DriverObject)
     if (status == STATUS_PENDING) {
         // Wait for the deregistration to be completed
         NmrWaitForProviderDeregisterComplete(_netevent_provider_handle);
-    } else {
-        // Handle error
     }
 }
 

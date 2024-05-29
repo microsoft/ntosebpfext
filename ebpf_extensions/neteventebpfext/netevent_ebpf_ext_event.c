@@ -108,19 +108,8 @@ _netevent_ebpf_extension_attach_provider(
 {
     EBPF_EXT_LOG_ENTRY();
 
-    UNREFERENCED_PARAMETER(nmr_binding_handle);
     UNREFERENCED_PARAMETER(client_context);
     UNREFERENCED_PARAMETER(provider_registration_instance);
-
-    // If the client module determines that it will attach to the provider module,
-    // the client module's ClientAttachProvider callback function allocates and initializes a binding context structure
-    // for the attachment to the provider module and then calls the NmrClientAttachProvider function to continue the
-    // attachment process.
-    // Although, if the client does not rely on any state of the provider, like for this application,
-    // there is no need to persist this data, moreover in a distinguished manner for multiple providers.
-    // Therefore we just provide the mandatory pointers required by NMR.
-    // Should per-provider context be required for the future, the '_netevent_client_npi_specific_characteristics'
-    // Can just be declared e.g. as an 'nmr_binding_handle' key-based hash map.
 
     // Attach to the NetEvent provider module.
     NTSTATUS status = NmrClientAttachProvider(
@@ -133,11 +122,6 @@ _netevent_ebpf_extension_attach_provider(
         EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
         goto Exit;
     }
-
-    // Save the client context and provider registration instance for later use.
-    // _netevent_client_binding_context.nmr_binding_handle = nmr_binding_handle;
-    // _netevent_client_binding_context.client_context = client_context;
-    // _netevent_client_binding_context.provider_registration_instance = provider_registration_instance;
 
 Exit:
     EBPF_EXT_RETURN_NTSTATUS(status);
@@ -448,7 +432,7 @@ typedef struct _netevent_event_notify_context
 void
 _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 {
-    // Logging may delay the event processing, consider enabling only is the calling frequency is low.
+    // Logging may delay the event processing, consider enabling only if the calling frequency is low.
     // EBPF_EXT_LOG_ENTRY();
 
     if (netevent_event == NULL) {
