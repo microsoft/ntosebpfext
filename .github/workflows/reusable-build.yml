@@ -138,7 +138,7 @@ jobs:
 
     - name: Install .NET 8 SDK
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.x
 
