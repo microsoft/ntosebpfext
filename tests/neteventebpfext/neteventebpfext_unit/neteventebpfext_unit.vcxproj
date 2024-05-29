@@ -88,7 +88,7 @@
       <AdditionalLibraryDirectories>$(VC_LibraryPath_VC_x64_Desktop);$(SolutionDir)$(Platform)\$(ConfigurationName)\;%(Link.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>powershell -NonInteractive -ExecutionPolicy Unrestricted $(SolutionDir)scripts\Install-eBpfForWindows.ps1 $(OutDir)scripts</Command>
+      <Command>copy $(SolutionDir)scripts\Install-eBpfForWindows.ps1 $(OutDir)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
@@ -106,7 +106,7 @@
       <AdditionalLibraryDirectories>$(VC_LibraryPath_VC_x64_Desktop);$(SolutionDir)$(Platform)\$(ConfigurationName)\;%(Link.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>powershell -NonInteractive -ExecutionPolicy Unrestricted $(SolutionDir)scripts\Install-eBpfForWindows.ps1 $(OutDir)scripts</Command>
+      <Command>copy $(SolutionDir)scripts\Install-eBpfForWindows.ps1 $(OutDir)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -128,7 +128,7 @@
       <AdditionalLibraryDirectories>$(VC_LibraryPath_VC_x64_Desktop);$(SolutionDir)$(Platform)\$(ConfigurationName)\;%(Link.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>powershell -NonInteractive -ExecutionPolicy Unrestricted $(SolutionDir)scripts\Install-eBpfForWindows.ps1 $(OutDir)scripts</Command>
+      <Command>copy $(SolutionDir)scripts\Install-eBpfForWindows.ps1 $(OutDir)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

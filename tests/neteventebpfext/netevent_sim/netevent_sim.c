@@ -20,7 +20,7 @@
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
 KDEFERRED_ROUTINE timer_dpc_routine;
-ULONG g_event_interval = 0;
+LONG g_event_interval = 0;
 
 // Function prototypes
 static NTSTATUS
@@ -152,9 +152,9 @@ _netevent_provider_attach_client(
     if (!KeCancelTimer(&_timer)) {
         // Timer is not yet running, so initialize and start it
         LARGE_INTEGER due_time;
-        due_time.QuadPart = -100; // 100 nanoseconds
+        due_time.QuadPart = -g_event_interval;
         KeInitializeTimerEx(&_timer, NotificationTimer);
-        KeSetTimerEx(&_timer, due_time, 100, &_timer_dpc);
+        KeSetTimerEx(&_timer, due_time, g_event_interval, &_timer_dpc);
     }
 
     return STATUS_SUCCESS;
