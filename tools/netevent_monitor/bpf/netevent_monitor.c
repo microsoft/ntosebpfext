@@ -26,20 +26,15 @@ SEC("netevent_monitor")
 int
 NetEventMonitor(netevent_event_md_t* ctx)
 {
-    uint8_t event_type = 0;
+    int result = -1;
 
-    if (ctx != NULL && ctx->event_data_start != NULL && (ctx->event_data_end - ctx->event_data_start) > 1) {
+    if (ctx != NULL && ctx->event_data_start != NULL && ctx->event_data_end != NULL &&
+        ctx->event_data_end > ctx->event_data_start) {
 
-        event_type = *(
-            ctx->event_data_start); // The event type is on the first byte of the buffer (like for Cilium event buffers)
-
-        if (event_type == NOTIFY_EVENT_TYPE_NETEVENT) {
-            // Push the event to the netevent_events_map.
-            bpf_ringbuf_output(
-                &netevent_events_map, ctx->event_data_start, (ctx->event_data_end - ctx->event_data_start), 0);
-        }
-        return 0;
+        // Push the event to the netevent_events_map.
+        result = bpf_ringbuf_output(
+            &netevent_events_map, ctx->event_data_start, (ctx->event_data_end - ctx->event_data_start), 0);
     }
 
-    return 1;
+    return result;
 }

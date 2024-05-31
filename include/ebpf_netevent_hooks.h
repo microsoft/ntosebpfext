@@ -7,9 +7,7 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
-#define NOTIFY_EVENT_TYPE_NETEVENT 100 // TBD: Update this value to be compatible with Cilium's enums.
-
-// This structure is used to pass event data to the eBPF program.
+//// This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {
     uint8_t* event_data_start; ///< Pointer to start of the data associated with the event.
@@ -18,7 +16,7 @@ typedef struct _netevent_event_md
 } netevent_event_md_t;
 
 /*
- * @brief Handle process creation and deletion.
+ * @brief Write an event into the ring buffer.
  *
  * Program type: \ref EBPF_PROGRAM_TYPE_NETEVENT
  *
@@ -26,7 +24,7 @@ typedef struct _netevent_event_md
  * \ref EBPF_ATTACH_TYPE_NETEVENT
  *
  * @param[in] context \ref netevent_event_md_t
- * @return STATUS_SUCCESS to permit the operation, or a failure NTSTATUS value to deny the operation.
+ * @return STATUS_SUCCESS insertion succeeded.
  * Value of STATUS_SUCCESS is 0x0.
  */
 typedef int
@@ -48,13 +46,11 @@ typedef enum
  * @brief Push an event to the netevent event ring buffer.
  *
  * @param[in] context Event metadata.
- * @param[in] data Pointer to the buffer containing the event data.
- * @param[in] data_length The length of the event data.
  *
- * @retval >=0 The length of the image path.
+ * @retval =0 Succeeded inserting the event.
  * @retval <0 A failure occurred.
  */
-EBPF_HELPER(int, bpf_netevent_push_event, (netevent_event_md_t * ctx, uint8_t* data, uint32_t data_length));
+EBPF_HELPER(int, bpf_netevent_push_event, (netevent_event_md_t * ctx));
 #ifndef __doxygen
 #define bpf_netevent_push_event ((bpf_netevent_push_event_t)BPF_FUNC_netevent_push_event)
 #endif

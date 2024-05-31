@@ -100,6 +100,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "process_monitor.Tests", "te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "process_monitor.Library", "tools\process_monitor.Library\process_monitor.Library.csproj", "{62F868B2-36E4-482C-8128-4903A54FD9CB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{6F4A225E-D0C9-46B1-8392-86A3AD4450B8}"
+	ProjectSection(SolutionItems) = preProject
+		include\ebpf_netevent_hooks.h = include\ebpf_netevent_hooks.h
+		include\ebpf_netevent_program_attach_type_guids.h = include\ebpf_netevent_program_attach_type_guids.h
+		include\ebpf_ntos_hooks.h = include\ebpf_ntos_hooks.h
+		include\ebpf_ntos_program_attach_type_guids.h = include\ebpf_ntos_program_attach_type_guids.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -300,6 +308,7 @@ Global
 		{52440D8B-C623-48C4-A2A3-527245139E19} = {FD22C885-E280-4166-AE1C-79D71BD006A7}
 		{36388BFD-96E8-4146-8C4A-B444A10DCB57} = {E8184DFB-C7EA-4913-9F63-6E61D4B9CBB1}
 		{62F868B2-36E4-482C-8128-4903A54FD9CB} = {FD22C885-E280-4166-AE1C-79D71BD006A7}
+		{6F4A225E-D0C9-46B1-8392-86A3AD4450B8} = {54A23059-C3A5-4527-9AA6-F8850930D838}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {90721348-AF7A-4E32-B38F-7368E0044BAC}

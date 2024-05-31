@@ -7,6 +7,9 @@
 #define NPI_CURRENT_CLIENT_REVISION 1
 #define NPI_PROVIDER_CHARACTERISTICS_VERSION 1
 
+// Define a specific event type
+#define NOTIFY_EVENT_TYPE_NETEVENT 100
+
 // Define the GUID for the NetEvent NPI
 const NPIID netevent_npiid = {0xcd3d4424, 0x657e, 0x404c, {0x87, 0xb2, 0xac, 0xf9, 0x28, 0x2c, 0xdd, 0x82}};
 

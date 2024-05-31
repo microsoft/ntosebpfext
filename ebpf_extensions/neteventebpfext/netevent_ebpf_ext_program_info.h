@@ -20,10 +20,7 @@ static const ebpf_helper_function_prototype_t _netevent_event_ebpf_extension_hel
      .helper_id = EBPF_MAX_GENERAL_HELPER_FUNCTION + 1,
      .name = "bpf_netevent_push_event",
      .return_type = EBPF_RETURN_TYPE_INTEGER,
-     .arguments = {
-         EBPF_ARGUMENT_TYPE_PTR_TO_CTX,
-         EBPF_ARGUMENT_TYPE_PTR_TO_WRITABLE_MEM,
-         EBPF_ARGUMENT_TYPE_PTR_TO_READABLE_MEM}}};
+     .arguments = {EBPF_ARGUMENT_TYPE_PTR_TO_CTX}}};
 
 static const ebpf_context_descriptor_t _ebpf_netevent_program_context_descriptor = {
     (int)sizeof(netevent_event_md_t),

@@ -27,6 +27,7 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
     (512 * 1024) // NOTE: must be kept in sync with the Cilium BPF code, in 'cnc\cilium\bpf\lib\events.h'.
 #define MAX_EVENTS_COUNT 1000
 #define NETEVENT_EVENT_TEST_TIMEOUT_SEC 90
+#define NOTIFY_EVENT_TYPE_NETEVENT 100 // The event type we want to process (matching the one emitted by netevent_sim).
 
 struct bpf_map* netevent_event_map;
 struct bpf_map* command_map;

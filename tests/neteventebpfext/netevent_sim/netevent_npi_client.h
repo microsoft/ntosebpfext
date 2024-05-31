@@ -3,9 +3,6 @@
 
 #pragma once
 
-// As defined in \include\ebpf_netevent_hooks.h
-#define NOTIFY_EVENT_TYPE_NETEVENT 100
-
 // Specific Event type to the neteventebpfext extension.
 typedef struct
 {

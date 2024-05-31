@@ -95,7 +95,7 @@ timer_dpc_routine(
         // Create the test payload
         netevent_event_info_t testPayload;
         char message[200] = {0};
-        message[0] = (unsigned char)NOTIFY_EVENT_TYPE_NETEVENT;
+        message[0] = (unsigned char)NOTIFY_EVENT_TYPE_NETEVENT; // First byte will contain the event type
         LONG counter = InterlockedIncrement(&_event_counter);
         NTSTATUS status =
             RtlStringCbPrintfA(message + 1, sizeof(message) - 1, "Network event simulation (total %ld)", counter);
