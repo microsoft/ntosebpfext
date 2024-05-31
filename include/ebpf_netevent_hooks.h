@@ -10,6 +10,8 @@
 //// This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {
+    uint8_t event_type;        ///< Event type. This is the first byte of the event data, for compatibility with
+                               ///< potential usage with Cilium eBPF programs.
     uint8_t* event_data_start; ///< Pointer to start of the data associated with the event.
     uint8_t* event_data_end;   ///< Pointer to end of the data associated with the event.
 

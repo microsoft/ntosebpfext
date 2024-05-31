@@ -6,6 +6,9 @@
 // Specific Event type to the neteventebpfext extension.
 typedef struct
 {
+    unsigned char event_type; ///< Event type. This is the first byte of the event data, for compatibility with
+                              ///< potential usage with Cilium eBPF programs.
+
     // Note: the BPF verifier limits the ability to just pass the pointer to the start of the buffer and its length.
     unsigned char* event_data_start; ///< Pointer to start of the data associated with the event.
     unsigned char* event_data_end; ///< Pointer to end of the data associated with the event (i.e. first byte *outside*

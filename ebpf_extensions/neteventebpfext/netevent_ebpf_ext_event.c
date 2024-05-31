@@ -447,10 +447,13 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     uint64_t event_size = netevent_event->event_data_end - netevent_event->event_data_start;
 
-    event_data = (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, event_size, EBPF_EXTENSION_POOL_TAG);
+    event_data = (uint8_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(netevent_event->event_type) + event_size, EBPF_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, event_data, "event_data", result);
 
-    memcpy(event_data, netevent_event->event_data_start, event_size);
+    memcpy(event_data, &netevent_event->event_type, sizeof(netevent_event->event_type));
+    memcpy(event_data + sizeof(netevent_event->event_type), netevent_event->event_data_start, event_size);
+    netevent_event_notify_context.netevent_event_md.event_type = netevent_event->event_type;
     netevent_event_notify_context.netevent_event_md.event_data_start = event_data;
     netevent_event_notify_context.netevent_event_md.event_data_end = event_data + event_size;
 

@@ -95,13 +95,13 @@ timer_dpc_routine(
         // Create the test payload
         netevent_event_info_t testPayload;
         char message[200] = {0};
-        message[0] = (unsigned char)NOTIFY_EVENT_TYPE_NETEVENT; // First byte will contain the event type
         LONG counter = InterlockedIncrement(&_event_counter);
         NTSTATUS status =
-            RtlStringCbPrintfA(message + 1, sizeof(message) - 1, "Network event simulation (total %ld)", counter);
+            RtlStringCbPrintfA(message, sizeof(message) - 1, "Network event simulation (total %ld)", counter);
         if (NT_SUCCESS(status)) {
+            testPayload.event_type = NOTIFY_EVENT_TYPE_NETEVENT;
             testPayload.event_data_start = (unsigned char*)message;
-            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 2;
+            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1;
 
             // Invoke the client's push_event_helper routine
             netevent_push_event push_event_helper =

@@ -7,7 +7,7 @@
 #define NPI_CURRENT_CLIENT_REVISION 1
 #define NPI_PROVIDER_CHARACTERISTICS_VERSION 1
 
-// Define a specific event type
+// Define a specific event type for this provider
 #define NOTIFY_EVENT_TYPE_NETEVENT 100
 
 // Define the GUID for the NetEvent NPI

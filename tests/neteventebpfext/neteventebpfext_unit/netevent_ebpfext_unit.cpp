@@ -21,10 +21,6 @@ struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
 CATCH_REGISTER_LISTENER(_watchdog)
 CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 
-#define EBPF_EVENTS_MAP_NAME "cilium_events"
-#define DEFAULT_MAP_PIN_PATH_PREFIX "/ebpf/global/"
-#define EVENTS_MAP_SIZE \
-    (512 * 1024) // NOTE: must be kept in sync with the Cilium BPF code, in 'cnc\cilium\bpf\lib\events.h'.
 #define MAX_EVENTS_COUNT 1000
 #define NETEVENT_EVENT_TEST_TIMEOUT_SEC 90
 #define NOTIFY_EVENT_TYPE_NETEVENT 100 // The event type we want to process (matching the one emitted by netevent_sim).
@@ -36,7 +32,6 @@ static volatile uint32_t event_count = 0;
 void
 _dump_event(const char* event_descr, void* data, size_t size, bool print_str = false)
 {
-    // Simply dump the event data as hex bytes.
     uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
 
     if (print_str) {
