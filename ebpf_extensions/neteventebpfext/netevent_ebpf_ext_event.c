@@ -451,7 +451,12 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
         NonPagedPoolNx, sizeof(netevent_event->event_type) + event_size, EBPF_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, event_data, "event_data", result);
 
+#pragma warning(push)
+#pragma warning( \
+    disable : 6386) // Buffer overrun while writing to 'event_data': the Analyzer cannot detect that the
+                    // allocated size of 'event_data' is 'sizeof(netevent_event->event_type) + event_size'.
     memcpy(event_data, &netevent_event->event_type, sizeof(netevent_event->event_type));
+#pragma warning(pop)
     memcpy(event_data + sizeof(netevent_event->event_type), netevent_event->event_data_start, event_size);
     netevent_event_notify_context.netevent_event_md.event_type = netevent_event->event_type;
     netevent_event_notify_context.netevent_event_md.event_data_start = event_data;
