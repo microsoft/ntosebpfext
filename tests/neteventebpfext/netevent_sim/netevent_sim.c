@@ -6,6 +6,7 @@
 #include <wdm.h>
 #include <wsk.h>
 // clang-format on
+#include "netevent_types.h"
 #include "netevent_npi_client.h"
 #include "netevent_npi_provider.h"
 
@@ -92,26 +93,26 @@ timer_dpc_routine(
             return;
         }
 
-        // Create the test payload
-        netevent_event_info_t testPayload;
-        char message[200] = {0};
+        // Create a test event
         LONG counter = InterlockedIncrement(&_event_counter);
-        NTSTATUS status =
-            RtlStringCbPrintfA(message, sizeof(message) - 1, "Network event simulation (total %ld)", counter);
-        if (NT_SUCCESS(status)) {
-            testPayload.event_type = NOTIFY_EVENT_TYPE_NETEVENT;
-            testPayload.event_data_start = (unsigned char*)message;
-            testPayload.event_data_end = testPayload.event_data_start + strlen(message) + 1;
+        netevent_type_drop_t demo_drop_event = {
+            .source_ip = {192, 168, 1, 1},
+            .destination_ip = {10, 11, 12, 1},
+            .source_port = 12345,
+            .destination_port = 80,
+            .reason = DROP_REASON_SECURITY_POLICY,
+            .event_counter = counter};
 
-            // Invoke the client's push_event_helper routine
-            netevent_push_event push_event_helper =
-                (netevent_push_event)(_netevent_provider_binding_context.client_dispatch->helper_function_address[0]);
-            push_event_helper(&testPayload);
-        } else {
-            // Failed to format the message
-            InterlockedDecrement(&_event_counter);
-            DbgPrintEx(DPFLTR_IHVNETWORK_ID, DPFLTR_ERROR_LEVEL, "Failed to format the message: 0x%X\n", status);
-        }
+        // Create the event payload
+        netevent_event_info_t event_payload = {
+            .event_type = NOTIFY_EVENT_TYPE_NETEVENT,
+            .event_data_start = (unsigned char*)&demo_drop_event,
+            .event_data_end = (unsigned char*)&demo_drop_event + sizeof(demo_drop_event)};
+
+        // Invoke the client's push_event_helper routine
+        netevent_push_event push_event_helper =
+            (netevent_push_event)(_netevent_provider_binding_context.client_dispatch->helper_function_address[0]);
+        push_event_helper(&event_payload);
 
         // Release the rundown protection
         ExReleaseRundownProtection(&_rundown_ref);

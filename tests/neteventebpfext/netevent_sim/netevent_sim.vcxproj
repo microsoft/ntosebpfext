@@ -27,6 +27,7 @@
   <ItemGroup>
     <ClInclude Include="netevent_npi_client.h" />
     <ClInclude Include="netevent_npi_provider.h" />
+    <ClInclude Include="netevent_types.h" />
     <ClInclude Include="Trace.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

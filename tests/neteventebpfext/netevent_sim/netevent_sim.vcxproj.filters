@@ -11,5 +11,6 @@
     <ClInclude Include="Trace.h" />
     <ClInclude Include="netevent_npi_provider.h" />
     <ClInclude Include="netevent_npi_client.h" />
+    <ClInclude Include="netevent_types.h" />
   </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #define CATCH_CONFIG_MAIN
+#include "..\netevent_sim\netevent_types.h"
 #include "catch_wrapper.hpp"
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
@@ -23,21 +24,28 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 
 #define MAX_EVENTS_COUNT 1000
 #define NETEVENT_EVENT_TEST_TIMEOUT_SEC 90
-#define NOTIFY_EVENT_TYPE_NETEVENT 100 // The event type we want to process (matching the one emitted by netevent_sim).
 
 struct bpf_map* netevent_event_map;
 struct bpf_map* command_map;
 static volatile uint32_t event_count = 0;
 
 void
-_dump_event(const char* event_descr, void* data, size_t size, bool print_str = false)
+_dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size)
 {
-    uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
+    if (event_type == NOTIFY_EVENT_TYPE_NETEVENT && size == sizeof(netevent_type_drop_t)) {
 
-    if (print_str) {
-        // Print the buffer as a string
-        std::cout << "\r>>> " << event_descr << " - type[" << (int)event_type << "], " << size << " bytes - message: { "
-                  << ((char*)data + 1) << " }" << std::flush;
+        // Cast the event and print the event details
+        netevent_type_drop_t* demo_drop_event = reinterpret_cast<netevent_type_drop_t*>(data);
+        std::cout << "\nNetwork drop event [" << demo_drop_event->event_counter << "]: {"
+                  << "src: " << (int)demo_drop_event->source_ip.octet1 << "." << (int)demo_drop_event->source_ip.octet2
+                  << "." << (int)demo_drop_event->source_ip.octet3 << "." << (int)demo_drop_event->source_ip.octet4
+                  << ":" << demo_drop_event->source_port << ", "
+                  << "dst: " << (int)demo_drop_event->destination_ip.octet1 << "."
+                  << (int)demo_drop_event->destination_ip.octet2 << "." << (int)demo_drop_event->destination_ip.octet3
+                  << "." << (int)demo_drop_event->destination_ip.octet4 << ":" << demo_drop_event->destination_port
+                  << ", "
+                  << "reason: " << (int)demo_drop_event->reason;
+        std::cout << "}" << std::flush;
     } else {
         // Simply dump the event data as hex bytes.
         std::cout << std::endl
@@ -66,7 +74,7 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
         return 0;
     }
     event_count++;
-    _dump_event("netevent_event", data, size, true);
+    _dump_event(event_type, "netevent_event", static_cast<uint8_t*>(data) + 1, size);
 
     return 0;
 }
