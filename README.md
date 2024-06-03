@@ -1,7 +1,13 @@
 # NTOS eBPF Extensions
 
-An [eBPF for Windows](https://github.com/microsoft/ebpf-for-windows) extension that permits developers to leverage existing public
+This repository contains source code libraries for accelerating the development of eBPF extensions for Windows, as they are documented in the [eBPF for Windows - eBPF extensions](https://github.com/microsoft/ebpf-for-windows/blob/main/docs/eBpfExtensions.md) documentation.
+
+The following eBPF extensions are included in this repository:
+
+- `ntosebpfext`: An eBPF extension  that permits developers to leverage existing public
 hooks in the Windows kernel to gather data and influence policy of the OS.
+
+- [`neteventebpfext`](./docs/neteventebpfext.md): An eBPF extension that attaches to network events sourced by [NMR Provider Modules](https://learn.microsoft.com/en-us/windows-hardware/drivers/network/initializing-and-registering-a-provider-module) that implement the `neteventebpfext`'s Network Provider Interface (NPI).
 
 ## Contributing
 
