@@ -94,8 +94,6 @@ The NetEvent Provider Interface (NPI) in `include\ebpf_netevent_hooks.h`defines 
 ```c
 typedef struct
 {
-    unsigned char event_type;        ///< Event type. This is the first byte of the event data, for compatibility with
-                                     ///< potential usage with Cilium eBPF programs.
     unsigned char* event_data_start; ///< Pointer to start of the data associated with the event.
     unsigned char* event_data_end;   ///< Pointer to end of the data associated with the event (i.e. first byte *outside*
                                      ///< the memory range).
@@ -164,4 +162,4 @@ void _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 This function will dispatch the network event to all the eBPF programs attached to the extension.
 
 For a more in-depth understanding of NMR and how to develop NPI providers & clients, please refer to the
-[NMR documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/network/network-module-registrar2).
+[Network Module Registar (NMR) documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/network/network-module-registrar2).

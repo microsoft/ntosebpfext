@@ -96,6 +96,7 @@ timer_dpc_routine(
         // Create a test event
         LONG counter = InterlockedIncrement(&_event_counter);
         netevent_type_drop_t demo_drop_event = {
+            .header = {.event_type = NOTIFY_EVENT_TYPE_NETEVENT},
             .source_ip = {192, 168, 1, 1},
             .destination_ip = {10, 11, 12, 1},
             .source_port = 12345,
@@ -105,11 +106,10 @@ timer_dpc_routine(
 
         // Create the event payload
         netevent_event_info_t event_payload = {
-            .event_type = NOTIFY_EVENT_TYPE_NETEVENT,
             .event_data_start = (unsigned char*)&demo_drop_event,
             .event_data_end = (unsigned char*)&demo_drop_event + sizeof(demo_drop_event)};
 
-        // Invoke the client's push_event_helper routine
+        // Invoke the NPI client's push_event_helper routine
         netevent_push_event push_event_helper =
             (netevent_push_event)(_netevent_provider_binding_context.client_dispatch->helper_function_address[0]);
         push_event_helper(&event_payload);

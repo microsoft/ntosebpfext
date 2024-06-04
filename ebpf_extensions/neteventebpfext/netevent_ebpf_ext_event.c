@@ -439,26 +439,17 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
         return;
     }
 
-    // Currently, the verifier does not support read-only contexts, so we need to copy the event data.
-    // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
     ebpf_result_t result;
     ebpf_extension_hook_client_t* client_context = NULL;
     uint8_t* event_data = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     uint64_t event_size = netevent_event->event_data_end - netevent_event->event_data_start;
 
-    event_data = (uint8_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(netevent_event->event_type) + event_size, EBPF_EXTENSION_POOL_TAG);
+    // Currently, the verifier does not support read-only contexts, so we need to copy the event data.
+    // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
+    event_data = (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, event_size, EBPF_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, event_data, "event_data", result);
-
-#pragma warning(push)
-#pragma warning( \
-    disable : 6386) // Buffer overrun while writing to 'event_data': the Analyzer cannot detect that the
-                    // allocated size of 'event_data' is 'sizeof(netevent_event->event_type) + event_size'.
-    memcpy(event_data, &netevent_event->event_type, sizeof(netevent_event->event_type));
-#pragma warning(pop)
-    memcpy(event_data + sizeof(netevent_event->event_type), netevent_event->event_data_start, event_size);
-    netevent_event_notify_context.netevent_event_md.event_type = netevent_event->event_type;
+    memcpy(event_data, netevent_event->event_data_start, event_size);
     netevent_event_notify_context.netevent_event_md.event_data_start = event_data;
     netevent_event_notify_context.netevent_event_md.event_data_end = event_data + event_size;
 

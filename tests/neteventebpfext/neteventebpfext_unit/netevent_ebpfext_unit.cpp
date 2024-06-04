@@ -34,9 +34,9 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
 {
     if (event_type == NOTIFY_EVENT_TYPE_NETEVENT && size == sizeof(netevent_type_drop_t)) {
 
-        // Cast the event and print the event details
+        // Cast the event and print its details
         netevent_type_drop_t* demo_drop_event = reinterpret_cast<netevent_type_drop_t*>(data);
-        std::cout << "\nNetwork drop event [" << demo_drop_event->event_counter << "]: {"
+        std::cout << "\rNetwork drop event [" << demo_drop_event->event_counter << "]: {"
                   << "src: " << (int)demo_drop_event->source_ip.octet1 << "." << (int)demo_drop_event->source_ip.octet2
                   << "." << (int)demo_drop_event->source_ip.octet3 << "." << (int)demo_drop_event->source_ip.octet4
                   << ":" << demo_drop_event->source_port << ", "
@@ -74,7 +74,7 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
         return 0;
     }
     event_count++;
-    _dump_event(event_type, "netevent_event", static_cast<uint8_t*>(data) + 1, size);
+    _dump_event(event_type, "netevent_event", data, size);
 
     return 0;
 }
