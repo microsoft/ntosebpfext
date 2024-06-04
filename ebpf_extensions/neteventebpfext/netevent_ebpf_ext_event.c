@@ -11,12 +11,18 @@
 #include "netevent_ebpf_ext_program_info.h"
 
 #include <errno.h>
+
 //
 // Global variables.
 //
+
+// Enable static event buffer for optimizing the event data copy on well-known use-cases.
+#define USE_STATIC_EVENT_BUFFER 0
+#define STATIC_EVENT_BUFFER_SIZE 65536 ///< Tune to the maximum size of the event data, specific to the use case.
+
 // Define the GUID for the NetEvent NPI (must match the one of the provider)
-const NPIID netevent_npiid = {0xcd3d4424, 0x657e, 0x404c, {0x87, 0xb2, 0xac, 0xf9, 0x28, 0x2c, 0xdd, 0x82}};
-// Define the client module's identification
+const NPIID netevent_npiid = {0x2227e819, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x90, 0x27, 0x71, 0x9e, 0x09}};
+// Define the client module's ID
 const NPI_MODULEID netevent_client_module_id = {
     sizeof(NPI_MODULEID), MIT_GUID, {0x8a9a5ef1, 0x2aa1, 0x42e9, {0x89, 0x5, 0xd1, 0xcf, 0x6, 0xc5, 0x77, 0x64}}};
 
@@ -432,8 +438,15 @@ typedef struct _netevent_event_notify_context
 void
 _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 {
-    // Logging may delay the event processing, consider enabling only if the calling frequency is low.
+    // Logging may delay the event processing, consider enabling only for debugging or if the calling frequency for a
+    // specific use case is low.
     // EBPF_EXT_LOG_ENTRY();
+
+#if USE_STATIC_EVENT_BUFFER
+    static uint8_t event_buffer[STATIC_EVENT_BUFFER_SIZE] = {0};
+#else
+    uint8_t* event_buffer = NULL;
+#endif // USE_STATIC_EVENT_BUFFER
 
     if (netevent_event == NULL) {
         return;
@@ -441,17 +454,26 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 
     ebpf_result_t result;
     ebpf_extension_hook_client_t* client_context = NULL;
-    uint8_t* event_data = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     uint64_t event_size = netevent_event->event_data_end - netevent_event->event_data_start;
 
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
-    event_data = (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, event_size, EBPF_EXTENSION_POOL_TAG);
-    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, event_data, "event_data", result);
-    memcpy(event_data, netevent_event->event_data_start, event_size);
-    netevent_event_notify_context.netevent_event_md.event_data_start = event_data;
-    netevent_event_notify_context.netevent_event_md.event_data_end = event_data + event_size;
+#if USE_STATIC_EVENT_BUFFER
+    if (event_size > STATIC_EVENT_BUFFER_SIZE) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Event size exceeds the static buffer size");
+        return;
+    }
+#else
+    event_buffer = (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, event_size, EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, event_buffer, "event_buffer", result);
+#endif // USE_STATIC_EVENT_BUFFER
+    memcpy(event_buffer, netevent_event->event_data_start, event_size);
+    netevent_event_notify_context.netevent_event_md.event_data_start = event_buffer;
+    netevent_event_notify_context.netevent_event_md.event_data_end = event_buffer + event_size;
 
     // For each attached client call the netevent hook.
     client_context = ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, NULL);
@@ -482,11 +504,13 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
             ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, client_context);
     }
 
+#if !USE_STATIC_EVENT_BUFFER
 Exit:
-    if (event_data) {
-        ExFreePool(event_data);
-        event_data = NULL;
+    if (event_buffer) {
+        ExFreePool(event_buffer);
+        event_buffer = NULL;
     }
+#endif // USE_STATIC_EVENT_BUFFER
 
     // EBPF_EXT_LOG_EXIT();
 }

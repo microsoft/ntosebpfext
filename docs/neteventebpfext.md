@@ -81,10 +81,21 @@ and attaching the to the network event source:
 
 ## Development
 
-[eBPF Extensions](https://github.com/microsoft/ebpf-for-windows/blob/main/docs/eBpfExtensions.md) use
+[eBPF for Windows Extensions](https://github.com/microsoft/ebpf-for-windows/blob/main/docs/eBpfExtensions.md) use
 the [Network Module Registar (NMR)](https://learn.microsoft.com/en-us/windows-hardware/drivers/network/network-module-registrar2)
-to interact with the eBPF programs (through eBPF Core), and providers. The `neteventebpfext` extension is an example of an eBPF extension that attaches
-to the network events sourced by providers for the `neteventebpfext`'s Network Provider Interface (NPI).
+to interact with the eBPF programs (through eBPF Core), and NMR providers. The `neteventebpfext` extension is an implementation of
+an Network Provider Interface (NPI) client that attaches to the network events sourced by providers its same NPI.
+
+### Optimizing event handling in the `neteventebpfext` extension
+
+The `neteventebpfext` extension can be optimized for well-defined use cases, where the maximum size of events is known.
+In this case, enabling the `USE_STATIC_EVENT_BUFFER` preprocessor variable (i.e setting it to `1`) in `ebpf_extensions\neteventebpfext\netevent_ebpf_ext_event.c`,
+will configure the extension to use a static buffer of size `STATIC_EVENT_BUFFER_SIZE` bytes, instead of a dynamically allocated buffer.
+
+```c
+#define USE_STATIC_EVENT_BUFFER 0
+#define STATIC_EVENT_BUFFER_SIZE 65536 ///< Tune to the maximum size of the event data, specific to the use case.
+```
 
 ### Writing an eBPF program that attaches to the `neteventebpfext` extension
 
@@ -132,6 +143,8 @@ MyNetEventHandler(netevent_event_md_t* ctx)
 }
 ```
 
+The extension supports attaching multiple eBPF programs (as NPI clients), to which the network events will be dispatched.
+
 ### Writing an NMR provider that generates network events
 
 Under `tools\netevent_sim`, you can find a simple NMR provider that generates demo network events, with detailed comments.
@@ -141,7 +154,7 @@ In `ebpf_extensions\neteventebpfext\netevent_ebpf_ext_event.c` you can find the 
 along with the dispatch table exported by the eBPF extension as an NMR client:
 
 ```c
-const NPIID netevent_npiid = {0xcd3d4424, 0x657e, 0x404c, {0x87, 0xb2, 0xac, 0xf9, 0x28, 0x2c, 0xdd, 0x82}};
+const NPIID netevent_npiid = {0x2227e819, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x90, 0x27, 0x71, 0x9e, 0x09}};
 ```
 
 The dispatch table for the network events provider is defined in `ebpf_extensions\neteventebpfext\netevent_ebpf_ext_event.c` as follows:
