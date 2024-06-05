@@ -86,17 +86,6 @@ the [Network Module Registar (NMR)](https://learn.microsoft.com/en-us/windows-ha
 to interact with the eBPF programs (through eBPF Core), and NMR providers. The `neteventebpfext` extension is an implementation of
 an Network Provider Interface (NPI) client that attaches to the network events sourced by providers its same NPI.
 
-### Optimizing event handling in the `neteventebpfext` extension
-
-The `neteventebpfext` extension can be optimized for well-defined use cases, where the maximum size of events is known.
-In this case, enabling the `USE_STATIC_EVENT_BUFFER` preprocessor variable (i.e setting it to `1`) in `ebpf_extensions\neteventebpfext\netevent_ebpf_ext_event.c`,
-will configure the extension to use a static buffer of size `STATIC_EVENT_BUFFER_SIZE` bytes, instead of a dynamically allocated buffer.
-
-```c
-#define USE_STATIC_EVENT_BUFFER 0
-#define STATIC_EVENT_BUFFER_SIZE 65536 ///< Tune to the maximum size of the event data, specific to the use case.
-```
-
 ### Writing an eBPF program that attaches to the `neteventebpfext` extension
 
 The simplest way to write an eBPF program that attaches to the network events is to review the `netevent_monitor.c` eBPF program that is
