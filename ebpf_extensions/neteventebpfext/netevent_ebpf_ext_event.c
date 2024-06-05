@@ -74,7 +74,7 @@ const ebpf_helper_function_addresses_t _netevent_client_dispatch = {
 // Context structure for the client module's registration
 typedef struct CLIENT_REGISTRATION_CONTEXT_
 {
-    HANDLE client_registration_handle; // Registration handle (TBD)
+    HANDLE client_registration_handle;
 
 } CLIENT_REGISTRATION_CONTEXT, *PCLIENT_REGISTRATION_CONTEXT;
 static CLIENT_REGISTRATION_CONTEXT _netevent_client_registration_context = {.client_registration_handle = NULL};

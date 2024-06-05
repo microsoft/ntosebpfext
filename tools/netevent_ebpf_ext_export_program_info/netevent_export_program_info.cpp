@@ -21,16 +21,6 @@ typedef struct _ebpf_program_section_info_with_count
 
 static const ebpf_program_info_t* _program_information_array[] = {&_ebpf_netevent_event_program_info};
 
-// ebpf_program_section_info_t _mock_netevent_event_section_info[] = {
-//    {.header =
-//         {.version = EBPF_PROGRAM_SECTION_INFORMATION_CURRENT_VERSION, .size = sizeof(ebpf_program_section_info_t)},
-//     .section_name = L"netevent_monitor",
-//     .program_type = &EBPF_PROGRAM_TYPE_NETEVENT,
-//     .attach_type = &EBPF_ATTACH_TYPE_NETEVENT,
-//     .bpf_program_type = BPF_PROG_TYPE_NETEVENT,
-//     .bpf_attach_type = BPF_ATTACH_TYPE_NETEVENT}};
-// static const ebpf_program_info_t* _program_information_array[] = {&_mock_netevent_event_section_info};
-
 static std::vector<ebpf_program_section_info_with_count_t> _section_information = {
     {&_ebpf_netevent_event_section_info[0], 1},
 };
