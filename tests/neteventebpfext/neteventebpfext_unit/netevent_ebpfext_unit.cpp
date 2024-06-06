@@ -82,6 +82,10 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
 
 TEST_CASE("netevent_event_simulation", "[neteventebpfext]")
 {
+    // Free the BPF object will take some time to unload from the previous test
+    // Once this issue is fixed, the sleep can be removed: https://github.com/microsoft/ebpf-for-windows/issues/2667
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+
     // First, load the netevent simulator driver (NPI provider).
     driver_service netevent_sim_driver;
     REQUIRE(
@@ -147,6 +151,10 @@ TEST_CASE("netevent_event_simulation", "[neteventebpfext]")
 
 TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
 {
+    // Free the BPF object will take some time to unload from the previous test
+    // Once this issue is fixed, the sleep can be removed: https://github.com/microsoft/ebpf-for-windows/issues/2667
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+
     // First, load the netevent simulator driver (NPI provider).
     driver_service netevent_sim_driver;
     REQUIRE(
