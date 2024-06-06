@@ -20,6 +20,7 @@
 static uint8_t* _event_buffer = NULL; ///< Event buffer for copying the event data.
 static size_t _event_buffer_size =
     4096; ///< Initial size of the event buffer, which will be dynamically resized as needed.
+EX_PUSH_LOCK _ebpf_netevent_push_event_lock;
 
 // Define the GUID for the NetEvent NPI (must match the one of the provider)
 const NPIID netevent_npiid = {0x2227e819, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x90, 0x27, 0x71, 0x9e, 0x09}};
@@ -140,7 +141,7 @@ _netevent_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle)
     EBPF_EXT_LOG_ENTRY();
 
     UNREFERENCED_PARAMETER(nmr_binding_handle);
-    // No rundown, since there no state dependency from the provider (i.e. netevent_sim).
+    // neteventebpfext does not maintain any state for the provider, therefore no action needed here.
 
     EBPF_EXT_RETURN_NTSTATUS(STATUS_SUCCESS);
 }
@@ -314,7 +315,8 @@ ebpf_ext_register_netevent()
     }
 
     // Initialize the global event buffer.
-    _event_buffer = (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, _event_buffer_size, EBPF_EXTENSION_POOL_TAG);
+    _event_buffer =
+        (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, _event_buffer_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
     if (_event_buffer == NULL) {
         status = STATUS_INSUFFICIENT_RESOURCES;
         EBPF_EXT_LOG_MESSAGE_NTSTATUS(
@@ -374,7 +376,7 @@ _ebpf_netevent_program_context_create(
 
     // Allocate memory for the context.
     netevent_event_context = (netevent_event_md_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(netevent_event_md_t), EBPF_EXTENSION_POOL_TAG);
+        NonPagedPoolNx, sizeof(netevent_event_md_t), EBPF_NETEVENT_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
         EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, netevent_event_context, "netevent_event_context", result);
 
@@ -467,14 +469,17 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     ebpf_extension_hook_client_t* client_context = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     uint64_t event_size = netevent_event->event_data_end - netevent_event->event_data_start;
+    bool push_lock_acquired = false;
 
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
+    ExAcquirePushLockExclusive(&_ebpf_netevent_push_event_lock);
+    push_lock_acquired = true;
     if (event_size > _event_buffer_size) {
         // If the event buffer is too small, attempt to resize it.
         uint8_t* new_event_buffer =
-            (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, event_size, EBPF_EXTENSION_POOL_TAG);
+            (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, event_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
         if (new_event_buffer == NULL) {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -512,13 +517,11 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
                 EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
                 "netevent_ebpf_extension_hook_client_enter_rundown failed");
         }
-        // If the client returns a non-zero value, stop calling the other clients.
-        if (!NT_SUCCESS(status) && netevent_event) {
-            break;
-        }
-
         client_context =
             ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, client_context);
+    }
+    if (push_lock_acquired) {
+        ExReleasePushLockExclusive(&_ebpf_netevent_push_event_lock);
     }
 
     // EBPF_EXT_LOG_EXIT();

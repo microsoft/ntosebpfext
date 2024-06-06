@@ -5,6 +5,8 @@
 
 #include "ebpf_ext.h"
 
+#define EBPF_NETEVENT_EXTENSION_POOL_TAG 'tvEN'
+
 /**
  * @brief Register EVENT NPI providers.
  *
