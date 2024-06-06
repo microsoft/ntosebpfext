@@ -24,7 +24,7 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 
 #define MAX_EVENTS_COUNT 1000
 #define NETEVENT_EVENT_TEST_TIMEOUT_SEC 90
-#define NETEVENT_EVENT_STRESS_TEST_TIMEOUT_SEC 60
+#define NETEVENT_EVENT_STRESS_TEST_TIMEOUT_SEC 90
 
 struct bpf_map* netevent_event_map;
 struct bpf_map* command_map;

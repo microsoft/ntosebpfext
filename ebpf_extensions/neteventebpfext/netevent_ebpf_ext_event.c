@@ -485,7 +485,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
                 EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
                 "Failed to resize the event buffer - event lost");
-            return;
+            goto Exit;
         }
         if (_event_buffer) {
             ExFreePool(_event_buffer);
@@ -520,6 +520,8 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
         client_context =
             ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, client_context);
     }
+
+Exit:
     if (push_lock_acquired) {
         ExReleasePushLockExclusive(&_ebpf_netevent_push_event_lock);
     }
