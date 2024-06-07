@@ -255,6 +255,69 @@ __declspec(noinline) void ebpf_ext_log_message_string(
     }
 }
 
+#define EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(trace_level, keyword, message, guid, status) \
+    switch (keyword) {                                                                               \
+    CASE_BASE:                                                                                       \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_BASE, message, guid, status);         \
+        break;                                                                                       \
+    CASE_BIND:                                                                                       \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_BIND, message, guid, status);         \
+        break;                                                                                       \
+    CASE_EXT:                                                                                        \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_EXT, message, guid, status);          \
+        break;                                                                                       \
+    CASE_NETEVENT:                                                                                   \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_NETEVENT, message, guid, status);     \
+        break;                                                                                       \
+    CASE_PROCESS:                                                                                    \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_PROCESS, message, guid, status);      \
+        break;                                                                                       \
+    CASE_SOCK_ADDR:                                                                                  \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_SOCK_ADDR, message, guid, status);    \
+        break;                                                                                       \
+    CASE_SOCK_OPS:                                                                                   \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_SOCK_OPS, message, guid, status);     \
+        break;                                                                                       \
+    CASE_XDP:                                                                                        \
+        _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_XDP, message, guid, status);          \
+        break;                                                                                       \
+    default:                                                                                         \
+        ebpf_assert(!"Invalid keyword");                                                             \
+        break;                                                                                       \
+    }
+
+__declspec(noinline) void ebpf_ext_log_message_guid_status(
+    ebpf_ext_tracelog_level_t trace_level,
+    ebpf_ext_tracelog_keyword_t keyword,
+    _In_z_ const char* message,
+    _In_ const GUID* guid,
+    NTSTATUS status)
+{
+    switch (trace_level) {
+    CASE_LOG_ALWAYS:
+        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_LOG_ALWAYS, keyword, message, *guid, status);
+        break;
+    CASE_CRITICAL:
+        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_CRITICAL, keyword, message, *guid, status);
+        break;
+    CASE_LEVEL_ERROR:
+        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_ERROR, keyword, message, *guid, status);
+        break;
+    CASE_WARNING:
+        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_WARNING, keyword, message, *guid, status);
+        break;
+    CASE_INFO:
+        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_INFO, keyword, message, *guid, status);
+        break;
+    CASE_VERBOSE:
+        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_VERBOSE, keyword, message, *guid, status);
+        break;
+    default:
+        ebpf_assert(!"Invalid trace level");
+        break;
+    }
+}
+
 #define EBPF_EXT_LOG_MESSAGE_NTSTATUS_KEYWORD_SWITCH(trace_level, message, status)       \
     switch (keyword) {                                                                   \
     CASE_BASE:                                                                           \

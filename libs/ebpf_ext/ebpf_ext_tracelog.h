@@ -161,6 +161,29 @@ ebpf_ext_log_message(
         ebpf_ext_log_message(_##trace_level##, _##keyword##, message);                   \
     }
 
+#define _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, keyword, message, guid, status) \
+    TraceLoggingWrite(                                                                 \
+        ebpf_ext_tracelog_provider,                                                    \
+        EBPF_EXT_TRACELOG_EVENT_GENERIC_MESSAGE,                                       \
+        TraceLoggingLevel((trace_level)),                                              \
+        TraceLoggingKeyword((keyword)),                                                \
+        TraceLoggingString((message), "Message"),                                      \
+        TraceLoggingGuid((guid), (#guid)),                                             \
+        TraceLoggingNTStatus((status), "Status"));
+
+void
+ebpf_ext_log_message_guid_status(
+    ebpf_ext_tracelog_level_t trace_level,
+    ebpf_ext_tracelog_keyword_t keyword,
+    _In_z_ const char* message,
+    _In_ const GUID* guid,
+    NTSTATUS status);
+
+#define EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, keyword, message, guid, status)            \
+    if (TraceLoggingProviderEnabled(ebpf_ext_tracelog_provider, trace_level, keyword)) {         \
+        ebpf_ext_log_message_guid_status(_##trace_level##, _##keyword##, message, guid, status); \
+    }
+
 #define _EBPF_EXT_LOG_MESSAGE_STRING(trace_level, keyword, message, value) \
     TraceLoggingWrite(                                                     \
         ebpf_ext_tracelog_provider,                                        \

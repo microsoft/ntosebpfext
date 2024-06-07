@@ -189,7 +189,7 @@ static ebpf_extension_program_info_provider_t* _ebpf_netevent_event_program_info
 // (must register a separate Hook NPI provider module for each supported attach type)
 //
 static ebpf_result_t
-_netevent_ebpf_extension_netevent_event_on_client_attach(
+_netevent_ebpf_extension_netevent_on_client_attach(
     _In_ const ebpf_extension_hook_client_t* attaching_client,
     _In_ const ebpf_extension_hook_provider_t* provider_context)
 {
@@ -202,7 +202,6 @@ _netevent_ebpf_extension_netevent_event_on_client_attach(
     UNREFERENCED_PARAMETER(provider_context);
 
     ExAcquirePushLockExclusive(&_ebpf_netevent_event_hook_provider_lock);
-
     push_lock_acquired = true;
 
     if (!_ebpf_netevent_event_hook_provider_registered) {
@@ -232,7 +231,7 @@ Exit:
 }
 
 static void
-_netevent_ebpf_extension_netevent_event_on_client_detach(_In_ const ebpf_extension_hook_client_t* detaching_client)
+_netevent_ebpf_extension_netevent_on_client_detach(_In_ const ebpf_extension_hook_client_t* detaching_client)
 {
     ebpf_result_t result = EBPF_SUCCESS;
 
@@ -301,8 +300,8 @@ ebpf_ext_register_netevent()
     _netevent_ebpf_netevent_event_hook_provider_data.link_type = BPF_LINK_TYPE_PLAIN;
     status = ebpf_extension_hook_provider_register(
         &hook_provider_parameters,
-        _netevent_ebpf_extension_netevent_event_on_client_attach,
-        _netevent_ebpf_extension_netevent_event_on_client_detach,
+        _netevent_ebpf_extension_netevent_on_client_attach,
+        _netevent_ebpf_extension_netevent_on_client_detach,
         NULL,
         &_ebpf_netevent_event_hook_provider_context);
     if (status != EBPF_SUCCESS) {
@@ -434,7 +433,7 @@ _ebpf_netevent_program_context_destroy(
         memcpy(
             data_out,
             netevent_event_context->event_data_start,
-            netevent_event_context->event_data_end - netevent_event_context->event_data_start + 1);
+            netevent_event_context->event_data_end - netevent_event_context->event_data_start);
         *data_size_out = netevent_event_context->event_data_end - netevent_event_context->event_data_start;
     } else {
         *data_size_out = 0;
@@ -505,10 +504,12 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
             result = ebpf_extension_hook_invoke_program(
                 client_context, &netevent_event_notify_context.netevent_event_md, (uint32_t*)&status);
             if (result != EBPF_SUCCESS) {
-                EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_LOG_MESSAGE_GUID_STATUS(
                     EBPF_EXT_TRACELOG_LEVEL_ERROR,
                     EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
-                    "netevent_ebpf_extension_hook_invoke_program failed");
+                    "netevent_ebpf_extension_hook_invoke_program failed module ",
+                    ebpf_extension_hook_provider_get_client_module_id(client_context),
+                    status);
             }
             ebpf_extension_hook_client_leave_rundown(client_context);
         } else {

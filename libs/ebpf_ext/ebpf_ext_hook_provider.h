@@ -42,6 +42,16 @@ const ebpf_extension_data_t*
 ebpf_extension_hook_client_get_client_data(_In_ const ebpf_extension_hook_client_t* hook_client);
 
 /**
+ * @brief Get the client module ID for the input client.
+ *
+ * @param[in] client_context Pointer to attached hook NPI client.
+ *
+ * @returns Pointer to the client module ID for the attached client.
+ */
+const GUID*
+ebpf_extension_hook_provider_get_client_module_id(_In_ const ebpf_extension_hook_client_t* client_context);
+
+/**
  * @brief Set the hook-specific provider data for the attached client.
  *
  * @param[in] hook_client Pointer to attached hook NPI client.
