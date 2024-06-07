@@ -88,6 +88,9 @@ ebpf_ext_trace_terminate()
     CASE_BIND:                                                                   \
         _EBPF_EXT_LOG_NTSTATUS_API_FAILURE(KEYWORD_BIND, api_name, status);      \
         break;                                                                   \
+    CASE_NETEVENT:                                                               \
+        _EBPF_EXT_LOG_NTSTATUS_API_FAILURE(KEYWORD_NETEVENT, api_name, status);  \
+        break;                                                                   \
     CASE_SOCK_ADDR:                                                              \
         _EBPF_EXT_LOG_NTSTATUS_API_FAILURE(KEYWORD_SOCK_ADDR, api_name, status); \
         break;                                                                   \
@@ -121,6 +124,9 @@ __declspec(noinline) void ebpf_ext_log_ntstatus_api_failure(
         break;                                                                                                         \
     CASE_BIND:                                                                                                         \
         _EBPF_EXT_LOG_NTSTATUS_API_FAILURE_MESSAGE_STRING(KEYWORD_BIND, api_name, status, message, string_value);      \
+        break;                                                                                                         \
+    CASE_NETEVENT:                                                                                                     \
+        _EBPF_EXT_LOG_NTSTATUS_API_FAILURE_MESSAGE_STRING(KEYWORD_NETEVENT, api_name, status, message, string_value);  \
         break;                                                                                                         \
     CASE_SOCK_ADDR:                                                                                                    \
         _EBPF_EXT_LOG_NTSTATUS_API_FAILURE_MESSAGE_STRING(KEYWORD_SOCK_ADDR, api_name, status, message, string_value); \
@@ -156,6 +162,9 @@ __declspec(noinline) void ebpf_ext_log_ntstatus_api_failure_message_string(
         break;                                                          \
     CASE_EXT:                                                           \
         _EBPF_EXT_LOG_MESSAGE(trace_level, KEYWORD_EXT, message);       \
+        break;                                                          \
+    CASE_NETEVENT:                                                      \
+        _EBPF_EXT_LOG_MESSAGE(trace_level, KEYWORD_NETEVENT, message);  \
         break;                                                          \
     CASE_SOCK_ADDR:                                                     \
         _EBPF_EXT_LOG_MESSAGE(trace_level, KEYWORD_SOCK_ADDR, message); \
@@ -210,6 +219,9 @@ __declspec(noinline) void ebpf_ext_log_message(
     CASE_EXT:                                                                                \
         _EBPF_EXT_LOG_MESSAGE_STRING(trace_level, KEYWORD_EXT, message, string_value);       \
         break;                                                                               \
+    CASE_NETEVENT:                                                                           \
+        _EBPF_EXT_LOG_MESSAGE_STRING(trace_level, KEYWORD_NETEVENT, message, string_value);  \
+        break;                                                                               \
     CASE_SOCK_ADDR:                                                                          \
         _EBPF_EXT_LOG_MESSAGE_STRING(trace_level, KEYWORD_SOCK_ADDR, message, string_value); \
         break;                                                                               \
@@ -255,7 +267,7 @@ __declspec(noinline) void ebpf_ext_log_message_string(
     }
 }
 
-#define EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(trace_level, keyword, message, guid, status) \
+#define EBPF_EXT_LOG_MESSAGE_GUID_STATUS_KEYWORD_SWITCH(trace_level, keyword, message, guid, status) \
     switch (keyword) {                                                                               \
     CASE_BASE:                                                                                       \
         _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, KEYWORD_BASE, message, guid, status);         \
@@ -295,22 +307,22 @@ __declspec(noinline) void ebpf_ext_log_message_guid_status(
 {
     switch (trace_level) {
     CASE_LOG_ALWAYS:
-        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_LOG_ALWAYS, keyword, message, *guid, status);
+        EBPF_EXT_LOG_MESSAGE_GUID_STATUS_KEYWORD_SWITCH(LEVEL_LOG_ALWAYS, keyword, message, *guid, status);
         break;
     CASE_CRITICAL:
-        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_CRITICAL, keyword, message, *guid, status);
+        EBPF_EXT_LOG_MESSAGE_GUID_STATUS_KEYWORD_SWITCH(LEVEL_CRITICAL, keyword, message, *guid, status);
         break;
     CASE_LEVEL_ERROR:
-        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_ERROR, keyword, message, *guid, status);
+        EBPF_EXT_LOG_MESSAGE_GUID_STATUS_KEYWORD_SWITCH(LEVEL_ERROR, keyword, message, *guid, status);
         break;
     CASE_WARNING:
-        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_WARNING, keyword, message, *guid, status);
+        EBPF_EXT_LOG_MESSAGE_GUID_STATUS_KEYWORD_SWITCH(LEVEL_WARNING, keyword, message, *guid, status);
         break;
     CASE_INFO:
-        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_INFO, keyword, message, *guid, status);
+        EBPF_EXT_LOG_MESSAGE_GUID_STATUS_KEYWORD_SWITCH(LEVEL_INFO, keyword, message, *guid, status);
         break;
     CASE_VERBOSE:
-        EBPF_EXT_LOG_MESSAGE_GUID_KEYWORD_SWITCH_STATUS(LEVEL_VERBOSE, keyword, message, *guid, status);
+        EBPF_EXT_LOG_MESSAGE_GUID_STATUS_KEYWORD_SWITCH(LEVEL_VERBOSE, keyword, message, *guid, status);
         break;
     default:
         ebpf_assert(!"Invalid trace level");
@@ -328,6 +340,9 @@ __declspec(noinline) void ebpf_ext_log_message_guid_status(
         break;                                                                           \
     CASE_EXT:                                                                            \
         _EBPF_EXT_LOG_MESSAGE_NTSTATUS(trace_level, KEYWORD_EXT, message, status);       \
+        break;                                                                           \
+    CASE_NETEVENT:                                                                       \
+        _EBPF_EXT_LOG_MESSAGE_NTSTATUS(trace_level, KEYWORD_NETEVENT, message, status);  \
         break;                                                                           \
     CASE_SOCK_ADDR:                                                                      \
         _EBPF_EXT_LOG_MESSAGE_NTSTATUS(trace_level, KEYWORD_SOCK_ADDR, message, status); \
@@ -385,6 +400,9 @@ __declspec(noinline) void ebpf_ext_log_message_ntstatus(
     CASE_EXT:                                                                          \
         _EBPF_EXT_LOG_MESSAGE_UINT32(trace_level, KEYWORD_EXT, message, status);       \
         break;                                                                         \
+    CASE_NETEVENT:                                                                     \
+        _EBPF_EXT_LOG_MESSAGE_UINT32(trace_level, KEYWORD_NETEVENT, message, status);  \
+        break;                                                                         \
     CASE_SOCK_ADDR:                                                                    \
         _EBPF_EXT_LOG_MESSAGE_UINT32(trace_level, KEYWORD_SOCK_ADDR, message, status); \
         break;                                                                         \
@@ -440,6 +458,9 @@ __declspec(noinline) void ebpf_ext_log_message_uint32(
         break;                                                                         \
     CASE_EXT:                                                                          \
         _EBPF_EXT_LOG_MESSAGE_UINT64(trace_level, KEYWORD_EXT, message, status);       \
+        break;                                                                         \
+    CASE_NETEVENT:                                                                     \
+        _EBPF_EXT_LOG_MESSAGE_UINT64(trace_level, KEYWORD_NETEVENT, message, status);  \
         break;                                                                         \
     CASE_SOCK_ADDR:                                                                    \
         _EBPF_EXT_LOG_MESSAGE_UINT64(trace_level, KEYWORD_SOCK_ADDR, message, status); \
@@ -497,6 +518,9 @@ __declspec(noinline) void ebpf_ext_log_message_uint64(
     CASE_BIND:                                                                                                 \
         _EBPF_EXT_LOG_NTSTATUS_API_FAILURE_UINT64_UINT64(KEYWORD_BIND, api_name, status, value1, value2);      \
         break;                                                                                                 \
+    CASE_NETEVENT:                                                                                             \
+        _EBPF_EXT_LOG_NTSTATUS_API_FAILURE_UINT64_UINT64(KEYWORD_NETEVENT, api_name, status, value1, value2);  \
+        break;                                                                                                 \
     CASE_SOCK_ADDR:                                                                                            \
         _EBPF_EXT_LOG_NTSTATUS_API_FAILURE_UINT64_UINT64(KEYWORD_SOCK_ADDR, api_name, status, value1, value2); \
         break;                                                                                                 \
@@ -527,6 +551,9 @@ __declspec(noinline) void ebpf_ext_log_ntstatus_api_failure_uint64_uint64(
         break;                                                                                        \
     CASE_BIND:                                                                                        \
         _EBPF_EXT_LOG_MESSAGE_UINT64_UINT64(trace_level, KEYWORD_BIND, message, value1, value2);      \
+        break;                                                                                        \
+    CASE_NETEVENT:                                                                                    \
+        _EBPF_EXT_LOG_MESSAGE_UINT64_UINT64(trace_level, KEYWORD_NETEVENT, message, value1, value2);  \
         break;                                                                                        \
     CASE_SOCK_ADDR:                                                                                   \
         _EBPF_EXT_LOG_MESSAGE_UINT64_UINT64(trace_level, KEYWORD_SOCK_ADDR, message, value1, value2); \
@@ -584,6 +611,9 @@ __declspec(noinline) void ebpf_ext_log_message_uint64_uint64(
         break;                                                                                                       \
     CASE_BIND:                                                                                                       \
         _EBPF_EXT_LOG_MESSAGE_UINT64_UINT64_UINT64(trace_level, KEYWORD_BIND, message, value1, value2, value3);      \
+        break;                                                                                                       \
+    CASE_NETEVENT:                                                                                                   \
+        _EBPF_EXT_LOG_MESSAGE_UINT64_UINT64_UINT64(trace_level, KEYWORD_NETEVENT, message, value1, value2, value3);  \
         break;                                                                                                       \
     CASE_SOCK_ADDR:                                                                                                  \
         _EBPF_EXT_LOG_MESSAGE_UINT64_UINT64_UINT64(trace_level, KEYWORD_SOCK_ADDR, message, value1, value2, value3); \
