@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ebpf_ext.h"
 #include "ebpf_extension.h"
 #include "ebpf_netevent_hooks.h"
 #include "ebpf_netevent_program_attach_type_guids.h"
 #include "ebpf_program_types.h"
 
-#define EBPF_COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
-#define EBPF_OFFSET_OF(s, m) (((size_t) & ((s*)0)->m))
-#define EBPF_FROM_FIELD(s, m, o) (s*)((uint8_t*)o - EBPF_OFFSET_OF(s, m))
 #define BPF_ATTACH_TYPE_NETEVENT 99900
 #define BPF_PROG_TYPE_NETEVENT 99901
 

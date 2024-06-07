@@ -21,6 +21,10 @@
 #define EBPF_EXTENSION_POOL_TAG 'bEtN'
 #define EBPF_EXTENSION_NPI_PROVIDER_VERSION 0
 
+#define EBPF_COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))
+#define EBPF_OFFSET_OF(s, m) (((size_t) & ((s*)0)->m))
+#define EBPF_FROM_FIELD(s, m, o) (s*)((uint8_t*)o - EBPF_OFFSET_OF(s, m))
+
 struct _ebpf_extension_hook_client;
 
 extern DEVICE_OBJECT* _ebpf_ext_driver_device_object;

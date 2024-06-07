@@ -365,13 +365,20 @@ _ebpf_netevent_program_context_create(
     ebpf_result_t result;
     netevent_event_md_t* netevent_event_context = NULL;
 
-    *context = NULL;
-
     if (context_in == NULL || context_size_in < sizeof(netevent_event_md_t)) {
-        EBPF_EXT_LOG_MESSAGE(EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "Context is required");
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "Input Context is required");
         result = EBPF_INVALID_ARGUMENT;
         goto Exit;
     }
+
+    if (context == NULL) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "Output Context is required");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
+    }
+    *context = NULL;
 
     // Allocate memory for the context.
     netevent_event_context = (netevent_event_md_t*)ExAllocatePoolUninitialized(
