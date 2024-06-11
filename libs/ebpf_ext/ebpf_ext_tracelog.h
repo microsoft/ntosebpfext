@@ -27,6 +27,7 @@ ebpf_ext_trace_terminate();
 #define EBPF_EXT_TRACELOG_KEYWORD_SOCK_ADDR 0x20
 #define EBPF_EXT_TRACELOG_KEYWORD_SOCK_OPS 0x40
 #define EBPF_EXT_TRACELOG_KEYWORD_PROCESS 0x80
+#define EBPF_EXT_TRACELOG_KEYWORD_NETEVENT 0x100
 
 #define EBPF_EXT_TRACELOG_LEVEL_LOG_ALWAYS WINEVENT_LEVEL_LOG_ALWAYS
 #define EBPF_EXT_TRACELOG_LEVEL_CRITICAL WINEVENT_LEVEL_CRITICAL
@@ -44,6 +45,7 @@ typedef enum _ebpf_ext_tracelog_keyword
     _EBPF_EXT_TRACELOG_KEYWORD_SOCK_OPS,
     _EBPF_EXT_TRACELOG_KEYWORD_XDP,
     _EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+    _EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
 } ebpf_ext_tracelog_keyword_t;
 
 typedef enum _ebpf_ext_tracelog_level
@@ -157,6 +159,29 @@ ebpf_ext_log_message(
 #define EBPF_EXT_LOG_MESSAGE(trace_level, keyword, message)                              \
     if (TraceLoggingProviderEnabled(ebpf_ext_tracelog_provider, trace_level, keyword)) { \
         ebpf_ext_log_message(_##trace_level##, _##keyword##, message);                   \
+    }
+
+#define _EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, keyword, message, guid, status) \
+    TraceLoggingWrite(                                                                 \
+        ebpf_ext_tracelog_provider,                                                    \
+        EBPF_EXT_TRACELOG_EVENT_GENERIC_MESSAGE,                                       \
+        TraceLoggingLevel((trace_level)),                                              \
+        TraceLoggingKeyword((keyword)),                                                \
+        TraceLoggingString((message), "Message"),                                      \
+        TraceLoggingGuid((guid), (#guid)),                                             \
+        TraceLoggingNTStatus((status), "Status"));
+
+void
+ebpf_ext_log_message_guid_status(
+    ebpf_ext_tracelog_level_t trace_level,
+    ebpf_ext_tracelog_keyword_t keyword,
+    _In_z_ const char* message,
+    _In_ const GUID* guid,
+    NTSTATUS status);
+
+#define EBPF_EXT_LOG_MESSAGE_GUID_STATUS(trace_level, keyword, message, guid, status)            \
+    if (TraceLoggingProviderEnabled(ebpf_ext_tracelog_provider, trace_level, keyword)) {         \
+        ebpf_ext_log_message_guid_status(_##trace_level##, _##keyword##, message, guid, status); \
     }
 
 #define _EBPF_EXT_LOG_MESSAGE_STRING(trace_level, keyword, message, value) \

@@ -4,7 +4,7 @@
   SPDX-License-Identifier: MIT
 -->
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props" Condition="Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props')" />
+  <Import Project="..\..\..\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props" Condition="Exists('..\..\..\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -18,10 +18,10 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{3DBF8A96-3883-448A-8BD3-B8C913A27F09}</ProjectGuid>
-    <RootNamespace>process_monitor</RootNamespace>
+    <ProjectGuid>{e619b985-44b3-4292-a585-5cd0c4315ed3}</ProjectGuid>
+    <RootNamespace>ntosebpfextunit</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ClangFlags>-g -target bpf -O2 -Werror</ClangFlags>
+    <ProjectName>ntosebpfext_unit</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -49,65 +49,73 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>false</LinkIncremental>
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)libs\ebpf_ext</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FuzzerDebug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)libs\ebpf_ext</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)libs\ebpf_ext</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)tests\include;$(SolutionDir)external\catch2\src;$(SolutionDir)external\catch2\build\generated-includes;$(SolutionDir)ntosebpfext;$(SolutionDir)external\usersim\inc;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VC_LibraryPath_VC_x64_Desktop);$(SolutionDir)$(Platform)\$(ConfigurationName)\;%(Link.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <PreBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear
-$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)tests\include;$(SolutionDir)external\catch2\src;$(SolutionDir)external\catch2\build\generated-includes;$(SolutionDir)ntosebpfext;$(SolutionDir)external\usersim\inc;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VC_LibraryPath_VC_x64_Desktop);$(SolutionDir)$(Platform)\$(ConfigurationName)\;%(Link.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <PreBuildEvent>
-      <Command>$(Outdir)ntos_ebpf_ext_export_program_info.exe --clear
-$(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CustomBuild Include="process_monitor.c">
-      <FileType>CppCode</FileType>
-      <Outputs>$(OutputPath)process_monitor.o</Outputs>
-      <Command>
-        clang $(ClangFlags) $(ClangIncludes) -I$(SolutionDir)include -c process_monitor.c -o $(OutputPath)process_monitor.o
-        pushd $(OutDir)
-        powershell -NonInteractive -ExecutionPolicy Unrestricted $(EbpfBinPath)\Convert-BpfToNative.ps1 -FileName %(Filename) -Type process -IncludeDir $(EbpfIncludePath) -Platform $(Platform) -Configuration $(Configuration)
-        popd
-      </Command>
-    </CustomBuild>
+    <ClCompile Include="ntos_ebpfext_unit.cpp" />
+    <ClCompile Include="ntos_ebpf_ext_helper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ntos_ebpf_ext_helper.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ebpf_extensions\ntosebpfext\sys\ntosebpfext.vcxproj">
-      <Project>{55499e36-37d4-4f86-b694-9f2990315758}</Project>
+    <ProjectReference Include="..\..\..\ebpf_extensions\ntosebpfext\user\ntosebpfext_user.vcxproj">
+      <Project>{630bb78f-6211-41d8-8e3a-096e22e169ef}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\ntos_ebpf_ext_export_program_info\ntos_ebpf_ext_export_program_info.vcxproj">
-      <Project>{fa9bb88d-8259-40c1-9422-bdedf9e9ce68}</Project>
+    <ProjectReference Include="..\..\..\external\Catch2\build\src\Catch2.vcxproj">
+      <Project>{8d538cbe-01bf-4a2e-a98a-6c368fdf13d7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\external\Catch2\build\src\Catch2WithMain.vcxproj">
+      <Project>{8bd3552a-2cfb-4a59-ab15-2031b97ada1e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\external\usersim\src\usersim.vcxproj">
+      <Project>{030a7ac6-14dc-45cf-af34-891057ab1402}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -116,6 +124,6 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\eBPF-for-Windows.0.16.0\build\native\ebpf-for-windows.props'))" />
   </Target>
 </Project>

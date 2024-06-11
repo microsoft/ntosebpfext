@@ -22,4 +22,8 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\process_monitor_bpf\process_monitor_bpf.vcxproj" />
+  </ItemGroup>
+
 </Project>

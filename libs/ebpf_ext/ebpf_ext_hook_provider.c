@@ -185,6 +185,12 @@ ebpf_extension_hook_client_get_client_data(_In_ const ebpf_extension_hook_client
     return hook_client->client_data;
 }
 
+const GUID*
+ebpf_extension_hook_provider_get_client_module_id(_In_ const ebpf_extension_hook_client_t* client_context)
+{
+    return &client_context->client_module_id;
+}
+
 void
 ebpf_extension_hook_client_set_provider_data(_In_ ebpf_extension_hook_client_t* hook_client, const void* data)
 {
