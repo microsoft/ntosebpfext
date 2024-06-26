@@ -56,7 +56,8 @@ static ebpf_program_data_t _ebpf_process_program_data = {
 };
 
 static ebpf_extension_data_t _ebpf_process_program_info_provider_data = {
-    EBPF_EXTENSION_NPI_PROVIDER_VERSION, sizeof(_ebpf_process_program_data), &_ebpf_process_program_data};
+    .header = {EBPF_EXTENSION_NPI_PROVIDER_VERSION, sizeof(_ebpf_process_program_data)},
+    .data = &_ebpf_process_program_data};
 
 NPI_MODULEID DECLSPEC_SELECTANY _ebpf_process_program_info_provider_moduleid = {sizeof(NPI_MODULEID), MIT_GUID, {0}};
 
