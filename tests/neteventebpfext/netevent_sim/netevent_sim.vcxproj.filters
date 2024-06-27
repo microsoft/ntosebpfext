@@ -13,4 +13,7 @@
     <ClInclude Include="netevent_npi_client.h" />
     <ClInclude Include="netevent_types.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>
