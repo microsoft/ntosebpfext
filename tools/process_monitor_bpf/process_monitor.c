@@ -72,7 +72,7 @@ struct
 // would complain when the function is actually defined below.
 process_hook_t ProcessMonitor;
 
-__attribute__((always_inline)) void*
+inline __attribute__((always_inline)) void*
 get_scratch_space()
 {
     uint64_t current_pid_tgid_key = bpf_get_current_pid_tgid();
