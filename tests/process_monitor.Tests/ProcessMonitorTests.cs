@@ -79,13 +79,31 @@ public class ProcessMonitorTests
         Assert.IsTrue(destroyedArgs.ExitTime - createdArgs.CreateTime < TimeSpan.FromSeconds(4));
     }
 
+    [TestMethod]
+    public async Task VeryLongCommandLinesArriveIntact()
+    {
+        var expectedCreatingThreadId = GetCurrentThreadId();
+        var longArgs = new string('a', 5000) + 'b';
+        (var createdArgs, var destroyedArgs) = await RunProcessAndWaitForEventsAsync("cmd.exe", $"/c echo {longArgs}");
+
+        // The parent should be our own process
+        Assert.AreEqual((uint)Environment.ProcessId, createdArgs.ParentProcessId);
+        Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
+        Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
+        Assert.AreEqual($"\"cmd.exe\" /c echo {longArgs}", createdArgs.CommandLine);
+
+        Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
+        Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);
+        Assert.AreEqual(0u, destroyedArgs.ExitCode);
+    }
+
     private static async Task<(ProcessCreatedEventArgs created, ProcessDestroyedEventArgs destroyed)>
         RunProcessAndWaitForEventsAsync(string exeName, string arguments)
     {
         using var pm = new ProcessMonitor(LoggerFactory.CreateLogger<ProcessMonitor>());
 
         var processDestoryHappened = new ManualResetEvent(false);
-        var cmdEchoTestPID = 0u;
+        var testPID = 0u;
         ProcessCreatedEventArgs createdArgs = default;
         ProcessDestroyedEventArgs destroyedArgs = default;
 
@@ -94,14 +112,14 @@ public class ProcessMonitorTests
             if (e.ImageFileName.EndsWith(exeName, StringComparison.Ordinal) &&
                 e.CommandLine.Contains($"\"{exeName}\" {arguments}", StringComparison.Ordinal))
             {
-                cmdEchoTestPID = e.ProcessId;
+                testPID = e.ProcessId;
                 createdArgs = e;
             }
         };
 
         pm.ProcessDestroyed += (sender, e) =>
         {
-            if (e.ProcessId == cmdEchoTestPID)
+            if (e.ProcessId == testPID)
             {
                 destroyedArgs = e;
                 processDestoryHappened.Set();

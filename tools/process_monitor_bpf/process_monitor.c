@@ -8,6 +8,26 @@
 #include "bpf_helpers.h"
 #include "ebpf_ntos_hooks.h"
 
+#define IMAGE_PATH_SIZE (1024)
+#define COMMAND_SCRATCH_SIZE (32 * 1024) // 32k characters is the max char count that fits in a UNICODE_STRING
+
+// Declare a per-CPU array to be used as scratch space.
+struct
+{
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __type(key, uint64_t); // key is pid_tgid
+    __uint(value_size, COMMAND_SCRATCH_SIZE);
+    __uint(max_entries, 1);
+} temp SEC(".maps");
+
+struct
+{
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __type(key, uint64_t); // key is pid_tgid
+    __uint(value_size, COMMAND_SCRATCH_SIZE);
+    __uint(max_entries, 1024);
+} scratch_space SEC(".maps");
+
 // The non variable fields from the process_md_t struct.
 // Note: this must be kept in sync with the C# version in process_monitor.Library's ProcessMonitorBPFLoader.cs
 typedef struct
@@ -22,14 +42,12 @@ typedef struct
     uint8_t operation;
 } process_info_t;
 
-#define MAX_PATH (496 - sizeof(process_info_t))
-
 // LRU hash for storing the image path of a process.
 struct
 {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __type(key, uint32_t); // key is the process id.
-    __type(value, char[MAX_PATH]);
+    __type(value, char[IMAGE_PATH_SIZE]);
     __uint(max_entries, 1024);
 } process_map SEC(".maps");
 
@@ -38,7 +56,7 @@ struct
 {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __type(key, uint32_t); // key is the process id.
-    __type(value, char[MAX_PATH]);
+    __type(value, char[COMMAND_SCRATCH_SIZE]);
     __uint(max_entries, 1024);
 } command_map SEC(".maps");
 
@@ -52,7 +70,36 @@ struct
 // The following line is optional, but is used to verify
 // that the ProcesMonitor prototype is correct or the compiler
 // would complain when the function is actually defined below.
-process_hook_t ProcesMonitor;
+process_hook_t ProcessMonitor;
+
+__attribute__((always_inline)) void*
+get_scratch_space()
+{
+    uint64_t current_pid_tgid_key = bpf_get_current_pid_tgid();
+    void* scratch = bpf_map_lookup_elem(&temp, &current_pid_tgid_key);
+    if (!scratch) {
+        uint32_t temp_key = 0;
+        // Allocate scratch space for this CPU.
+        scratch = bpf_map_lookup_elem(&temp, &temp_key);
+
+        if (!scratch) {
+            return NULL;
+        }
+
+        // Insert into the LRU map.
+        bpf_map_update_elem(&scratch_space, &current_pid_tgid_key, scratch, BPF_ANY);
+
+        // Get the pointer to the scratch space.
+        scratch = bpf_map_lookup_elem(&scratch_space, &current_pid_tgid_key);
+        if (!scratch) {
+            return NULL;
+        }
+
+        // Initialize the scratch space.
+        memset(scratch, 0, COMMAND_SCRATCH_SIZE);
+    }
+    return scratch;
+}
 
 SEC("process")
 int
@@ -72,18 +119,28 @@ ProcessMonitor(process_md_t* ctx)
     process_info.operation = ctx->operation;
 
     if (process_info.operation == PROCESS_OPERATION_CREATE) {
-        uint8_t buffer[MAX_PATH];
+        void* buffer = get_scratch_space();
 
-        memset(buffer, 0, sizeof(buffer));
+        if (buffer == NULL) {
+            // TODO: log ETW?
+            return 0;
+        }
 
-        memcpy_s(buffer, sizeof(buffer), ctx->command_start, ctx->command_end - ctx->command_start);
+        int command_length = ctx->command_end - ctx->command_start;
+        if (command_length > COMMAND_SCRATCH_SIZE) {
+            command_length = COMMAND_SCRATCH_SIZE; // Better to truncate than to get nothing
+        }
+
+        // Use COMMAND_SCRATCH_SIZE -1 to ensure the last byte stays a 0 for null termination
+        memcpy_s(buffer, COMMAND_SCRATCH_SIZE - 1, ctx->command_start, command_length);
+
         bpf_map_update_elem(&command_map, &process_info.process_id, buffer, BPF_ANY);
 
         // Reset the buffer.
-        memset(buffer, 0, sizeof(buffer));
+        memset(buffer, 0, COMMAND_SCRATCH_SIZE);
 
-        // Copy image path into the LRU hash.
-        bpf_process_get_image_path(ctx, buffer, sizeof(buffer));
+        // Copy image path into the LRU hash.  Note we use IMAGE_PATH_SIZE - 1 to leave a guaranteed null terminator
+        bpf_process_get_image_path(ctx, buffer, IMAGE_PATH_SIZE - 1);
         bpf_map_update_elem(&process_map, &process_info.process_id, buffer, BPF_ANY);
     }
     bpf_ringbuf_output(&process_ringbuf, &process_info, sizeof(process_info), 0);
