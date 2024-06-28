@@ -147,7 +147,7 @@ namespace process_monitor.Library
 
         private static unsafe string GetUnicodeStringFromBpfMapFD(int mapFD, process_info_t* evt)
         {
-            Span<byte> utf16BytesOnStack = stackalloc byte[1024];
+            Span<byte> utf16BytesOnStack = stackalloc byte[64 * 1024];
 
             var addrOfPID = (byte*)evt + process_info_t_process_id_offset;
             var byteSpanOfPID = new Span<byte>(addrOfPID, sizeof(uint));
