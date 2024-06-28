@@ -145,17 +145,18 @@ namespace process_monitor.Library
             return (map, mapFD);
         }
 
-        private static unsafe string GetStringFromBpfMapFD(int mapFD, process_info_t* evt)
+        private static unsafe string GetUnicodeStringFromBpfMapFD(int mapFD, process_info_t* evt)
         {
-            Span<byte> utf8BytesOnStack = stackalloc byte[1024];
+            Span<byte> utf16BytesOnStack = stackalloc byte[1024];
 
             var addrOfPID = (byte*)evt + process_info_t_process_id_offset;
             var byteSpanOfPID = new Span<byte>(addrOfPID, sizeof(uint));
 
             PInvokes.bpf_map_lookup_elem(mapFD,
                                          key: ref MemoryMarshal.AsRef<byte>(byteSpanOfPID),
-                                         value: ref MemoryMarshal.AsRef<byte>(utf8BytesOnStack));
-            return Encoding.UTF8.GetString(utf8BytesOnStack).Trim('\0');
+                                         value: ref MemoryMarshal.AsRef<byte>(utf16BytesOnStack));
+
+            return Encoding.Unicode.GetString(utf16BytesOnStack).Trim('\0');
         }
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -168,8 +169,8 @@ namespace process_monitor.Library
 
             process_info_t* evt = (process_info_t*)data;
 
-            var file_name_str = GetStringFromBpfMapFD(process_map_fd, evt);
-            var command_line_str = GetStringFromBpfMapFD(command_map_fd, evt);
+            var file_name_str = GetUnicodeStringFromBpfMapFD(process_map_fd, evt);
+            var command_line_str = GetUnicodeStringFromBpfMapFD(command_map_fd, evt);
 
             if (evt->operation == 0 /* 0 == PROCESS_OPERATION_COMPLETE */)
             {
