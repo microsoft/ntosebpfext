@@ -73,11 +73,11 @@ TEST_CASE("process_invoke", "[ntosebpfext]")
     usersime_invoke_process_creation_notify_routine(
         reinterpret_cast<PEPROCESS>(&fake_eprocess), (HANDLE)1, &create_info);
 
-    std::string test_command_line = std::string(
-        reinterpret_cast<char*>(client_context.process_context.command_start),
-        reinterpret_cast<char*>(client_context.process_context.command_end));
+    std::wstring test_command_line = std::wstring(
+        reinterpret_cast<wchar_t*>(client_context.process_context.command_start),
+        reinterpret_cast<wchar_t*>(client_context.process_context.command_end));
 
-    REQUIRE(test_command_line == std::string("notepad.exe foo.txt"));
+    REQUIRE(test_command_line == std::wstring(L"notepad.exe foo.txt"));
 
     REQUIRE(client_context.process_context.process_id == 1);
     REQUIRE((HANDLE)client_context.process_context.parent_process_id == create_info.ParentProcessId);
@@ -137,11 +137,11 @@ TEST_CASE("process exit codes", "[ntosebpfext]")
 
     usersime_set_process_exit_status_callback([](PEPROCESS process) -> NTSTATUS { return expectedExitCode; });
 
-    std::string test_command_line = std::string(
-        reinterpret_cast<char*>(client_context.process_context.command_start),
-        reinterpret_cast<char*>(client_context.process_context.command_end));
+    std::wstring test_command_line = std::wstring(
+        reinterpret_cast<wchar_t*>(client_context.process_context.command_start),
+        reinterpret_cast<wchar_t*>(client_context.process_context.command_end));
 
-    REQUIRE(test_command_line == std::string("notepad.exe foo.txt"));
+    REQUIRE(test_command_line == std::wstring(L"notepad.exe foo.txt"));
 
     REQUIRE(client_context.process_context.process_id == 1);
     REQUIRE((HANDLE)client_context.process_context.parent_process_id == create_info.ParentProcessId);
@@ -206,11 +206,11 @@ TEST_CASE("process create and exit times", "[ntosebpfext]")
     usersime_invoke_process_creation_notify_routine(
         reinterpret_cast<PEPROCESS>(&fake_eprocess), (HANDLE)1, &create_info);
 
-    std::string test_command_line = std::string(
-        reinterpret_cast<char*>(client_context.process_context.command_start),
-        reinterpret_cast<char*>(client_context.process_context.command_end));
+    std::wstring test_command_line = std::wstring(
+        reinterpret_cast<wchar_t*>(client_context.process_context.command_start),
+        reinterpret_cast<wchar_t*>(client_context.process_context.command_end));
 
-    REQUIRE(test_command_line == std::string("notepad.exe foo.txt"));
+    REQUIRE(test_command_line == std::wstring(L"notepad.exe foo.txt"));
 
     REQUIRE(client_context.process_context.process_id == 1);
     REQUIRE((HANDLE)client_context.process_context.parent_process_id == create_info.ParentProcessId);
