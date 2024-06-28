@@ -9,7 +9,11 @@
 #include "ebpf_ntos_hooks.h"
 
 #define IMAGE_PATH_SIZE (1024)
-#define COMMAND_SCRATCH_SIZE (32 * 1024) // 32k characters is the max char count that fits in a UNICODE_STRING
+
+// 64k bytes is the max byte count that fits in a UNICODE_STRING (because Length is a USHORT).  Exactly 64k seems
+// to be a little too high for eBPF, so we subtract a few bytes and the likelihood this actually truncates anything
+// important is pretty low.
+#define COMMAND_SCRATCH_SIZE ((64 * 1024) - 16)
 
 // Declare a per-CPU array to be used as scratch space.
 struct
