@@ -50,6 +50,7 @@ jobs:
     with:
       ref: ${{ github.ref }}
       build_artifact: Build-x64
+      build_nuget: true
       configurations: '["Debug", "Release"]'
 
   # Run the ntosebpfext unit tests in GitHub.

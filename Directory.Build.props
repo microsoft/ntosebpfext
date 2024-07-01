@@ -9,6 +9,11 @@
     <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     <CodeAnalysisRuleSet>$(SolutionDir)Analyze.default.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <eBPFExtensionsVersionMajor>0</eBPFExtensionsVersionMajor>
+    <eBPFExtensionsVersionMinor>1</eBPFExtensionsVersionMinor>
+    <eBPFExtensionsVersionRevision>0</eBPFExtensionsVersionRevision>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(AddressSanitizer)'=='True' And '$(MSBuildProjectExtension)'!='.csproj'">
     <EnableASAN>true</EnableASAN>
   </PropertyGroup>
