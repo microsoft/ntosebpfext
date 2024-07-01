@@ -4,7 +4,7 @@
 -->
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <OutputPath>$(MSBuildThisFileDirectory)\..\..\$(Platform)\$(Configuration)</OutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\$(Platform)\$(Configuration)</OutputPath>
     <PackageId>eBPF-for-Windows.Extensions</PackageId>
     <IsPackable>true</IsPackable>
     <TargetFramework>netstandard2.0</TargetFramework>

@@ -194,7 +194,7 @@ jobs:
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: ebpf-for-windows-extensions - NuGet package (${{inputs.build_artifact}}_${{env.BUILD_CONFIGURATION}})
-        path: ${{github.workspace}}/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/eBPF-for-Windows-Extensions.*.nupkg
+        path: ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\eBPF-for-Windows-Extensions.*.nupkg
 
     - name: Check for crash dumps
       # Check for crash dumps even if the workflow failed.
