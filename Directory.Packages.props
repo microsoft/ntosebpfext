@@ -8,8 +8,8 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Try to keep these in alphabetical order -->
-    <PackageVersion Include="DotNet.ReproducibleBuilds" Version="1.1.1"/>
-    <PackageVersion Include="DotNet.ReproducibleBuilds.Isolated" Version="1.1.1"/>
+    <PackageVersion Include="DotNet.ReproducibleBuilds" Version="1.2.4"/>
+    <PackageVersion Include="DotNet.ReproducibleBuilds.Isolated" Version="1.2.4"/>
     <PackageVersion Include="eBPF-for-Windows" Version="0.17.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />

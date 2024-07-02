@@ -14,7 +14,6 @@
     <PackageDescription>eBPF for Windows Extensions</PackageDescription>
     <PackageVersion>$(eBPFExtensionsVersionMajor).$(eBPFExtensionsVersionMinor).$(eBPFExtensionsVersionRevision)</PackageVersion>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/Microsoft/ntosebpfext</PackageProjectUrl>
     <PackageTags>native ebpf</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
