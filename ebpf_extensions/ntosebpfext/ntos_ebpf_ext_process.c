@@ -315,8 +315,8 @@ typedef struct _process_notify_context
     process_md_t process_md;
     PEPROCESS process;
     PPS_CREATE_NOTIFY_INFO create_info;
-    UTF8_STRING command_line_utf8;
-    UTF8_STRING image_file_name_utf8;
+    UNICODE_STRING command_line;
+    UNICODE_STRING image_file_name;
 } process_notify_context_t;
 
 void
@@ -324,7 +324,7 @@ _ebpf_process_create_process_notify_routine_ex(
     _Inout_ PEPROCESS process, _In_ HANDLE process_id, _Inout_opt_ PPS_CREATE_NOTIFY_INFO create_info)
 {
     process_notify_context_t process_notify_context = {
-        .process_md = {0}, .process = process, .create_info = create_info};
+        .process_md = {0}, .process = process, .create_info = create_info, .command_line = {0}, .image_file_name = {0}};
 
     EBPF_EXT_LOG_ENTRY();
     ebpf_extension_hook_client_t* client_context;
@@ -334,26 +334,18 @@ _ebpf_process_create_process_notify_routine_ex(
 
     if (create_info != NULL) {
         if (create_info->CommandLine != NULL) {
-            NTSTATUS status =
-                RtlUnicodeStringToUTF8String(&process_notify_context.command_line_utf8, create_info->CommandLine, TRUE);
-            if (!NT_SUCCESS(status)) {
-                goto Exit;
-            }
+            process_notify_context.command_line = *create_info->CommandLine;
         }
         if (create_info->ImageFileName != NULL) {
-            NTSTATUS status = RtlUnicodeStringToUTF8String(
-                &process_notify_context.image_file_name_utf8, create_info->ImageFileName, TRUE);
-            if (!NT_SUCCESS(status)) {
-                goto Exit;
-            }
+            process_notify_context.image_file_name = *create_info->ImageFileName;
         }
         process_notify_context.process_md.operation = PROCESS_OPERATION_CREATE;
         process_notify_context.process_md.parent_process_id = (uint64_t)create_info->ParentProcessId;
         process_notify_context.process_md.creating_process_id = (uint64_t)create_info->CreatingThreadId.UniqueProcess;
         process_notify_context.process_md.creating_thread_id = (uint64_t)create_info->CreatingThreadId.UniqueThread;
-        process_notify_context.process_md.command_start = (uint8_t*)process_notify_context.command_line_utf8.Buffer;
+        process_notify_context.process_md.command_start = (uint8_t*)process_notify_context.command_line.Buffer;
         process_notify_context.process_md.command_end =
-            (uint8_t*)process_notify_context.command_line_utf8.Buffer + process_notify_context.command_line_utf8.Length;
+            (uint8_t*)process_notify_context.command_line.Buffer + process_notify_context.command_line.Length;
     } else {
         process_notify_context.process_md.operation = PROCESS_OPERATION_DELETE;
         process_notify_context.process_md.exit_time = PsGetProcessExitTime().QuadPart;
@@ -391,15 +383,6 @@ _ebpf_process_create_process_notify_routine_ex(
             ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, client_context);
     }
 
-Exit:
-    if (process_notify_context.command_line_utf8.Buffer != NULL) {
-        RtlFreeUTF8String(&process_notify_context.command_line_utf8);
-    }
-
-    if (process_notify_context.image_file_name_utf8.Buffer != NULL) {
-        RtlFreeUTF8String(&process_notify_context.image_file_name_utf8);
-    }
-
     EBPF_EXT_LOG_EXIT();
 }
 
@@ -408,16 +391,14 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
 {
     process_notify_context_t* process_notify_context = (process_notify_context_t*)process_md;
     int32_t result = 0;
-    if (process_notify_context->image_file_name_utf8.Length > path_length) {
+    if (process_notify_context->image_file_name.Length > path_length) {
         return -EINVAL;
     }
-    if (process_notify_context->image_file_name_utf8.Buffer != NULL) {
-        if (path_length >= process_notify_context->image_file_name_utf8.Length) {
+    if (process_notify_context->image_file_name.Buffer != NULL) {
+        if (path_length >= process_notify_context->image_file_name.Length) {
             memcpy(
-                path,
-                process_notify_context->image_file_name_utf8.Buffer,
-                process_notify_context->image_file_name_utf8.Length);
-            result = process_notify_context->image_file_name_utf8.Length;
+                path, process_notify_context->image_file_name.Buffer, process_notify_context->image_file_name.Length);
+            result = process_notify_context->image_file_name.Length;
         }
     }
     return result;
