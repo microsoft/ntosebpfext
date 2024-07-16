@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) Microsoft Corporation
+     SPDX-License-Identifier: MIT
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\$(Platform)\$(Configuration)</OutputPath>
+    <PackageId>eBPF-for-Windows.Extensions</PackageId>
+    <IsPackable>true</IsPackable>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>eBPF for Windows Contributors</Authors>
+    <Owners>eBPF for Windows Contributors</Owners>
+    <Title>eBPF for Windows Extensions</Title>
+    <PackageDescription>eBPF for Windows Extensions</PackageDescription>
+    <PackageVersion>$(eBPFExtensionsVersionMajor).$(eBPFExtensionsVersionMinor).$(eBPFExtensionsVersionRevision)</PackageVersion>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>native ebpf</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="eBPF-for-Windows" />
+  </ItemGroup>
+
+  <Target Name="_Get_NetNativeContent" BeforeTargets="PrepareForBuild;_IntermediatePack">
+    <ItemGroup>
+      <None Include="README.md" PackagePath="." Pack="true" />
+      <None Include="..\..\$(Platform)\$(Configuration)\ntosebpfext.sys" PackagePath="build\native\bin" Pack="true" />
+      <None Include="..\..\$(Platform)\$(Configuration)\ntosebpfext.pdb" PackagePath="build\native\bin" Pack="true" />
+      <None Include="..\..\$(Platform)\$(Configuration)\neteventebpfext.sys" PackagePath="build\native\bin" Pack="true" />
+      <None Include="..\..\$(Platform)\$(Configuration)\neteventebpfext.pdb" PackagePath="build\native\bin" Pack="true" />
+    </ItemGroup>
+  </Target>
+</Project>
