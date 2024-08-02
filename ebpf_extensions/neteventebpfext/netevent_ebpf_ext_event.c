@@ -168,12 +168,13 @@ uint64_t _ebpf_netevent_event_hook_provider_registration_count = 0;
 // Event Program Information NPI Provider.
 //
 static ebpf_program_data_t _ebpf_netevent_event_program_data = {
-    .header = {.version = EBPF_PROGRAM_DATA_CURRENT_VERSION, .size = EBPF_PROGRAM_DATA_CURRENT_VERSION_SIZE},
+    .header = EBPF_PROGRAM_DATA_HEADER,
     .program_info = &_ebpf_netevent_event_program_info,
     .program_type_specific_helper_function_addresses = NULL, // No helper functions exposed to client eBPF programs.
     .context_create = _ebpf_netevent_program_context_create,
     .context_destroy = _ebpf_netevent_program_context_destroy,
     .required_irql = PASSIVE_LEVEL,
+    .capabilities = {.supports_context_header = true},
 };
 static ebpf_extension_data_t _ebpf_netevent_event_program_info_provider_data = {
     .header = {EBPF_EXTENSION_NPI_PROVIDER_VERSION, sizeof(_ebpf_netevent_event_program_data)},
@@ -352,6 +353,15 @@ ebpf_ext_unregister_netevent()
 }
 
 //
+// Event Hook NPI client helper functions (invoked by NetEvent as the NPI provider).
+//
+typedef struct _netevent_event_notify_context
+{
+    EBPF_CONTEXT_HEADER;
+    netevent_event_md_t netevent_event_md;
+} netevent_event_notify_context_t;
+
+//
 // eBPF NetEvent Program Information NPI helper routines.
 //
 static ebpf_result_t
@@ -364,7 +374,7 @@ _ebpf_netevent_program_context_create(
 {
     EBPF_EXT_LOG_ENTRY();
     ebpf_result_t result;
-    netevent_event_md_t* netevent_event_context = NULL;
+    netevent_event_notify_context_t* netevent_event_context = NULL;
 
     if (context_in == NULL || context_size_in < sizeof(netevent_event_md_t)) {
         EBPF_EXT_LOG_MESSAGE(
@@ -382,17 +392,17 @@ _ebpf_netevent_program_context_create(
     *context = NULL;
 
     // Allocate memory for the context.
-    netevent_event_context = (netevent_event_md_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(netevent_event_md_t), EBPF_NETEVENT_EXTENSION_POOL_TAG);
+    netevent_event_context = (netevent_event_notify_context_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(netevent_event_notify_context_t), EBPF_NETEVENT_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
         EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, netevent_event_context, "netevent_event_context", result);
 
     // Copy the context from the caller.
-    memcpy(netevent_event_context, context_in, sizeof(netevent_event_md_t));
+    memcpy(&netevent_event_context->netevent_event_md, context_in, sizeof(netevent_event_md_t));
 
     // Copy the event's pointer & size from the caller, to the out context.
-    netevent_event_context->event_data_start = (uint8_t*)data_in;
-    netevent_event_context->event_data_end = (uint8_t*)data_in + data_size_in;
+    netevent_event_context->netevent_event_md.event_data_start = (uint8_t*)data_in;
+    netevent_event_context->netevent_event_md.event_data_end = (uint8_t*)data_in + data_size_in;
     *context = netevent_event_context;
     netevent_event_context = NULL;
     result = EBPF_SUCCESS;
@@ -415,7 +425,7 @@ _ebpf_netevent_program_context_destroy(
 {
     EBPF_EXT_LOG_ENTRY();
 
-    netevent_event_md_t* netevent_event_context = (netevent_event_md_t*)context;
+    netevent_event_notify_context_t* netevent_event_context = (netevent_event_notify_context_t*)context;
     netevent_event_md_t* netevent_event_context_out = (netevent_event_md_t*)context_out;
 
     if (!netevent_event_context) {
@@ -424,7 +434,7 @@ _ebpf_netevent_program_context_destroy(
 
     if (context_out != NULL && *context_size_out >= sizeof(netevent_event_md_t)) {
         // Copy the context to the caller.
-        memcpy(netevent_event_context_out, netevent_event_context, sizeof(netevent_event_md_t));
+        memcpy(netevent_event_context_out, &netevent_event_context->netevent_event_md, sizeof(netevent_event_md_t));
         *context_size_out = sizeof(netevent_event_md_t);
 
         // Zero out the event context info.
@@ -436,13 +446,16 @@ _ebpf_netevent_program_context_destroy(
     }
 
     // Copy the event data to 'data_out'.
-    if (data_out != NULL &&
-        *data_size_out >= (size_t)(netevent_event_context->event_data_end - netevent_event_context->event_data_start)) {
+    if (data_out != NULL && *data_size_out >= (size_t)(
+                                                  netevent_event_context->netevent_event_md.event_data_end -
+                                                  netevent_event_context->netevent_event_md.event_data_start)) {
         memcpy(
             data_out,
-            netevent_event_context->event_data_start,
-            netevent_event_context->event_data_end - netevent_event_context->event_data_start);
-        *data_size_out = netevent_event_context->event_data_end - netevent_event_context->event_data_start;
+            netevent_event_context->netevent_event_md.event_data_start,
+            netevent_event_context->netevent_event_md.event_data_end -
+                netevent_event_context->netevent_event_md.event_data_start);
+        *data_size_out = netevent_event_context->netevent_event_md.event_data_end -
+                         netevent_event_context->netevent_event_md.event_data_start;
     } else {
         *data_size_out = 0;
     }
@@ -452,14 +465,6 @@ _ebpf_netevent_program_context_destroy(
 Exit:
     EBPF_EXT_LOG_EXIT();
 }
-
-//
-// Event Hook NPI client helper functions (invoked by NetEvent as the NPI provider).
-//
-typedef struct _netevent_event_notify_context
-{
-    netevent_event_md_t netevent_event_md;
-} netevent_event_notify_context_t;
 
 void
 _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)

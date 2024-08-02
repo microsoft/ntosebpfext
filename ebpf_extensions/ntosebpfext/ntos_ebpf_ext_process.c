@@ -47,12 +47,13 @@ static ebpf_helper_function_addresses_t _ebpf_process_helper_function_address_ta
 // Process Program Information NPI Provider.
 //
 static ebpf_program_data_t _ebpf_process_program_data = {
-    .header = {EBPF_PROGRAM_DATA_CURRENT_VERSION, EBPF_PROGRAM_DATA_CURRENT_VERSION_SIZE},
+    .header = EBPF_PROGRAM_DATA_HEADER,
     .program_info = &_ebpf_process_program_info,
     .program_type_specific_helper_function_addresses = &_ebpf_process_helper_function_address_table,
     .context_create = _ebpf_process_context_create,
     .context_destroy = _ebpf_process_context_destroy,
     .required_irql = PASSIVE_LEVEL,
+    .capabilities = {.supports_context_header = true},
 };
 
 static ebpf_extension_data_t _ebpf_process_program_info_provider_data = {
@@ -223,6 +224,16 @@ Exit:
     EBPF_EXT_RETURN_NTSTATUS(status);
 }
 
+typedef struct _process_notify_context
+{
+    EBPF_CONTEXT_HEADER;
+    process_md_t process_md;
+    PEPROCESS process;
+    PPS_CREATE_NOTIFY_INFO create_info;
+    UNICODE_STRING command_line;
+    UNICODE_STRING image_file_name;
+} process_notify_context_t;
+
 static ebpf_result_t
 _ebpf_process_context_create(
     _In_reads_bytes_opt_(data_size_in) const uint8_t* data_in,
@@ -233,7 +244,7 @@ _ebpf_process_context_create(
 {
     EBPF_EXT_LOG_ENTRY();
     ebpf_result_t result;
-    process_md_t* process_context = NULL;
+    process_notify_context_t* process_context = NULL;
 
     *context = NULL;
 
@@ -243,8 +254,8 @@ _ebpf_process_context_create(
         goto Exit;
     }
 
-    process_context =
-        (process_md_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, sizeof(process_md_t), EBPF_EXTENSION_POOL_TAG);
+    process_context = (process_notify_context_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(process_notify_context_t), EBPF_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
         EBPF_EXT_TRACELOG_KEYWORD_PROCESS, process_context, "process_context", result);
 
@@ -252,8 +263,8 @@ _ebpf_process_context_create(
     memcpy(process_context, context_in, sizeof(process_md_t));
 
     // Replace the process_id_start and process_id_end with pointers to data_in.
-    process_context->command_start = (uint8_t*)data_in;
-    process_context->command_end = (uint8_t*)data_in + data_size_in;
+    process_context->process_md.command_start = (uint8_t*)data_in;
+    process_context->process_md.command_end = (uint8_t*)data_in + data_size_in;
 
     *context = process_context;
     process_context = NULL;
@@ -277,7 +288,7 @@ _ebpf_process_context_destroy(
 {
     EBPF_EXT_LOG_ENTRY();
 
-    process_md_t* process_context = (process_md_t*)context;
+    process_notify_context_t* process_context = (process_notify_context_t*)context;
     process_md_t* process_context_out = (process_md_t*)context_out;
 
     if (!process_context) {
@@ -286,7 +297,7 @@ _ebpf_process_context_destroy(
 
     if (context_out != NULL && *context_size_out >= sizeof(process_md_t)) {
         // Copy the context to the caller.
-        memcpy(process_context_out, process_context, sizeof(process_md_t));
+        memcpy(process_context_out, &process_context->process_md, sizeof(process_md_t));
 
         // Zero out the command_start and command_end.
         process_context_out->command_start = 0;
@@ -297,9 +308,14 @@ _ebpf_process_context_destroy(
     }
 
     // Copy the command to the data_out.
-    if (data_out != NULL && *data_size_out >= (size_t)(process_context->command_end - process_context->command_start)) {
-        memcpy(data_out, process_context->command_start, process_context->command_end - process_context->command_start);
-        *data_size_out = process_context->command_end - process_context->command_start;
+    if (data_out != NULL &&
+        *data_size_out >=
+            (size_t)(process_context->process_md.command_end - process_context->process_md.command_start)) {
+        memcpy(
+            data_out,
+            process_context->process_md.command_start,
+            process_context->process_md.command_end - process_context->process_md.command_start);
+        *data_size_out = process_context->process_md.command_end - process_context->process_md.command_start;
     } else {
         *data_size_out = 0;
     }
@@ -309,15 +325,6 @@ _ebpf_process_context_destroy(
 Exit:
     EBPF_EXT_LOG_EXIT();
 }
-
-typedef struct _process_notify_context
-{
-    process_md_t process_md;
-    PEPROCESS process;
-    PPS_CREATE_NOTIFY_INFO create_info;
-    UNICODE_STRING command_line;
-    UNICODE_STRING image_file_name;
-} process_notify_context_t;
 
 void
 _ebpf_process_create_process_notify_routine_ex(
@@ -389,7 +396,8 @@ _ebpf_process_create_process_notify_routine_ex(
 _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
     _In_ process_md_t* process_md, _Out_writes_bytes_(path_length) uint8_t* path, uint32_t path_length)
 {
-    process_notify_context_t* process_notify_context = (process_notify_context_t*)process_md;
+    process_notify_context_t* process_notify_context =
+        CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
     int32_t result = 0;
     if (process_notify_context->image_file_name.Length > path_length) {
         return -EINVAL;

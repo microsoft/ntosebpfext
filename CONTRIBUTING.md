@@ -93,7 +93,7 @@ Do the following once:
 1. Open a command prompt as admin
 1. `cd <your local clone root>`
 1. `cd x64\Debug\bin\process_monitor.Tests\win-x64`
-1. `powershell -file .\Install-eBpfForWindows.ps1 0.17.0`
+1. `powershell -file .\Install-eBpfForWindows.ps1 0.18.0`
 1. `powershell -file .\Setup-ProcessMonitorTests.ps1`
 
 Then do this each time you want to re-run the tests:
