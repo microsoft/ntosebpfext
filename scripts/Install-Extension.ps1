@@ -1,4 +1,3 @@
-
 <#
 # Copyright (c) Microsoft Corporation
 # SPDX-License-Identifier: MIT
@@ -7,7 +6,7 @@
 This script provides helpers to install or uninstall ebpf extensions.
 
 .PARAMETER Extension
-    Specifies the extension to install. This script only supports "neteventebpfext" as of now.
+    Specifies the extension to install. This MUST be one of ("neteventebpfext", "ntosebpfext").
 
 .PARAMETER Action
     Specifies the action to take. This MUST be either "Install" or "Uninstall".
@@ -31,7 +30,7 @@ param (
     [ValidateSet("Install", "Uninstall")]
     [string]$Action,
     [Parameter(Mandatory=$true)]
-    [ValidateSet("neteventebpfext")]
+    [ValidateSet("neteventebpfext", "ntosebpfext")]
     [string]$Extension,
     [Parameter(Mandatory=$false)]
     [string]$BinaryDirectory = (Get-Location).Path
@@ -48,7 +47,7 @@ Stops and deletes a service.
 The name of the service to cleanup.
 
 .EXAMPLE
-Clear-Serbvice -ServiceName "neteventebpfext"
+Clear-Service -ServiceName "neteventebpfext"
 #>
 function Clear-Service(
     [Parameter(Mandatory=$true)]
@@ -163,15 +162,6 @@ function Install-Service(
 
 <#
 .SYNOPSIS
-This function sets up paths and names needed for installing/uninstalling neteventebpfext
-#>
-function Set-Path-Neteventebpfext {
-    $script:ExtPath = $BinaryDirectory + "\neteventebpfext.sys"
-    $script:ServiceName = "neteventebpfext"
-    $script:BpfExportPath = $BinaryDirectory + "\netevent_ebpf_ext_export_program_info.exe"
-}
-<#
-.SYNOPSIS
 This function installs the service and updates the eBPF store.
 
 .PARAMETER ServiceName
@@ -227,8 +217,29 @@ function Uninstall-Extension(
     Write-Verbose "Uninstall complete!"
 }
 
+<#
+.SYNOPSIS
+This function sets up paths and names needed for installing/uninstalling neteventebpfext
+#>
+function Set-Path-Neteventebpfext {
+    $script:ExtPath =  Join-Path -Path $BinaryDirectory -ChildPath "neteventebpfext.sys"
+    $script:ServiceName = "neteventebpfext"
+    $script:BpfExportPath =  Join-Path -Path $BinaryDirectory -ChildPath "netevent_ebpf_ext_export_program_info.exe"
+}
+
+<#
+.SYNOPSIS
+This function sets up paths and names needed for installing/uninstalling ntosebpfext
+#>
+function Set-Path-Ntosebpfext {
+    $script:ExtPath =  Join-Path -Path $BinaryDirectory -ChildPath "ntosebpfext.sys"
+    $script:ServiceName = "ntosebpfext"
+    $script:BpfExportPath =  Join-Path -Path $BinaryDirectory -ChildPath "ntos_ebpf_ext_export_program_info.exe"
+}
+
 switch($Extension) {
     "neteventebpfext" { Set-Path-Neteventebpfext }
+    "ntosebpfext" { Set-Path-Ntosebpfext }
 }
 
 if ($Action -eq "Install") {
