@@ -57,13 +57,13 @@ function Clear-Service(
     $StopSuccess = $false
     try {
         Stop-Service $ServiceName
-        for ($i = 0; $i -lt 100; $i++) {
+        for ($i = 0; $i -lt 10; $i++) {
             if (-not (Get-Service $ServiceName -ErrorAction Ignore) -or
                 (Get-Service $ServiceName).Status -eq "Stopped") {
                 $StopSuccess = $true
                 break;
             }
-            Start-Sleep -Milliseconds 100
+            Start-Sleep -Seconds 1
         }
         if (!$StopSuccess) {
             Write-Verbose "$ServiceName failed to stop"
@@ -84,7 +84,7 @@ function Clear-Service(
                 $DeleteSuccess = $true
                 break;
             }
-            Start-Sleep -Milliseconds 10
+            Start-Sleep -Seconds 1
         }
         if (!$DeleteSuccess) {
             Write-Verbose "Failed to clean up $ServiceName!"
@@ -109,9 +109,9 @@ function Start-Service-With-Retry(
     Write-Verbose "Start-Service $ServiceName"
     $StartSuccess = $false
 
-    for ($i=0; $i -lt 100; $i++) {
+    for ($i=0; $i -lt 10; $i++) {
         try {
-            Start-Sleep -Milliseconds 10
+            Start-Sleep -Seconds 1
             Start-Service $ServiceName
             $StartSuccess = $true
             break
