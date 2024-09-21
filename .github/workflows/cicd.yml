@@ -61,7 +61,6 @@ jobs:
     with:
       ref: ${{ github.ref }}
       build_artifact: Build-x64-onebranch
-      build_nuget: true
       build_options: /p:BuildOneBranch='True' /t:tools\onebranch
       configurations: '["Debug", "Release"]'
 
