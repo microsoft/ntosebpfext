@@ -53,6 +53,17 @@ jobs:
       build_nuget: true
       configurations: '["Debug", "Release"]'
 
+  # Perform the onebranch build.
+  onebranch:
+    # Always run this job.
+    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      ref: ${{ github.ref }}
+      build_artifact: Build-x64-onebranch
+      build_options: /p:BuildOneBranch='True' /t:tools\onebranch
+      configurations: '["Debug", "Release"]'
+
   # Run the ntosebpfext unit tests in GitHub.
   ntosebpfext_units:
     # Always run this job.
