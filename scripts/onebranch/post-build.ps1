@@ -1,15 +1,6 @@
 # Copyright (c) Microsoft Corporation
 # SPDX-License-Identifier: MIT
 
-# Get the path where this script is located
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-
-# Change the parent directory for the script directory
-Set-Location $scriptPath\..\..
-
-# Copyright (c) eBPF for Windows contributors
-# SPDX-License-Identifier: MIT
-
 # Copy signed files from build\bin\amd64[fre|chk] to the output directory and then rebuild the nupkg and msi
 
 # Get the path where this script is located
