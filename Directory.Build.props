@@ -17,6 +17,9 @@
   <PropertyGroup Condition="'$(AddressSanitizer)'=='True' And '$(MSBuildProjectExtension)'!='.csproj'">
     <EnableASAN>true</EnableASAN>
   </PropertyGroup>
+    <PropertyGroup>
+    <ClangExec>"$(VsInstallRoot)\VC\Tools\Llvm\bin\clang.exe"</ClangExec>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

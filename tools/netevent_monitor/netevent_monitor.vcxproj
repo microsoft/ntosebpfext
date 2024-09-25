@@ -161,7 +161,7 @@ $(Outdir)netevent_ebpf_ext_export_program_info.exe</Command>
       <FileType>CppCode</FileType>
       <Outputs>$(OutputPath)netevent_monitor.o</Outputs>
       <Command>
-        clang $(ClangFlags) $(ClangIncludes) -I$(SolutionDir)include -c bpf\netevent_monitor.c -o $(OutputPath)netevent_monitor.o
+        $(ClangExec) $(ClangFlags) $(ClangIncludes) -I$(SolutionDir)include -c bpf\netevent_monitor.c -o $(OutputPath)netevent_monitor.o
         pushd $(OutDir)
         powershell -NonInteractive -ExecutionPolicy Unrestricted $(EbpfBinPath)\Convert-BpfToNative.ps1 -FileName %(Filename) -Type netevent_monitor -IncludeDir $(EbpfIncludePath) -Platform $(Platform) -Configuration $(Configuration)
         popd

@@ -92,7 +92,7 @@ $(Outdir)ntos_ebpf_ext_export_program_info.exe</Command>
       <FileType>CppCode</FileType>
       <Outputs>$(OutputPath)process_monitor.o</Outputs>
       <Command>
-        clang $(ClangFlags) $(ClangIncludes) -I$(SolutionDir)include -c process_monitor.c -o $(OutputPath)process_monitor.o
+        $(ClangExec) $(ClangFlags) $(ClangIncludes) -I$(SolutionDir)include -c process_monitor.c -o $(OutputPath)process_monitor.o
         pushd $(OutDir)
         powershell -NonInteractive -ExecutionPolicy Unrestricted $(EbpfBinPath)\Convert-BpfToNative.ps1 -FileName %(Filename) -Type process -IncludeDir $(EbpfIncludePath) -Platform $(Platform) -Configuration $(Configuration)
         popd
