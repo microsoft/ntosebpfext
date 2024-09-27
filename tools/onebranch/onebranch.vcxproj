@@ -114,7 +114,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /yie $(OutDir) $(SolutionDir)build\bin\x64_Debug</Command>
+      <Command>
+        xcopy /yie $(OutDir) $(SolutionDir)build\bin\x64_Debug
+        xcopy /yie $(SolutionDir)scripts\Install-Extension.ps1 $(SolutionDir)build\bin\x64_Debug\
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64' And '$(BuildOneBranch)'=='True'">
@@ -133,7 +136,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /yie $(OutDir) $(SolutionDir)build\bin\x64_Release</Command>
+      <Command>
+        xcopy /yie $(OutDir) $(SolutionDir)build\bin\x64_Release
+        xcopy /yie $(SolutionDir)scripts\Install-Extension.ps1 $(SolutionDir)build\bin\x64_Release\
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
