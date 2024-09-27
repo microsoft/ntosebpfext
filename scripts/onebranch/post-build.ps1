@@ -16,11 +16,13 @@ $OneBranchConfig = $env:ONEBRANCH_CONFIG
 if ($OneBranchConfig -eq "Debug" -and $OneBranchArch -eq "x64")
 {
     xcopy /y build\bin\x64_Debug .\x64\Debug
+    xcopy /y build\bin\x64_Debug\Install-Extension.ps1 .\scripts\
     Get-ChildItem -Path .\build\bin\x64_Debug -Recurse | Remove-Item -Force -Recurse
 }
 elseif ($OneBranchConfig -eq "Release" -and $OneBranchArch -eq "x64")
 {
     xcopy /y build\bin\x64_Release .\x64\Release
+    xcopy /y build\bin\x64_Release\Install-Extension.ps1 .\scripts\
     Get-ChildItem -Path .\build\bin\x64_Release -Recurse | Remove-Item -Force -Recurse
 }
 else
