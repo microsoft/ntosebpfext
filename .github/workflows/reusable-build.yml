@@ -121,7 +121,7 @@ jobs:
       # Add cache entry for any choco packages that are installed.
       # The cache key is based on the hash of this file so if any choco packages are added or removed, the cache will be invalidated.
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/cache@2cdf405574d6ef1f33a1d12acccd3ae82f47b3f2
+      uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8
       env:
         cache-name: cache-choco-packages
       with:
@@ -144,7 +144,7 @@ jobs:
 
     - name: Cache nuget packages
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/cache@2cdf405574d6ef1f33a1d12acccd3ae82f47b3f2
+      uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8
       env:
         cache-name: cache-nuget-modules
       with:
