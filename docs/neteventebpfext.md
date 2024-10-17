@@ -143,7 +143,7 @@ In `ebpf_extensions\neteventebpfext\netevent_ebpf_ext_event.c` you can find the 
 along with the dispatch table exported by the eBPF extension as an NMR client:
 
 ```c
-const NPIID netevent_npiid = {0x2227e819, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x90, 0x27, 0x71, 0x9e, 0x09}};
+const NPIID netevent_npiid = {0x2227e81a, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x90, 0x27, 0x71, 0x9e, 0x09}};
 ```
 
 The dispatch table for the network events provider is defined in `ebpf_extensions\neteventebpfext\netevent_ebpf_ext_event.c` as follows:
