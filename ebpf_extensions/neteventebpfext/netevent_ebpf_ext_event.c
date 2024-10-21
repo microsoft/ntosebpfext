@@ -352,11 +352,6 @@ ebpf_ext_unregister_netevent()
     }
 }
 
-typedef struct _EBPF_PROG_TEST_RUN_CONTEXT {
-    char* Data;
-    SIZE_T DataSize;
-} EBPF_PROG_TEST_RUN_CONTEXT;
-
 //
 // Event Hook NPI client helper functions (invoked by NetEvent as the NPI provider).
 //
@@ -364,21 +359,7 @@ typedef struct _netevent_event_notify_context
 {
     EBPF_CONTEXT_HEADER;
     netevent_event_md_t netevent_event_md;
-    EBPF_PROG_TEST_RUN_CONTEXT* ProgTestRunContext;
 } netevent_event_notify_context_t;
-
-static void EbpfProgramTestRunContextFree(_In_opt_ _Post_invalid_ EBPF_PROG_TEST_RUN_CONTEXT* Context)
-{
-    if (Context == NULL) {
-        return;
-    }
-
-    if (Context->Data != NULL) {
-        ExFreePool(Context->Data);
-    }
-    ExFreePool(Context);
-}
-
 
 //
 // eBPF NetEvent Program Information NPI helper routines.
@@ -416,19 +397,6 @@ _ebpf_netevent_program_context_create(
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
         EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, netevent_event_context, "netevent_event_context", result);
 
-    netevent_event_context->ProgTestRunContext = (EBPF_PROG_TEST_RUN_CONTEXT*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(EBPF_PROG_TEST_RUN_CONTEXT), EBPF_NETEVENT_EXTENSION_POOL_TAG);
-    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
-        EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, netevent_event_context->ProgTestRunContext, "ProgTestRunContext", result);
-
-    // Allocate buffer for data.
-    netevent_event_context->ProgTestRunContext->Data = (char*)ExAllocatePoolUninitialized(NonPagedPoolNx, data_size_in, EBPF_NETEVENT_EXTENSION_POOL_TAG);
-    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
-        EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, netevent_event_context->ProgTestRunContext->Data, "ProgTestRunContext->Data", result);
-
-    memcpy(netevent_event_context->ProgTestRunContext->Data, data_in, data_size_in);
-    netevent_event_context->ProgTestRunContext->DataSize = data_size_in;
-
     // Copy the context from the caller.
     memcpy(&netevent_event_context->netevent_event_md, context_in, sizeof(netevent_event_md_t));
 
@@ -441,7 +409,6 @@ _ebpf_netevent_program_context_create(
 
 Exit:
     if (netevent_event_context) {
-        EbpfProgramTestRunContextFree(netevent_event_context->ProgTestRunContext);
         ExFreePool(netevent_event_context);
         netevent_event_context = NULL;
     }
@@ -493,7 +460,6 @@ _ebpf_netevent_program_context_destroy(
         *data_size_out = 0;
     }
 
-    EbpfProgramTestRunContextFree(netevent_event_context->ProgTestRunContext);
     ExFreePool(netevent_event_context);
 
 Exit:
