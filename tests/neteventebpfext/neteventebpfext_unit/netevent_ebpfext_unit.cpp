@@ -25,6 +25,7 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 #define MAX_EVENTS_COUNT 1000
 #define NETEVENT_EVENT_TEST_TIMEOUT_SEC 90
 #define NETEVENT_EVENT_STRESS_TEST_TIMEOUT_SEC 90
+#define MAX_PACKET_SIZE 1600
 
 struct bpf_map* netevent_event_map;
 struct bpf_map* command_map;
@@ -293,14 +294,17 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
     REQUIRE(ring != nullptr);
 
-    fd_t netevent_program_fd = bpf_program__fd(netevent_monitor);
+
+    // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
     netevent_event_md_t netevent_md = {0};
-    unsigned char dummy_data_in[] = {'x', 'y', 'z'};
+    unsigned char dummy_data_in[] = {NOTIFY_EVENT_TYPE_NETEVENT, 'a', 'b'};
     const size_t dummy_data_size = sizeof(dummy_data_in);
-    unsigned char data_out[dummy_data_size] = {0};
+    unsigned char data_out[MAX_PACKET_SIZE] = {0};
     uint32_t event_count_before = event_count;
+    fd_t netevent_program_fd = bpf_program__fd(netevent_monitor);
 
+    // Prepare bpf_opts
     bpf_opts.repeat = 1;
     bpf_opts.ctx_in = &netevent_md;
     bpf_opts.ctx_size_in = sizeof(netevent_md);
@@ -308,11 +312,11 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     bpf_opts.ctx_size_out = 0;
     bpf_opts.data_in = &dummy_data_in;
     bpf_opts.data_size_in = static_cast<uint32_t>(dummy_data_size);
-
     // Set the data_out buffer to hold the output.
     bpf_opts.data_out = data_out;
-    bpf_opts.data_size_out = sizeof(dummy_data_size);
+    bpf_opts.data_size_out = sizeof(data_out);
 
+    // Execute the program
     REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) == 0);
 
     REQUIRE(bpf_opts.data_size_out == dummy_data_size);
