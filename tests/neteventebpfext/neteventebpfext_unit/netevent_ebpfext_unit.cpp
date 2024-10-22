@@ -321,7 +321,8 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     REQUIRE(bpf_opts.data_size_out == dummy_data_size);
     REQUIRE(memcmp(dummy_data_in, data_out, dummy_data_size) == 0);
-    REQUIRE(event_count_before + 1 == event_count);
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    REQUIRE(event_count == event_count_before + 1);
 
     // Detach the program (link) from the attach point.
     int link_fd = bpf_link__fd(netevent_monitor_link);
