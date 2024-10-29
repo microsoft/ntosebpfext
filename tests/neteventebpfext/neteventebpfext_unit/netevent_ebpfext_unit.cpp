@@ -264,7 +264,7 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
 
 TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 {
-    // Free the BPF object will take some time to unload from the previous test
+    // The BPF object will take some time to unload from the previous test
     // Once this issue is fixed, the sleep can be removed: https://github.com/microsoft/ebpf-for-windows/issues/2667
     std::this_thread::sleep_for(std::chrono::seconds(10));
 
@@ -294,7 +294,6 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
     REQUIRE(ring != nullptr);
 
-
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
     netevent_event_md_t netevent_md = {0};
@@ -323,6 +322,24 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(memcmp(dummy_data_in, data_out, dummy_data_size) == 0);
     std::this_thread::sleep_for(std::chrono::seconds(5));
     REQUIRE(event_count == event_count_before + 1);
+
+    // Execute negative cases
+    bpf_opts.ctx_in = NULL;
+    bpf_opts.ctx_size_in = 0;
+
+    REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) != 0);
+
+    // context smaller than netevent_md must be rejected
+    unsigned char smaller_ctx[sizeof(netevent_md) - 1];
+    bpf_opts.ctx_in = &smaller_ctx;
+    bpf_opts.ctx_size_in = sizeof(smaller_ctx);
+
+    REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) != 0);
+
+    bpf_opts.ctx_in = NULL;
+    bpf_opts.ctx_size_in = 0;
+
+    REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) != 0);
 
     // Detach the program (link) from the attach point.
     int link_fd = bpf_link__fd(netevent_monitor_link);
