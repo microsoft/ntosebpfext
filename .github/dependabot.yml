@@ -14,15 +14,27 @@ updates:
     schedule:
       interval: "weekly"
       day: "saturday"
+    groups:
+      actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "saturday"
+    groups:
+      actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/images"
     schedule:
       interval: "weekly"
       day: "saturday"
+    groups:
+      actions:
+        patterns:
+          - "*"
