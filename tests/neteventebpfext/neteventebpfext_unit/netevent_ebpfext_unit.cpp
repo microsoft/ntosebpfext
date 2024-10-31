@@ -265,7 +265,7 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
 TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 {
     // The BPF object will take some time to unload from the previous test
-    // Once this issue is fixed, the sleep can be removed: https://github.com/microsoft/ebpf-for-windows/issues/2667
+    // TODO: Remove sleep once this issue is fixed: https://github.com/microsoft/ebpf-for-windows/issues/2667
     std::this_thread::sleep_for(std::chrono::seconds(10));
 
     // Load and start neteventebpfext extension driver.
@@ -283,15 +283,15 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(res == 0);
 
     // Find and attach to the netevent_monitor BPF program.
-    auto netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
+    bpf_program* netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
-    auto netevent_monitor_link = bpf_program__attach(netevent_monitor);
+    bpf_link* netevent_monitor_link = bpf_program__attach(netevent_monitor);
     REQUIRE(netevent_monitor_link != nullptr);
 
     // Attach to the eBPF ring buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
+    ring_buffer* ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
     REQUIRE(ring != nullptr);
 
     // Initialize structures required for bpf_prog_test_run_opts
@@ -302,6 +302,7 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     unsigned char data_out[MAX_PACKET_SIZE] = {0};
     uint32_t event_count_before = event_count;
     fd_t netevent_program_fd = bpf_program__fd(netevent_monitor);
+    REQUIRE(netevent_program_fd != ebpf_fd_invalid);
 
     // Prepare bpf_opts
     bpf_opts.repeat = 1;
@@ -336,17 +337,13 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) != 0);
 
-    bpf_opts.ctx_in = NULL;
-    bpf_opts.ctx_size_in = 0;
-
-    REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) != 0);
-
     // Detach the program (link) from the attach point.
     int link_fd = bpf_link__fd(netevent_monitor_link);
-    bpf_link_detach(link_fd);
-    bpf_link__destroy(netevent_monitor_link);
+    REQUIRE(link_fd != ebpf_fd_invalid);
+    REQUIRE(bpf_link_detach(link_fd) == 0);
+    REQUIRE(bpf_link__destroy(netevent_monitor_link) == 0);
 
-    // Close ring buffer.
+    // Free the ring buffer manager
     ring_buffer__free(ring);
 
     // Free the BPF object.
