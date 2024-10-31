@@ -28,11 +28,13 @@
       <None Include="..\..\$(Platform)\$(Configuration)\ntosebpfext.sys" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\ntosebpfext.pdb" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\include\ebpf_ntos_hooks.h" PackagePath="build\native\include" Pack="true" />
+      <None Include="..\..\include\ebpf_ntos_program_attach_type_guids.h" PackagePath="build\native\include" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\ntos_ebpf_ext_export_program_info.exe" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\ntos_ebpf_ext_export_program_info.pdb" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\neteventebpfext.sys" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\neteventebpfext.pdb" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\include\ebpf_netevent_hooks.h" PackagePath="build\native\include" Pack="true" />
+      <None Include="..\..\include\ebpf_netevent_program_attach_type_guids.h" PackagePath="build\native\include" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\netevent_ebpf_ext_export_program_info.exe" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\netevent_ebpf_ext_export_program_info.pdb" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\scripts\Install-Extension.ps1" PackagePath="build\native\bin" Pack="true" />
