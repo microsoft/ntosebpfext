@@ -403,7 +403,7 @@ _ebpf_netevent_program_context_create(
     // Copy the event's pointer & size from the caller, to the out context.
     netevent_event_context->netevent_event_md.event_data_start = (uint8_t*)data_in;
     netevent_event_context->netevent_event_md.event_data_end = (uint8_t*)data_in + data_size_in;
-    *context = netevent_event_context;
+    *context = &netevent_event_context->netevent_event_md;
     netevent_event_context = NULL;
     result = EBPF_SUCCESS;
 
@@ -424,18 +424,19 @@ _ebpf_netevent_program_context_destroy(
     _Inout_ size_t* context_size_out)
 {
     EBPF_EXT_LOG_ENTRY();
+    netevent_event_notify_context_t* netevent_event_context = NULL;
+    netevent_event_md_t* netevent_event_context_out = NULL;
 
-    netevent_event_notify_context_t* netevent_event_context = (netevent_event_notify_context_t*)context;
-    netevent_event_md_t* netevent_event_context_out = (netevent_event_md_t*)context_out;
-
-    if (!netevent_event_context) {
+    if (!context) {
         goto Exit;
     }
+
+    netevent_event_context = CONTAINING_RECORD(context, netevent_event_notify_context_t, netevent_event_md);
+    netevent_event_context_out = (netevent_event_md_t*)context_out;
 
     if (context_out != NULL && *context_size_out >= sizeof(netevent_event_md_t)) {
         // Copy the context to the caller.
         memcpy(netevent_event_context_out, &netevent_event_context->netevent_event_md, sizeof(netevent_event_md_t));
-        *context_size_out = sizeof(netevent_event_md_t);
 
         // Zero out the event context info.
         netevent_event_context_out->event_data_start = 0;
@@ -446,9 +447,8 @@ _ebpf_netevent_program_context_destroy(
     }
 
     // Copy the event data to 'data_out'.
-    if (data_out != NULL && *data_size_out >= (size_t)(
-                                                  netevent_event_context->netevent_event_md.event_data_end -
-                                                  netevent_event_context->netevent_event_md.event_data_start)) {
+    if (data_out != NULL && *data_size_out >= (size_t)(netevent_event_context->netevent_event_md.event_data_end -
+                                                       netevent_event_context->netevent_event_md.event_data_start)) {
         memcpy(
             data_out,
             netevent_event_context->netevent_event_md.event_data_start,
