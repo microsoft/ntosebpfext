@@ -291,12 +291,14 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     // Attach to the eBPF ring buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    ring_buffer* ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
+    ring_buffer* ring =
+        ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
     REQUIRE(ring != nullptr);
 
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
-    netevent_event_md_t netevent_md = {0};
+    netevent_event_md_t netevent_ctx_in = {0};
+    netevent_event_md_t netevent_ctx_out = {0};
     unsigned char dummy_data_in[] = {NOTIFY_EVENT_TYPE_NETEVENT, 'a', 'b'};
     const size_t dummy_data_size = sizeof(dummy_data_in);
     unsigned char data_out[MAX_PACKET_SIZE] = {0};
@@ -306,10 +308,10 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     // Prepare bpf_opts
     bpf_opts.repeat = 1;
-    bpf_opts.ctx_in = &netevent_md;
-    bpf_opts.ctx_size_in = sizeof(netevent_md);
-    bpf_opts.ctx_out = nullptr;
-    bpf_opts.ctx_size_out = 0;
+    bpf_opts.ctx_in = &netevent_ctx_in;
+    bpf_opts.ctx_size_in = sizeof(netevent_ctx_in);
+    bpf_opts.ctx_out = &netevent_ctx_out;
+    bpf_opts.ctx_size_out = sizeof(netevent_ctx_out);
     bpf_opts.data_in = &dummy_data_in;
     bpf_opts.data_size_in = static_cast<uint32_t>(dummy_data_size);
     // Set the data_out buffer to hold the output.
@@ -321,6 +323,7 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     REQUIRE(bpf_opts.data_size_out == dummy_data_size);
     REQUIRE(memcmp(dummy_data_in, data_out, dummy_data_size) == 0);
+    REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
     std::this_thread::sleep_for(std::chrono::seconds(5));
     REQUIRE(event_count == event_count_before + 1);
 
@@ -331,7 +334,7 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) != 0);
 
     // context smaller than netevent_md must be rejected
-    unsigned char smaller_ctx[sizeof(netevent_md) - 1];
+    unsigned char smaller_ctx[sizeof(netevent_ctx_in) - 1];
     bpf_opts.ctx_in = &smaller_ctx;
     bpf_opts.ctx_size_in = sizeof(smaller_ctx);
 

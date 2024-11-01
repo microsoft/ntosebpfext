@@ -437,7 +437,6 @@ _ebpf_netevent_program_context_destroy(
     if (context_out != NULL && *context_size_out >= sizeof(netevent_event_md_t)) {
         // Copy the context to the caller.
         memcpy(netevent_event_context_out, &netevent_event_context->netevent_event_md, sizeof(netevent_event_md_t));
-        *context_size_out = sizeof(netevent_event_md_t);
 
         // Zero out the event context info.
         netevent_event_context_out->event_data_start = 0;
@@ -449,7 +448,7 @@ _ebpf_netevent_program_context_destroy(
 
     // Copy the event data to 'data_out'.
     if (data_out != NULL && *data_size_out >= (size_t)(netevent_event_context->netevent_event_md.event_data_end -
-                                                  netevent_event_context->netevent_event_md.event_data_start)) {
+                                                       netevent_event_context->netevent_event_md.event_data_start)) {
         memcpy(
             data_out,
             netevent_event_context->netevent_event_md.event_data_start,
