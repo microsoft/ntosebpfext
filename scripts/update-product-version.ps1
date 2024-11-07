@@ -7,15 +7,24 @@ param ($majorVersion, $minorVersion, $revisionNumber)
 if ("$majorVersion.$minorVersion.$revisionNumber" -match '^\d+\.\d+\.\d+$') {
 
     if (Test-Path -Path ".\ntosebpfext.sln") {
-        # Set the new version number in the ebpf_version.h file.
-        $ntosebpfext_version_file = "$PSScriptRoot\..\Directory.Build.props"
-        Write-Host -ForegroundColor DarkGreen "Updating the version number in the '$ntosebpfext_version_file' file..."
+        # Set the new version number in the Directory.Build.props file.
+        $ntosebpfext_build_prop_file = "$PSScriptRoot\..\Directory.Build.props"
+        Write-Host -ForegroundColor DarkGreen "Updating the version number in the '$ntosebpfext_build_prop_file' file..."
         # Replace <eBPFExtensionsVersionMajor>0</eBPFExtensionsVersionMajor> with <eBPFExtensionsVersionMajor>$majorVersion</eBPFExtensionsVersionMajor>
-        $newcontent = (Get-Content $ntosebpfext_version_file -Raw -Encoding UTF8) `
+        $newcontent = (Get-Content $ntosebpfext_build_prop_file -Raw -Encoding UTF8) `
                         -replace '(?<=<eBPFExtensionsVersionMajor>)\d+', $majorVersion `
                         -replace '(?<=<eBPFExtensionsVersionMinor>)\d+', $minorVersion `
                         -replace '(?<=<eBPFExtensionsVersionRevision>)\d+', $revisionNumber
+        $newcontent | Set-Content $ntosebpfext_build_prop_file -NoNewline
+        Write-Host -ForegroundColor DarkGreen "Version number updated to '$majorVersion.$minorVersion.$revisionNumber' in $ntosebpfext_build_prop_file"
 
+        # Set the new version number in the ebpf_ext_version.h file.
+        $ntosebpfext_version_file = "$PSScriptRoot\..\resource\ebpf_ext_version.h"
+        # Replace #define EBPF_VERSION_MAJOR 0 with #define EBPF_VERSION_MAJOR $majorVersion
+        $newcontent = (Get-Content $ntosebpfext_version_file -Raw -Encoding UTF8) `
+                        -replace '(?<=#define EBPF_VERSION_MAJOR )\d+', $majorVersion `
+                        -replace '(?<=#define EBPF_VERSION_MINOR )\d+', $minorVersion `
+                        -replace '(?<=#define EBPF_VERSION_REVISION )\d+', $revisionNumber
         $newcontent | Set-Content $ntosebpfext_version_file -NoNewline
         Write-Host -ForegroundColor DarkGreen "Version number updated to '$majorVersion.$minorVersion.$revisionNumber' in $ntosebpfext_version_file"
 
