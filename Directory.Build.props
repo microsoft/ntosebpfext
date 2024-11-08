@@ -11,7 +11,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <eBPFExtensionsVersionMajor>0</eBPFExtensionsVersionMajor>
-    <eBPFExtensionsVersionMinor>1</eBPFExtensionsVersionMinor>
+    <eBPFExtensionsVersionMinor>2</eBPFExtensionsVersionMinor>
     <eBPFExtensionsVersionRevision>0</eBPFExtensionsVersionRevision>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AddressSanitizer)'=='True' And '$(MSBuildProjectExtension)'!='.csproj'">
