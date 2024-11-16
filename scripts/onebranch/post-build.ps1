@@ -12,21 +12,40 @@ Set-Location $scriptPath\..\..
 $OneBranchArch = $env:ONEBRANCH_ARCH
 $OneBranchConfig = $env:ONEBRANCH_CONFIG
 
+function Copy-BuildFolder {
+    param (
+        [Parameter(Mandatory=$true)]
+        [ValidateSet("Release", "Debug")]
+        [string]$Configuration
+    )
+
+    # Define the source folder and zip file path based on the configuration
+    $SourceFolder = ".\x64\$Configuration"
+    $ZipFile = ".\build\bin\x64_$Configuration\$Configuration.zip"
+
+    # Remove any existing zip file to avoid conflicts
+    if (Test-Path $ZipFile) {
+        Remove-Item $ZipFile
+    }
+
+    # Compress the folder into a zip file
+    Compress-Archive -Path $SourceFolder -DestinationPath $ZipFile
+
+    Write-Host "$SourceFolder folder has been zipped into $ZipFile"
+}
+
 # Copy the signed binaries to the output directory
-if ($OneBranchConfig -eq "Debug" -and $OneBranchArch -eq "x64")
-{
+if ($OneBranchConfig -eq "Debug" -and $OneBranchArch -eq "x64") {
     xcopy /y build\bin\x64_Debug .\x64\Debug
     xcopy /y build\bin\x64_Debug\Install-Extension.ps1 .\scripts\
     Get-ChildItem -Path .\build\bin\x64_Debug -Recurse | Remove-Item -Force -Recurse
 }
-elseif ($OneBranchConfig -eq "Release" -and $OneBranchArch -eq "x64")
-{
+elseif ($OneBranchConfig -eq "Release" -and $OneBranchArch -eq "x64") {
     xcopy /y build\bin\x64_Release .\x64\Release
     xcopy /y build\bin\x64_Release\Install-Extension.ps1 .\scripts\
     Get-ChildItem -Path .\build\bin\x64_Release -Recurse | Remove-Item -Force -Recurse
 }
-else
-{
+else {
     throw ("Configuration $OneBranchConfig|$OneBranchArch is not supported.")
 }
 
@@ -37,15 +56,14 @@ $SolutionDir = Get-Location
 msbuild /p:SolutionDir=$SolutionDir\ /p:Configuration=$OneBranchConfig /p:Platform=$OneBranchArch /p:BuildProjectReferences=false .\tools\nuget\nuget.proj /t:Restore,Build,Pack
 
 # Copy the nupkg and msi to the output directory
-if ($OneBranchConfig -eq "Debug" -and $OneBranchArch -eq "x64")
-{
+if ($OneBranchConfig -eq "Debug" -and $OneBranchArch -eq "x64") {
     xcopy /y .\x64\Debug\*.nupkg .\build\bin\x64_Debug
+    Copy-BuildFolder -Configuration Debug
 }
-elseif ($OneBranchConfig -eq "Release" -and $OneBranchArch -eq "x64")
-{
+elseif ($OneBranchConfig -eq "Release" -and $OneBranchArch -eq "x64") {
     xcopy /y .\x64\Release\*.nupkg .\build\bin\x64_Release
+    Copy-BuildFolder -Configuration Release
 }
-else
-{
+else {
     throw ("Configuration $OneBranchConfig|$OneBranchArch is not supported.")
 }
