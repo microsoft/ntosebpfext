@@ -16,12 +16,14 @@ function Copy-BuildFolder {
     param (
         [Parameter(Mandatory=$true)]
         [ValidateSet("Release", "Debug")]
-        [string]$Configuration
+        [string]$Configuration, 
+        [Parameter(Mandatory=$true)]
+        [string]$Arch
     )
 
     # Define the source folder and zip file path based on the configuration
-    $SourceFolder = ".\x64\$Configuration"
-    $ZipFile = ".\build\bin\x64_$Configuration\$Configuration.zip"
+    $SourceFolder = ".\$Arch\$Configuration"
+    $ZipFile = ".\build\bin\$($Arch)_$($Configuration)\Build-$($Arch)-$($Configuration).zip"
 
     # Remove any existing zip file to avoid conflicts
     if (Test-Path $ZipFile) {
@@ -58,11 +60,11 @@ msbuild /p:SolutionDir=$SolutionDir\ /p:Configuration=$OneBranchConfig /p:Platfo
 # Copy the nupkg and msi to the output directory
 if ($OneBranchConfig -eq "Debug" -and $OneBranchArch -eq "x64") {
     xcopy /y .\x64\Debug\*.nupkg .\build\bin\x64_Debug
-    Copy-BuildFolder -Configuration Debug
+    Copy-BuildFolder -Configuration Debug -Arch x64
 }
 elseif ($OneBranchConfig -eq "Release" -and $OneBranchArch -eq "x64") {
     xcopy /y .\x64\Release\*.nupkg .\build\bin\x64_Release
-    Copy-BuildFolder -Configuration Release
+    Copy-BuildFolder -Configuration Release -Arch x64
 }
 else {
     throw ("Configuration $OneBranchConfig|$OneBranchArch is not supported.")
