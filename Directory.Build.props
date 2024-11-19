@@ -4,7 +4,7 @@
   SPDX-License-Identifier: MIT
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="Platform">
-  <Import Project="$(SolutionDir)wdk.props" Condition="'$(MSBuildProjectExtension)'!='.csproj'"/>
+  <Import Project="$(SolutionDir)wdk.props" Condition="'$(MSBuildProjectExtension)'=='.vcxproj'"/>
   <PropertyGroup Condition="'$(Analysis)'=='True' And '$(MSBuildProjectExtension)'!='.csproj'">
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
