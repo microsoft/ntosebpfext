@@ -64,8 +64,6 @@ To build locally, ensure your environment is set up:
 
 1. Install Visual Studio 2022 with at least the "Desktop development with C++" and ".NET desktop development" workloads
 1. Install the .NET 8 SDK from https://dotnet.microsoft.com/en-us/download/dotnet/8.0
-1. Install the Windows SDK 10.0.22621.0 with `winget install Microsoft.WindowsSDK.10.0.22621`
-1. Install the Windows DDK 10.0.22621.0 with `winget install Microsoft.WindowsWDK.10.0.22621`
 
 Then do one-time repo setup:
 
