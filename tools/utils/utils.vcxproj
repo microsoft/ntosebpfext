@@ -19,8 +19,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{52440d8b-c623-48c4-a2a3-527245139e19}</ProjectGuid>
     <RootNamespace>utils</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-  </PropertyGroup>
+    </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
