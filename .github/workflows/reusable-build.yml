@@ -108,33 +108,15 @@ jobs:
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
-
-    - name: Setup choco cache folder
-      # Set the choco cache to a local folder so that it can be cached.
-      if: steps.skip_check.outputs.should_skip != 'true'
-      id: choco-cache
-      run: |
-        mkdir ${{github.workspace}}\choco_cache
-        choco config set --name cacheLocation --value ${{github.workspace}}\choco_cache
-
-    - name: Cache choco packages
-      # Add cache entry for any choco packages that are installed.
-      # The cache key is based on the hash of this file so if any choco packages are added or removed, the cache will be invalidated.
-      if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a
-      env:
-        cache-name: cache-choco-packages
       with:
-        path: ${{github.workspace}}\choco_cache
-        key: ${{ hashFiles('.github/workflows/reusable-build.yml') }}
+        msbuild-architecture: x64
 
-    - name: Install tools
+    - name: Check clang version
       if: steps.skip_check.outputs.should_skip != 'true'
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        choco install -y llvm --version 11.0.1 --allow-downgrade
-        echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         where clang.exe
+        clang -v
 
     - name: Install .NET 8 SDK
       if: steps.skip_check.outputs.should_skip != 'true'
