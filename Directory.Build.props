@@ -4,7 +4,7 @@
   SPDX-License-Identifier: MIT
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="Platform">
-  <Import Project="$(SolutionDir)wdk.props"/>
+  <Import Project="$(SolutionDir)wdk.props" Condition="'$(MSBuildProjectExtension)'!='.csproj'"/>
   <PropertyGroup Condition="'$(Analysis)'=='True' And '$(MSBuildProjectExtension)'!='.csproj'">
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
@@ -18,7 +18,7 @@
   <PropertyGroup Condition="'$(AddressSanitizer)'=='True' And '$(MSBuildProjectExtension)'!='.csproj'">
     <EnableASAN>true</EnableASAN>
   </PropertyGroup>
-    <PropertyGroup>
+  <PropertyGroup>
     <ClangExec>"$(VsInstallRoot)\VC\Tools\Llvm\bin\clang.exe"</ClangExec>
   </PropertyGroup>
   <ItemDefinitionGroup>
