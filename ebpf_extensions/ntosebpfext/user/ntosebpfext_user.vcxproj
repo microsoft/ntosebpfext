@@ -20,7 +20,6 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{630bb78f-6211-41d8-8e3a-096e22e169ef}</ProjectGuid>
     <RootNamespace>ntosebpfextunit</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>ntosebpfext_user</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

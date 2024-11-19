@@ -24,7 +24,6 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{AAAB234B-F0E9-4326-91E8-87B98367ACC1}</ProjectGuid>
     <RootNamespace>neteventebpfextunit</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>neteventebpfext_user</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
