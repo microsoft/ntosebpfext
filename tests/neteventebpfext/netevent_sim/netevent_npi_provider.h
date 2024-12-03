@@ -23,8 +23,8 @@ typedef struct PROVIDER_REGISTRATION_CONTEXT_
 // Define the context structure for the provider module's binding to a client module
 typedef struct PROVIDER_BINDING_CONTEXT_
 {
-    HANDLE client_binding_handle;                            // Handle of the attached client
-    const ebpf_helper_function_addresses_t* client_dispatch; // Dispatch routines addresses of the attached client
-    PNPI_REGISTRATION_INSTANCE client_registration_instance; // Registration instance of the attached client
-    void* client_binding_context;                            // Binding context of the attached client
+    HANDLE client_binding_handle;                             // Handle of the attached client
+    const netevent_ext_function_addresses_t* client_dispatch; // Dispatch routines addresses of the attached client
+    PNPI_REGISTRATION_INSTANCE client_registration_instance;  // Registration instance of the attached client
+    void* client_binding_context;                             // Binding context of the attached client
 } PROVIDER_BINDING_CONTEXT;

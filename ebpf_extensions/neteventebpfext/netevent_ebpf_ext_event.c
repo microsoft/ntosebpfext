@@ -63,12 +63,26 @@ _netevent_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle);
 // Structures for attaching to NetEvent (as an NMR client)
 //
 
+typedef struct netevent_ext_header
+{
+    uint16_t version; ///< Version of the extension data structure.
+    size_t size;      ///< Size of the netevent function addresses structure.
+} netevent_ext_header_t;
+
+// This is the type definition for the netevent helper function addresses.
+// This type should be matched by the Netevent NMI provider.
+typedef struct netevent_ext_function_addresses
+{
+    netevent_ext_header_t header;
+    uint32_t helper_function_count;
+    uint64_t* helper_function_address;
+} netevent_ext_function_addresses_t;
+
 // Dispatch table for the client module's helper functions
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
 const ebpf_helper_function_addresses_t _netevent_client_dispatch = {
     .header =
-        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION,
-         .size = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
+        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION, .size = sizeof(netevent_ext_function_addresses_t)},
     .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
     .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
 

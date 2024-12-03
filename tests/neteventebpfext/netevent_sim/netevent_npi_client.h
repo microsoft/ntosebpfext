@@ -14,11 +14,16 @@ typedef struct
 } netevent_event_info_t;
 typedef void (*netevent_push_event)(netevent_event_info_t*);
 
-// This is the type definition for the eBPF helper function addresses
-// when version is EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION.
-typedef struct _ebpf_helper_function_addresses
+typedef struct netevent_ext_header
 {
-    ebpf_extension_header_t header;
-    UINT32 helper_function_count;
-    UINT64* helper_function_address;
-} ebpf_helper_function_addresses_t;
+    uint16_t version; ///< Version of the extension data structure.
+    size_t size;      ///< Size of the netevent function addresses structure.
+} netevent_ext_header_t;
+
+// This is the type definition for the netevent helper function addresses.
+typedef struct netevent_ext_function_addresses
+{
+    netevent_ext_header_t header;
+    uint32_t helper_function_count;
+    uint64_t* helper_function_address;
+} netevent_ext_function_addresses_t;
