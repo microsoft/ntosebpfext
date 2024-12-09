@@ -80,7 +80,7 @@ typedef struct netevent_ext_function_addresses
 
 // Dispatch table for the client module's helper functions
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
-const ebpf_helper_function_addresses_t _netevent_client_dispatch = {
+const netevent_ext_function_addresses_t _netevent_client_dispatch = {
     .header =
         {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION, .size = sizeof(netevent_ext_function_addresses_t)},
     .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
