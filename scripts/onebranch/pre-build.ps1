@@ -7,6 +7,12 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 # Change the parent directory for the script directory
 Set-Location $scriptPath\..\..
 
-.\scripts\initialize_repo.ps1
+try {
+    Copy-Item .\scripts\onebranch\nuget.config .\nuget.config
+    .\scripts\initialize_repo.ps1
+}
+catch {
+    throw "Failed to initialize the repository."
+}
 
 Get-ChildItem -Path ./external -Filter *.dll -Recurse | Remove-Item
