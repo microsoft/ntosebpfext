@@ -74,15 +74,16 @@ typedef struct netevent_ext_header
 typedef struct netevent_ext_function_addresses
 {
     netevent_ext_header_t header;
+    netevent_capture_type_t capture_type;
     uint32_t helper_function_count;
     uint64_t* helper_function_address;
 } netevent_ext_function_addresses_t;
 
 // Dispatch table for the client module's helper functions
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
-const netevent_ext_function_addresses_t _netevent_client_dispatch = {
-    .header =
-        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION, .size = sizeof(netevent_ext_function_addresses_t)},
+netevent_ext_function_addresses_t _netevent_client_dispatch = {
+    .header = {.version = 2, .size = sizeof(netevent_ext_function_addresses_t)},
+    .capture_type = NetevenCapture_Drop,
     .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
     .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
 
@@ -211,11 +212,38 @@ _netevent_ebpf_extension_netevent_on_client_attach(
 {
     ebpf_result_t result = EBPF_SUCCESS;
     bool push_lock_acquired = false;
+    netevent_attach_opts_t* attach_opts;
+    const ebpf_extension_data_t* client_data = ebpf_extension_hook_client_get_client_data(attaching_client);
 
     EBPF_EXT_LOG_ENTRY();
 
-    UNREFERENCED_PARAMETER(attaching_client);
     UNREFERENCED_PARAMETER(provider_context);
+
+    if (client_data != NULL && client_data->data != NULL) {
+        attach_opts = (netevent_attach_opts_t*)client_data->data;
+        if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NetevenCapture_None)) {
+            _netevent_client_dispatch.capture_type = attach_opts->capture_type;
+            char buffer[10];
+
+            // Convert the integer to a string
+            sprintf_s(buffer, sizeof(buffer), "%d", attach_opts->capture_type);
+
+            EBPF_EXT_LOG_MESSAGE_STRING(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "capture type found ", buffer);
+        } else {
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+                "Incorrect capture type in attach opts.");
+            result = EBPF_OPERATION_NOT_SUPPORTED;
+            goto Exit;
+        }
+
+    } else {
+
+        EBPF_EXT_LOG_MESSAGE_STRING(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "capture type is null ", "nada");
+    }
 
     ExAcquirePushLockExclusive(&_ebpf_netevent_event_hook_provider_lock);
     push_lock_acquired = true;

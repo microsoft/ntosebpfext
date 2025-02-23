@@ -14,6 +14,14 @@ typedef struct
 } netevent_event_info_t;
 typedef void (*netevent_push_event)(netevent_event_info_t*);
 
+typedef enum _netevent_capture_type
+{
+    NeteventCapture_All = 1,
+    NetevenCapture_Flow,
+    NetevenCapture_Drop,
+    NetevenCapture_None
+} netevent_capture_type_t;
+
 typedef struct netevent_ext_header
 {
     uint16_t version; ///< Version of the extension data structure.
@@ -24,6 +32,7 @@ typedef struct netevent_ext_header
 typedef struct netevent_ext_function_addresses
 {
     netevent_ext_header_t header;
+    netevent_capture_type_t capture_type;
     uint32_t helper_function_count;
     uint64_t* helper_function_address;
 } netevent_ext_function_addresses_t;

@@ -8,7 +8,8 @@
 //
 
 // The event type we want to process
-#define NOTIFY_EVENT_TYPE_NETEVENT 100
+#define NOTIFY_EVENT_TYPE_NETEVENT_DROP 100
+#define NOTIFY_EVENT_TYPE_NETEVENT_LOG 101
 
 #pragma pack(push, 1) // Set packing to 1 byte boundary
 
@@ -37,7 +38,7 @@ typedef enum _drop_reason
     DROP_REASON_BANDWIDTH_LIMIT = 3,
     DROP_REASON_INACTIVE_TIMEOUT = 4,
 } drop_reason;
-typedef struct _netevent_type_drop
+typedef struct _netevent_message
 {
     event_header_t header;
 
@@ -49,6 +50,6 @@ typedef struct _netevent_type_drop
 
     // Event counter, for testing purposes
     unsigned long event_counter;
-} netevent_type_drop_t;
+} netevent_message_t;
 
 #pragma pack(pop) // Restore default packing
