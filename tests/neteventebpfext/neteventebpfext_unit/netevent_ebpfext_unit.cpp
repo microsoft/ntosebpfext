@@ -69,7 +69,6 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
 int
 netevent_monitor_event_callback(void* ctx, void* data, size_t size)
 {
-    std::cout << "callback fired" << std::flush;
     // Parameter checks.
     UNREFERENCED_PARAMETER(ctx);
     if (data == nullptr || size == 0) {

@@ -223,13 +223,6 @@ _netevent_ebpf_extension_netevent_on_client_attach(
         attach_opts = (netevent_attach_opts_t*)client_data->data;
         if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NetevenCapture_None)) {
             _netevent_client_dispatch.capture_type = attach_opts->capture_type;
-            char buffer[10];
-
-            // Convert the integer to a string
-            sprintf_s(buffer, sizeof(buffer), "%d", attach_opts->capture_type);
-
-            EBPF_EXT_LOG_MESSAGE_STRING(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "capture type found ", buffer);
         } else {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -238,11 +231,6 @@ _netevent_ebpf_extension_netevent_on_client_attach(
             result = EBPF_OPERATION_NOT_SUPPORTED;
             goto Exit;
         }
-
-    } else {
-
-        EBPF_EXT_LOG_MESSAGE_STRING(
-            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "capture type is null ", "nada");
     }
 
     ExAcquirePushLockExclusive(&_ebpf_netevent_event_hook_provider_lock);
