@@ -20,7 +20,7 @@
 static uint8_t* _event_buffer = NULL; ///< Event buffer for copying the event data.
 static size_t _event_buffer_size =
     4096; ///< Initial size of the event buffer, which will be dynamically resized as needed.
-EX_PUSH_LOCK _ebpf_netevent_push_event_lock;
+EX_SPIN_LOCK _ebpf_netevent_push_event_lock;
 
 // Define the GUID for the NetEvent NPI (must match the one of the provider)
 const NPIID netevent_npiid = {0x2227e81a, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x90, 0x27, 0x71, 0x9e, 0x09}};
@@ -130,12 +130,19 @@ _netevent_ebpf_extension_attach_provider(
     _In_ PNPI_REGISTRATION_INSTANCE provider_registration_instance)
 {
     EBPF_EXT_LOG_ENTRY();
+    NTSTATUS status;
 
     UNREFERENCED_PARAMETER(client_context);
     UNREFERENCED_PARAMETER(provider_registration_instance);
 
+    if (provider_registration_instance->NpiSpecificCharacteristics == NULL) {
+        status = STATUS_NOINTERFACE;
+        EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
+        goto Exit;
+    }
+
     // Attach to the NetEvent provider module.
-    NTSTATUS status = NmrClientAttachProvider(
+    status = NmrClientAttachProvider(
         nmr_binding_handle,
         &_netevent_client_binding_context,
         &_netevent_client_dispatch,
@@ -516,7 +523,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
-    ExAcquirePushLockExclusive(&_ebpf_netevent_push_event_lock);
+    ExAcquireSpinLockExclusive(&_ebpf_netevent_push_event_lock);
     push_lock_acquired = true;
     if (event_size > _event_buffer_size) {
         // If the event buffer is too small, attempt to resize it.
@@ -567,7 +574,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
 
 Exit:
     if (push_lock_acquired) {
-        ExReleasePushLockExclusive(&_ebpf_netevent_push_event_lock);
+        ExAcquireSpinLockExclusive(&_ebpf_netevent_push_event_lock);
     }
 
     // EBPF_EXT_LOG_EXIT();

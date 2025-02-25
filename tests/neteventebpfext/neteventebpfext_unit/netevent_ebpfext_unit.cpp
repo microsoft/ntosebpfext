@@ -198,11 +198,13 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     REQUIRE(ring != nullptr);
 
     // Test attach with invalid capture type
+    ebpf_result_t result;
     bpf_link* netevent_monitor_link = nullptr;
     netevent_attach_opts_t attach_opts = {};
     attach_opts.capture_type = (netevent_capture_type_t)0;
-    ebpf_program_attach(
+    result = ebpf_program_attach(
         netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    REQUIRE(result != EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link == nullptr);
 
     // Test attach with capture valid capture type
@@ -211,8 +213,9 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     uint32_t drop_event_count_before = drop_event_count;
 
     attach_opts.capture_type = NeteventCapture_All;
-    ebpf_program_attach(
+    result = ebpf_program_attach(
         netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
@@ -229,8 +232,9 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     // Test reattach with different capture type
     event_count_before = event_count;
     attach_opts.capture_type = NetevenCapture_Drop;
-    ebpf_program_attach(
+    result = ebpf_program_attach(
         netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
