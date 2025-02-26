@@ -63,7 +63,7 @@ const NPI_PROVIDER_CHARACTERISTICS _netevent_provider_characteristics = {
         .NpiId = &netevent_npiid,
         .ModuleId = &netevent_module_id,
         .Number = 0,
-        .NpiSpecificCharacteristics = NULL}};
+        .NpiSpecificCharacteristics = &netevent_npi_specific_characteristics}};
 PROVIDER_REGISTRATION_CONTEXT _netevent_provider_registration_context = {.provider_registration_handle = NULL};
 PROVIDER_BINDING_CONTEXT _netevent_provider_binding_context = {
     .client_binding_handle = NULL,

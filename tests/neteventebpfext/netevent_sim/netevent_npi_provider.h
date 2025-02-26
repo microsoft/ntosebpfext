@@ -28,3 +28,24 @@ typedef struct PROVIDER_BINDING_CONTEXT_
     PNPI_REGISTRATION_INSTANCE client_registration_instance;  // Registration instance of the attached client
     void* client_binding_context;                             // Binding context of the attached client
 } PROVIDER_BINDING_CONTEXT;
+
+typedef struct _netevent_header
+{
+    USHORT Size;
+    USHORT Version;
+
+} netevent_header;
+
+typedef struct PROVIDER_NPI_SPECIFIC_CHARACTERISTICS_
+{
+    netevent_header Header;
+} PROVIDER_NPI_SPECIFIC_CHARACTERISTICS;
+
+// Define the provider module's NPI specific characteristics=
+PROVIDER_NPI_SPECIFIC_CHARACTERISTICS const netevent_npi_specific_characteristics = {
+    .Header =
+        {
+            .Size = sizeof(PROVIDER_NPI_SPECIFIC_CHARACTERISTICS),
+            .Version = 2,
+        },
+};
