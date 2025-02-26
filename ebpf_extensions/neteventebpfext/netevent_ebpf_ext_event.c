@@ -518,7 +518,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     ebpf_extension_hook_client_t* client_context = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     uint64_t event_size = netevent_event->event_data_end - netevent_event->event_data_start;
-    bool push_lock_acquired = false;
+    bool spin_lock_acquired = false;
 
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
