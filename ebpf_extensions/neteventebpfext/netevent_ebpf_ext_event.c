@@ -523,8 +523,8 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
-    ExAcquireSpinLockExclusive(&_ebpf_netevent_push_event_lock);
-    push_lock_acquired = true;
+    KIRQL oldIrql = ExAcquireSpinLockExclusive(&_ebpf_netevent_push_event_lock);
+    spin_lock_acquired = true;
     if (event_size > _event_buffer_size) {
         // If the event buffer is too small, attempt to resize it.
         uint8_t* new_event_buffer =
@@ -573,8 +573,8 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     }
 
 Exit:
-    if (push_lock_acquired) {
-        ExAcquireSpinLockExclusive(&_ebpf_netevent_push_event_lock);
+    if (spin_lock_acquired) {
+        ExReleaseSpinLockExclusive(&_ebpf_netevent_push_event_lock, oldIrql);
     }
 
     // EBPF_EXT_LOG_EXIT();
