@@ -20,7 +20,7 @@
 static uint8_t* _event_buffer = NULL; ///< Event buffer for copying the event data.
 static size_t _event_buffer_size =
     4096; ///< Initial size of the event buffer, which will be dynamically resized as needed.
-EX_PUSH_LOCK _ebpf_netevent_push_event_lock;
+EX_SPIN_LOCK _ebpf_netevent_push_event_lock;
 
 // Define the GUID for the NetEvent NPI (must match the one of the provider)
 const NPIID netevent_npiid = {0x2227e81a, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x90, 0x27, 0x71, 0x9e, 0x09}};
@@ -74,15 +74,16 @@ typedef struct netevent_ext_header
 typedef struct netevent_ext_function_addresses
 {
     netevent_ext_header_t header;
+    netevent_capture_type_t capture_type;
     uint32_t helper_function_count;
     uint64_t* helper_function_address;
 } netevent_ext_function_addresses_t;
 
 // Dispatch table for the client module's helper functions
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
-const netevent_ext_function_addresses_t _netevent_client_dispatch = {
-    .header =
-        {.version = EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION, .size = sizeof(netevent_ext_function_addresses_t)},
+netevent_ext_function_addresses_t _netevent_client_dispatch = {
+    .header = {.version = EBPF_NETEVENT_EXTENSION_VERSION, .size = sizeof(netevent_ext_function_addresses_t)},
+    .capture_type = NetevenCapture_Drop,
     .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
     .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
 
@@ -129,12 +130,22 @@ _netevent_ebpf_extension_attach_provider(
     _In_ PNPI_REGISTRATION_INSTANCE provider_registration_instance)
 {
     EBPF_EXT_LOG_ENTRY();
+    NTSTATUS status;
 
     UNREFERENCED_PARAMETER(client_context);
     UNREFERENCED_PARAMETER(provider_registration_instance);
 
+    if (provider_registration_instance->NpiSpecificCharacteristics == NULL) {
+        status = STATUS_NOINTERFACE;
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Incompatible netevent provider version");
+        goto Exit;
+    }
+
     // Attach to the NetEvent provider module.
-    NTSTATUS status = NmrClientAttachProvider(
+    status = NmrClientAttachProvider(
         nmr_binding_handle,
         &_netevent_client_binding_context,
         &_netevent_client_dispatch,
@@ -211,11 +222,26 @@ _netevent_ebpf_extension_netevent_on_client_attach(
 {
     ebpf_result_t result = EBPF_SUCCESS;
     bool push_lock_acquired = false;
+    netevent_attach_opts_t* attach_opts;
+    const ebpf_extension_data_t* client_data = ebpf_extension_hook_client_get_client_data(attaching_client);
 
     EBPF_EXT_LOG_ENTRY();
 
-    UNREFERENCED_PARAMETER(attaching_client);
     UNREFERENCED_PARAMETER(provider_context);
+
+    if (client_data != NULL && client_data->data != NULL) {
+        attach_opts = (netevent_attach_opts_t*)client_data->data;
+        if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NetevenCapture_None)) {
+            _netevent_client_dispatch.capture_type = attach_opts->capture_type;
+        } else {
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+                "Incorrect capture type in attach opts.");
+            result = EBPF_OPERATION_NOT_SUPPORTED;
+            goto Exit;
+        }
+    }
 
     ExAcquirePushLockExclusive(&_ebpf_netevent_event_hook_provider_lock);
     push_lock_acquired = true;
@@ -495,13 +521,13 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     ebpf_extension_hook_client_t* client_context = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     uint64_t event_size = netevent_event->event_data_end - netevent_event->event_data_start;
-    bool push_lock_acquired = false;
+    bool spin_lock_acquired = false;
 
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
-    ExAcquirePushLockExclusive(&_ebpf_netevent_push_event_lock);
-    push_lock_acquired = true;
+    KIRQL oldIrql = ExAcquireSpinLockExclusive(&_ebpf_netevent_push_event_lock);
+    spin_lock_acquired = true;
     if (event_size > _event_buffer_size) {
         // If the event buffer is too small, attempt to resize it.
         uint8_t* new_event_buffer =
@@ -550,8 +576,8 @@ _ebpf_netevent_push_event(_In_ netevent_event_md_t* netevent_event)
     }
 
 Exit:
-    if (push_lock_acquired) {
-        ExReleasePushLockExclusive(&_ebpf_netevent_push_event_lock);
+    if (spin_lock_acquired) {
+        ExReleaseSpinLockExclusive(&_ebpf_netevent_push_event_lock, oldIrql);
     }
 
     // EBPF_EXT_LOG_EXIT();

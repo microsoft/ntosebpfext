@@ -6,9 +6,9 @@
 #include <wdm.h>
 #include <wsk.h>
 // clang-format on
-#include "netevent_types.h"
 #include "netevent_npi_client.h"
 #include "netevent_npi_provider.h"
+#include "netevent_types.h"
 
 #include <guiddef.h>
 #include <ntstrsafe.h>
@@ -63,7 +63,7 @@ const NPI_PROVIDER_CHARACTERISTICS _netevent_provider_characteristics = {
         .NpiId = &netevent_npiid,
         .ModuleId = &netevent_module_id,
         .Number = 0,
-        .NpiSpecificCharacteristics = NULL}};
+        .NpiSpecificCharacteristics = &netevent_npi_specific_characteristics}};
 PROVIDER_REGISTRATION_CONTEXT _netevent_provider_registration_context = {.provider_registration_handle = NULL};
 PROVIDER_BINDING_CONTEXT _netevent_provider_binding_context = {
     .client_binding_handle = NULL,
@@ -86,7 +86,6 @@ timer_dpc_routine(
 
     // Send the payload to the attached NMR client (if any)
     if (_netevent_provider_binding_context.client_dispatch != NULL) {
-
         // Acquire the rundown protection
         if (!ExAcquireRundownProtection(&_rundown_ref)) {
             // The driver is unloading, so return without doing anything
@@ -95,19 +94,24 @@ timer_dpc_routine(
 
         // Create a test event
         LONG counter = InterlockedIncrement(&_event_counter);
-        netevent_type_drop_t demo_drop_event = {
-            .header = {.event_type = NOTIFY_EVENT_TYPE_NETEVENT},
+        netevent_message_t demo_event = {
+            .header = {.event_type = NOTIFY_EVENT_TYPE_NETEVENT_LOG},
             .source_ip = {192, 168, 1, 1},
             .destination_ip = {10, 11, 12, 1},
             .source_port = 12345,
             .destination_port = 80,
-            .reason = DROP_REASON_SECURITY_POLICY,
+            .reason = DROP_REASON_NONE,
             .event_counter = counter};
+
+        if (_netevent_provider_binding_context.client_dispatch->capture_type == NetevenCapture_Drop) {
+            demo_event.header.event_type = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+            demo_event.reason = DROP_REASON_SECURITY_POLICY;
+        }
 
         // Create the event payload
         netevent_event_info_t event_payload = {
-            .event_data_start = (unsigned char*)&demo_drop_event,
-            .event_data_end = (unsigned char*)&demo_drop_event + sizeof(demo_drop_event)};
+            .event_data_start = (unsigned char*)&demo_event,
+            .event_data_end = (unsigned char*)&demo_event + sizeof(demo_event)};
 
         // Invoke the NPI client's push_event_helper routine
         netevent_push_event push_event_helper =

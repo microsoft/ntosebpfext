@@ -15,6 +15,22 @@ typedef struct _netevent_event_md
 
 } netevent_event_md_t;
 
+//
+// Packet capture type
+//
+typedef enum _netevent_capture_type
+{
+    NeteventCapture_All = 1,
+    NetevenCapture_Flow,
+    NetevenCapture_Drop,
+    NetevenCapture_None
+} netevent_capture_type_t;
+
+typedef struct _netevent_attach_opts
+{
+    netevent_capture_type_t capture_type;
+} netevent_attach_opts_t;
+
 /*
  * @brief Write an event into the ring buffer.
  *
