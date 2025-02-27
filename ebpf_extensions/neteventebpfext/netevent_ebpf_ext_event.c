@@ -82,7 +82,7 @@ typedef struct netevent_ext_function_addresses
 // Dispatch table for the client module's helper functions
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
 netevent_ext_function_addresses_t _netevent_client_dispatch = {
-    .header = {.version = 2, .size = sizeof(netevent_ext_function_addresses_t)},
+    .header = {.version = EBPF_NETEVENT_EXTENSION_VERSION, .size = sizeof(netevent_ext_function_addresses_t)},
     .capture_type = NetevenCapture_Drop,
     .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
     .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
@@ -137,7 +137,10 @@ _netevent_ebpf_extension_attach_provider(
 
     if (provider_registration_instance->NpiSpecificCharacteristics == NULL) {
         status = STATUS_NOINTERFACE;
-        EBPF_EXT_LOG_NTSTATUS_API_FAILURE(EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, "NmrRegisterProvider", status);
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Incompatible netevent provider version");
         goto Exit;
     }
 
