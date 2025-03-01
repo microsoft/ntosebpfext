@@ -125,9 +125,8 @@ jobs:
     - name: Check clang version (LLVM)
       if: steps.skip_check.outputs.should_skip != 'true'
       shell: cmd
-      run: |
-        where clang.exe
-        clang -v
+      run:
+        '"c:\Program Files\llvm\bin\clang.exe" --version'
 
     - name: Install .NET 8 SDK
       if: steps.skip_check.outputs.should_skip != 'true'
