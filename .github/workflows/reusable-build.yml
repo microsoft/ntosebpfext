@@ -124,7 +124,7 @@ jobs:
 
     - name: Check clang version (LLVM)
       if: steps.skip_check.outputs.should_skip != 'true'
-      working-directory: ${{env.GITHUB_WORKSPACE}}
+      shell: cmd
       run: |
         where clang.exe
         clang -v
