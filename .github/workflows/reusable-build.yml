@@ -83,6 +83,7 @@ jobs:
         powershell.exe "echo 'msvc_tools_path=%VCToolsInstallDir%' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
         powershell.exe "echo 'msvc_tools_version=%VCToolsVersion%' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
         powershell.exe "echo 'ASAN_WIN_CONTINUE_ON_INTERCEPTION_FAILURE=true' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
+        powershell.exe "echo 'VCINSTALLDIR=%VCINSTALLDIR%' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
 
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       if: steps.skip_check.outputs.should_skip != 'true'
@@ -111,7 +112,17 @@ jobs:
       with:
         msbuild-architecture: x64
 
-    - name: Check clang version
+    - name: Add Visual Studio LLVM to path
+      if: steps.skip_check.outputs.should_skip != 'true'
+      run: |
+        echo "$env:VCINSTALLDIR\tools\llvm\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Check for Clang version (MSVC)
+      if: steps.skip_check.outputs.should_skip != 'true'
+      run:
+        clang.exe --version
+
+    - name: Check clang version (LLVM)
       if: steps.skip_check.outputs.should_skip != 'true'
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
