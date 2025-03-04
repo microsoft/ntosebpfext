@@ -5,7 +5,8 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <OutputPath>$(MSBuildThisFileDirectory)..\..\$(Platform)\$(Configuration)</OutputPath>
-    <PackageId>eBPF-for-Windows.Extensions</PackageId>
+    <PackageId Condition="'$(Configuration)' == 'Release'">eBPF-for-Windows.Extensions</PackageId>
+    <PackageId Condition="'$(Configuration)' == 'Debug'">eBPF-for-Windows.Extensions.Debug</PackageId>
     <IsPackable>true</IsPackable>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>eBPF for Windows Contributors</Authors>
