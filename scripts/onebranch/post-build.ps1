@@ -57,15 +57,13 @@ Set-Location $scriptPath\..\..
 $SolutionDir = Get-Location
 msbuild /p:SolutionDir=$SolutionDir\ /p:Configuration=$OneBranchConfig /p:Platform=$OneBranchArch /p:BuildProjectReferences=false .\tools\nuget\nuget.proj /t:Restore,Build,Pack
 
-# Copy the nupkg and msi to the output directory
-if ($OneBranchConfig -eq "Debug" -and $OneBranchArch -eq "x64") {
-    xcopy /y .\x64\Debug\*.nupkg .\build\bin\x64_Debug
-    Copy-BuildFolder -Configuration Debug -Arch x64
+$SourceNupkgPath = ".\$OneBranchArch\$OneBranchConfig\*.nupkg"
+# Copy the nupkg to the 'packages' subdirectory in the output directory (default used by onebranch pipelines to publish nupkgs)
+$DestinationNupkgPath = ".\build\bin\$OneBranchArch`_$OneBranchConfig\packages"
+
+if (-not (Test-Path -Path $DestinationNupkgPath)) {
+    New-Item -ItemType Directory -Path $DestinationNupkgPath
 }
-elseif ($OneBranchConfig -eq "Release" -and $OneBranchArch -eq "x64") {
-    xcopy /y .\x64\Release\*.nupkg .\build\bin\x64_Release
-    Copy-BuildFolder -Configuration Release -Arch x64
-}
-else {
-    throw ("Configuration $OneBranchConfig|$OneBranchArch is not supported.")
-}
+
+xcopy /y $SourceNupkgPath $DestinationNupkgPath
+Copy-BuildFolder -Configuration $OneBranchConfig -Arch $OneBranchArch
