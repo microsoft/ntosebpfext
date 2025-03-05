@@ -21,9 +21,9 @@ typedef struct _netevent_event_md
 typedef enum _netevent_capture_type
 {
     NeteventCapture_All = 1,
-    NetevenCapture_Flow,
-    NetevenCapture_Drop,
-    NetevenCapture_None
+    NeteventCapture_Flow,
+    NeteventCapture_Drop,
+    NeteventCapture_None
 } netevent_capture_type_t;
 
 typedef struct _netevent_attach_opts

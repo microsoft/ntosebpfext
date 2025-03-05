@@ -231,7 +231,7 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
 
     // Test reattach with different capture type
     event_count_before = event_count;
-    attach_opts.capture_type = NetevenCapture_Drop;
+    attach_opts.capture_type = NeteventCapture_Drop;
     result = ebpf_program_attach(
         netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
     REQUIRE(result == EBPF_SUCCESS);

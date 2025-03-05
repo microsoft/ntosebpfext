@@ -103,7 +103,7 @@ timer_dpc_routine(
             .reason = DROP_REASON_NONE,
             .event_counter = counter};
 
-        if (_netevent_provider_binding_context.client_dispatch->capture_type == NetevenCapture_Drop) {
+        if (_netevent_provider_binding_context.client_dispatch->capture_type == NeteventCapture_Drop) {
             demo_event.header.event_type = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
             demo_event.reason = DROP_REASON_SECURITY_POLICY;
         }

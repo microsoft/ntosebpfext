@@ -42,7 +42,7 @@ typedef struct _ebpf_extension_hook_provider
 {
     NPI_PROVIDER_CHARACTERISTICS characteristics;         ///< NPI Provider characteristics.
     HANDLE nmr_provider_handle;                           ///< NMR binding handle.
-    EX_PUSH_LOCK lock;                                    ///< Lock for synchronization.
+    EX_SPIN_LOCK lock;                                    ///< Lock for synchronization.
     ebpf_extension_hook_on_client_attach attach_callback; /*!< Pointer to hook specific callback to be invoked
                                                               when a client attaches. */
     ebpf_extension_hook_on_client_detach detach_callback; /*!< Pointer to hook specific callback to be invoked
@@ -69,6 +69,24 @@ typedef struct _ebpf_extension_hook_provider
 
 #define RELEASE_PUSH_LOCK_EXCLUSIVE(lock) _RELEASE_PUSH_LOCK(lock, Exclusive)
 #define RELEASE_PUSH_LOCK_SHARED(lock) _RELEASE_PUSH_LOCK(lock, Shared)
+
+#define _ACQUIRE_SPIN_LOCK(lock, mode) \
+    {                                  \
+        KeEnterCriticalRegion();       \
+        ExAcquireSpinLock##mode(lock); \
+    }
+
+#define _RELEASE_SPIN_LOCK(lock, mode) \
+    {                                  \
+        ExReleaseSpinLock##mode(lock); \
+        KeLeaveCriticalRegion();       \
+    }
+
+#define ACQUIRE_SPIN_LOCK_EXCLUSIVE(lock) _ACQUIRE_SPIN_LOCK(lock, Exclusive)
+#define ACQUIRE_SPIN_LOCK_SHARED(lock) _ACQUIRE_SPIN_LOCK(lock, Shared)
+
+#define RELEASE_SPIN_LOCK_EXCLUSIVE(lock) _RELEASE_SPIN_LOCK(lock, Exclusive)
+#define RELEASE_SPIN_LOCK_SHARED(lock) _RELEASE_SPIN_LOCK(lock, Shared)
 
 /**
  * @brief Initialize the hook client rundown state.
@@ -237,7 +255,7 @@ ebpf_extension_hook_check_attach_parameter(
         using_wild_card_attach_parameter = TRUE;
     }
 
-    ACQUIRE_PUSH_LOCK_SHARED(&provider_context->lock);
+    ACQUIRE_SPIN_LOCK_SHARED(&provider_context->lock);
     lock_held = TRUE;
     if (using_wild_card_attach_parameter) {
         // Client requested wild card attach parameter. This will only be allowed if there are no other clients
@@ -278,7 +296,7 @@ ebpf_extension_hook_check_attach_parameter(
 
 Exit:
     if (lock_held) {
-        RELEASE_PUSH_LOCK_SHARED(&provider_context->lock);
+        RELEASE_SPIN_LOCK_SHARED(&provider_context->lock);
     }
 
     EBPF_EXT_RETURN_RESULT(result);
@@ -377,9 +395,9 @@ _ebpf_extension_hook_provider_attach_client(
     result = local_provider_context->attach_callback(hook_client, local_provider_context);
 
     if (result == EBPF_SUCCESS) {
-        ACQUIRE_PUSH_LOCK_EXCLUSIVE(&local_provider_context->lock);
+        ACQUIRE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock);
         InsertTailList(&local_provider_context->attached_clients_list, &hook_client->link);
-        RELEASE_PUSH_LOCK_EXCLUSIVE(&local_provider_context->lock);
+        RELEASE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock);
     } else {
         EBPF_EXT_LOG_MESSAGE_UINT32(
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -431,9 +449,9 @@ _ebpf_extension_hook_provider_detach_client(_In_ const void* provider_binding_co
     // Invoke hook specific handler for processing client detach.
     local_provider_context->detach_callback(local_client_context);
 
-    ACQUIRE_PUSH_LOCK_EXCLUSIVE(&local_provider_context->lock);
+    ACQUIRE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock);
     RemoveEntryList(&local_client_context->link);
-    RELEASE_PUSH_LOCK_EXCLUSIVE(&local_provider_context->lock);
+    RELEASE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock);
 
     IoQueueWorkItem(
         local_client_context->detach_work_item,
@@ -533,12 +551,12 @@ ebpf_extension_hook_client_t*
 ebpf_extension_hook_get_attached_client(_Inout_ ebpf_extension_hook_provider_t* provider_context)
 {
     ebpf_extension_hook_client_t* client_context = NULL;
-    ACQUIRE_PUSH_LOCK_SHARED(&provider_context->lock);
+    ACQUIRE_SPIN_LOCK_SHARED(&provider_context->lock);
     if (!IsListEmpty(&provider_context->attached_clients_list)) {
         client_context = (ebpf_extension_hook_client_t*)CONTAINING_RECORD(
             provider_context->attached_clients_list.Flink, ebpf_extension_hook_client_t, link);
     }
-    RELEASE_PUSH_LOCK_SHARED(&provider_context->lock);
+    RELEASE_SPIN_LOCK_SHARED(&provider_context->lock);
     return client_context;
 }
 
@@ -548,7 +566,7 @@ ebpf_extension_hook_get_next_attached_client(
     _In_opt_ const ebpf_extension_hook_client_t* client_context)
 {
     ebpf_extension_hook_client_t* next_client = NULL;
-    ACQUIRE_PUSH_LOCK_SHARED(&provider_context->lock);
+    ACQUIRE_SPIN_LOCK_SHARED(&provider_context->lock);
     if (client_context == NULL) {
         // Return the first attached client (if any).
         if (!IsListEmpty(&provider_context->attached_clients_list)) {
@@ -562,6 +580,6 @@ ebpf_extension_hook_get_next_attached_client(
                 client_context->link.Flink, ebpf_extension_hook_client_t, link);
         }
     }
-    RELEASE_PUSH_LOCK_SHARED(&provider_context->lock);
+    RELEASE_SPIN_LOCK_SHARED(&provider_context->lock);
     return next_client;
 }
