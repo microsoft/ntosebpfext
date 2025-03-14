@@ -70,26 +70,6 @@ typedef struct _ebpf_extension_hook_provider
 #define RELEASE_PUSH_LOCK_EXCLUSIVE(lock) _RELEASE_PUSH_LOCK(lock, Exclusive)
 #define RELEASE_PUSH_LOCK_SHARED(lock) _RELEASE_PUSH_LOCK(lock, Shared)
 
-static inline KIRQL
-_acquire_spin_lock(EX_SPIN_LOCK* lock, bool exclusive)
-{
-    KeEnterCriticalRegion();
-    return exclusive ? ExAcquireSpinLockExclusive(lock) : ExAcquireSpinLockShared(lock);
-}
-
-static inline void
-_release_spin_lock(EX_SPIN_LOCK* lock, KIRQL oldIrql, bool exclusive)
-{
-    exclusive ? ExAcquireSpinLockExclusive(lock) : ExAcquireSpinLockShared(lock);
-    KeLeaveCriticalRegion();
-}
-
-#define ACQUIRE_SPIN_LOCK_EXCLUSIVE(lock) _acquire_spin_lock_exclusive(lock, TRUE)
-#define ACQUIRE_SPIN_LOCK_SHARED(lock) _acquire_spin_lock_shared(lock, FALSE)
-
-#define RELEASE_SPIN_LOCK_EXCLUSIVE(lock, oldIrql) _release_spin_lock_exclusive(lock, oldIrql, TRUE)
-#define RELEASE_SPIN_LOCK_SHARED(lock, oldIrql) _release_spin_lock_shared(lock, oldIrql, FALSE)
-
 /**
  * @brief Initialize the hook client rundown state.
  *
@@ -257,7 +237,7 @@ ebpf_extension_hook_check_attach_parameter(
         using_wild_card_attach_parameter = TRUE;
     }
 
-    KIRQL oldIrql = ACQUIRE_SPIN_LOCK_SHARED(&provider_context->lock);
+    KIRQL oldIrql = ExAcquireSpinLockShared(&provider_context->lock);
     lock_held = TRUE;
     if (using_wild_card_attach_parameter) {
         // Client requested wild card attach parameter. This will only be allowed if there are no other clients
@@ -298,7 +278,7 @@ ebpf_extension_hook_check_attach_parameter(
 
 Exit:
     if (lock_held) {
-        RELEASE_SPIN_LOCK_SHARED(&provider_context->lock, oldIrql);
+        ExReleaseSpinLockShared(&provider_context->lock, oldIrql);
     }
 
     EBPF_EXT_RETURN_RESULT(result);
@@ -397,9 +377,9 @@ _ebpf_extension_hook_provider_attach_client(
     result = local_provider_context->attach_callback(hook_client, local_provider_context);
 
     if (result == EBPF_SUCCESS) {
-        KIRQL oldIrql = ACQUIRE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock);
+        KIRQL oldIrql = ExAcquireSpinLockExclusive(&local_provider_context->lock);
         InsertTailList(&local_provider_context->attached_clients_list, &hook_client->link);
-        RELEASE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock, oldIrql);
+        ExReleaseSpinLockExclusive(&local_provider_context->lock, oldIrql);
     } else {
         EBPF_EXT_LOG_MESSAGE_UINT32(
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -432,6 +412,7 @@ static NTSTATUS
 _ebpf_extension_hook_provider_detach_client(_In_ const void* provider_binding_context)
 {
     NTSTATUS status = STATUS_PENDING;
+    KIRQL oldIrql;
 
     EBPF_EXT_LOG_ENTRY();
 
@@ -451,9 +432,9 @@ _ebpf_extension_hook_provider_detach_client(_In_ const void* provider_binding_co
     // Invoke hook specific handler for processing client detach.
     local_provider_context->detach_callback(local_client_context);
 
-    KIRQL oldIrql = ACQUIRE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock);
+    oldIrql = ExAcquireSpinLockExclusive(&local_provider_context->lock);
     RemoveEntryList(&local_client_context->link);
-    RELEASE_SPIN_LOCK_EXCLUSIVE(&local_provider_context->lock, oldIrql);
+    ExReleaseSpinLockExclusive(&local_provider_context->lock, oldIrql);
 
     IoQueueWorkItem(
         local_client_context->detach_work_item,
@@ -512,7 +493,6 @@ ebpf_extension_hook_provider_register(
         EBPF_EXT_TRACELOG_KEYWORD_EXTENSION, local_provider_context, "local_provider_context", status);
 
     memset(local_provider_context, 0, sizeof(ebpf_extension_hook_provider_t));
-    ExInitializeSpinLock(&local_provider_context->lock);
     InitializeListHead(&local_provider_context->attached_clients_list);
 
     characteristics = &local_provider_context->characteristics;
@@ -553,12 +533,12 @@ ebpf_extension_hook_client_t*
 ebpf_extension_hook_get_attached_client(_Inout_ ebpf_extension_hook_provider_t* provider_context)
 {
     ebpf_extension_hook_client_t* client_context = NULL;
-    KIRQL oldIrql = ACQUIRE_SPIN_LOCK_SHARED(&provider_context->lock);
+    KIRQL oldIrql = ExAcquireSpinLockShared(&provider_context->lock);
     if (!IsListEmpty(&provider_context->attached_clients_list)) {
         client_context = (ebpf_extension_hook_client_t*)CONTAINING_RECORD(
             provider_context->attached_clients_list.Flink, ebpf_extension_hook_client_t, link);
     }
-    RELEASE_SPIN_LOCK_SHARED(&provider_context->lock, oldIrql);
+    ExReleaseSpinLockShared(&provider_context->lock, oldIrql);
     return client_context;
 }
 
@@ -568,7 +548,7 @@ ebpf_extension_hook_get_next_attached_client(
     _In_opt_ const ebpf_extension_hook_client_t* client_context)
 {
     ebpf_extension_hook_client_t* next_client = NULL;
-    KIRQL oldIrql = ACQUIRE_SPIN_LOCK_SHARED(&provider_context->lock);
+    KIRQL oldIrql = ExAcquireSpinLockShared(&provider_context->lock);
     if (client_context == NULL) {
         // Return the first attached client (if any).
         if (!IsListEmpty(&provider_context->attached_clients_list)) {
@@ -582,6 +562,6 @@ ebpf_extension_hook_get_next_attached_client(
                 client_context->link.Flink, ebpf_extension_hook_client_t, link);
         }
     }
-    RELEASE_SPIN_LOCK_SHARED(&provider_context->lock, oldIrql);
+    ExReleaseSpinLockShared(&provider_context->lock, oldIrql);
     return next_client;
 }
