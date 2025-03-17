@@ -17,6 +17,7 @@
 #define EVENT_INTERVAL_KEY_PATH L"\\Registry\\Machine\\Software\\eBPF\\Parameters"
 #define EVENT_INTERVAL_VALUE_NAME L"NetEventInterval"
 #define DEFAULT_EVENT_INTERVAL 1U // milliseconds
+#define DISPATCH_ITQL_EVENT_INTERVAL 5
 
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
@@ -116,7 +117,15 @@ timer_dpc_routine(
         // Invoke the NPI client's push_event_helper routine
         netevent_push_event push_event_helper =
             (netevent_push_event)(_netevent_provider_binding_context.client_dispatch->helper_function_address[0]);
-        push_event_helper(&event_payload);
+
+        if (counter % DISPATCH_ITQL_EVENT_INTERVAL == 0) {
+            KIRQL old_irql;
+            KeRaiseIrql(DISPATCH_LEVEL, &old_irql);
+            push_event_helper(&event_payload);
+            KeLowerIrql(old_irql);
+        } else {
+            push_event_helper(&event_payload);
+        }
 
         // Release the rundown protection
         ExReleaseRundownProtection(&_rundown_ref);
@@ -262,7 +271,7 @@ DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING RegistryPath)
 
     // Initialize the timer and assign the DPC routine
     KeInitializeTimer(&_timer);
-    KeInitializeDpc(&_timer_dpc, timer_dpc_routine, NULL);
+    KeInitializeThreadedDpc(&_timer_dpc, timer_dpc_routine, NULL);
 
     // Register the provider with the NMR
     status = NmrRegisterProvider(
