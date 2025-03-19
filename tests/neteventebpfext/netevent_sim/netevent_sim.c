@@ -17,7 +17,7 @@
 #define EVENT_INTERVAL_KEY_PATH L"\\Registry\\Machine\\Software\\eBPF\\Parameters"
 #define EVENT_INTERVAL_VALUE_NAME L"NetEventInterval"
 #define DEFAULT_EVENT_INTERVAL 1U // milliseconds
-#define DISPATCH_ITQL_EVENT_INTERVAL 5
+#define DISPATCH_IRQL_EVENT_INTERVAL 2U
 
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
@@ -118,7 +118,7 @@ timer_dpc_routine(
         netevent_push_event push_event_helper =
             (netevent_push_event)(_netevent_provider_binding_context.client_dispatch->helper_function_address[0]);
 
-        if (counter % DISPATCH_ITQL_EVENT_INTERVAL == 0) {
+        if ((counter % DISPATCH_IRQL_EVENT_INTERVAL) == 0) {
             KIRQL old_irql;
             KeRaiseIrql(DISPATCH_LEVEL, &old_irql);
             push_event_helper(&event_payload);
