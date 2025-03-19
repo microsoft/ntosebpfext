@@ -52,24 +52,6 @@ typedef struct _ebpf_extension_hook_provider
         LIST_ENTRY attached_clients_list; ///< Linked list of hook NPI clients that are attached to this provider.
 } ebpf_extension_hook_provider_t;
 
-#define _ACQUIRE_PUSH_LOCK(lock, mode) \
-    {                                  \
-        KeEnterCriticalRegion();       \
-        ExAcquirePushLock##mode(lock); \
-    }
-
-#define _RELEASE_PUSH_LOCK(lock, mode) \
-    {                                  \
-        ExReleasePushLock##mode(lock); \
-        KeLeaveCriticalRegion();       \
-    }
-
-#define ACQUIRE_PUSH_LOCK_EXCLUSIVE(lock) _ACQUIRE_PUSH_LOCK(lock, Exclusive)
-#define ACQUIRE_PUSH_LOCK_SHARED(lock) _ACQUIRE_PUSH_LOCK(lock, Shared)
-
-#define RELEASE_PUSH_LOCK_EXCLUSIVE(lock) _RELEASE_PUSH_LOCK(lock, Exclusive)
-#define RELEASE_PUSH_LOCK_SHARED(lock) _RELEASE_PUSH_LOCK(lock, Shared)
-
 /**
  * @brief Initialize the hook client rundown state.
  *
