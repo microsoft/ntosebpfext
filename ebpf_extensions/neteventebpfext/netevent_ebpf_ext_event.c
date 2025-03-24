@@ -83,7 +83,7 @@ typedef struct netevent_ext_function_addresses
 static const void* _ebpf_netevent_ext_helper_functions[] = {(void*)&_ebpf_netevent_push_event};
 netevent_ext_function_addresses_t _netevent_client_dispatch = {
     .header = {.version = EBPF_NETEVENT_EXTENSION_VERSION, .size = sizeof(netevent_ext_function_addresses_t)},
-    .capture_type = NetevenCapture_Drop,
+    .capture_type = NeteventCapture_Drop,
     .helper_function_count = EBPF_COUNT_OF(_ebpf_netevent_ext_helper_functions),
     .helper_function_address = (uint64_t*)_ebpf_netevent_ext_helper_functions};
 
@@ -231,7 +231,7 @@ _netevent_ebpf_extension_netevent_on_client_attach(
 
     if (client_data != NULL && client_data->data != NULL) {
         attach_opts = (netevent_attach_opts_t*)client_data->data;
-        if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NetevenCapture_None)) {
+        if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NeteventCapture_None)) {
             _netevent_client_dispatch.capture_type = attach_opts->capture_type;
         } else {
             EBPF_EXT_LOG_MESSAGE(
