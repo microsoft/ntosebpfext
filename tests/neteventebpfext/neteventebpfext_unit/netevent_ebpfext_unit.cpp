@@ -44,14 +44,16 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
 
         // Cast the event and print its details
         netevent_message_t* demo_event = reinterpret_cast<netevent_message_t*>(data);
-        std::cout << "\rNetwork event [" << demo_event->event_counter << "]: {"
-                  << "src: " << (int)demo_event->source_ip.octet1 << "." << (int)demo_event->source_ip.octet2 << "."
-                  << (int)demo_event->source_ip.octet3 << "." << (int)demo_event->source_ip.octet4 << ":"
-                  << demo_event->source_port << ", "
-                  << "dst: " << (int)demo_event->destination_ip.octet1 << "." << (int)demo_event->destination_ip.octet2
-                  << "." << (int)demo_event->destination_ip.octet3 << "." << (int)demo_event->destination_ip.octet4
-                  << ":" << demo_event->destination_port << ", "
-                  << "reason: " << (int)demo_event->reason;
+        std::cout << "\rNetwork event [" << demo_event->payload.event_counter << "]: {"
+                  << "src: " << (int)demo_event->payload.source_ip.octet1 << "."
+                  << (int)demo_event->payload.source_ip.octet2 << "." << (int)demo_event->payload.source_ip.octet3
+                  << "." << (int)demo_event->payload.source_ip.octet4 << ":" << demo_event->payload.source_port << ", "
+                  << "dst: " << (int)demo_event->payload.destination_ip.octet1 << "."
+                  << (int)demo_event->payload.destination_ip.octet2 << "."
+                  << (int)demo_event->payload.destination_ip.octet3 << "."
+                  << (int)demo_event->payload.destination_ip.octet4 << ":" << demo_event->payload.destination_port
+                  << ", "
+                  << "reason: " << (int)demo_event->header.Metadata.DropReason;
         std::cout << "}" << std::flush;
     } else {
         // Simply dump the event data as hex bytes.
