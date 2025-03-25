@@ -40,20 +40,17 @@ void
 _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size)
 {
     if ((event_type == NOTIFY_EVENT_TYPE_NETEVENT_DROP || event_type == NOTIFY_EVENT_TYPE_NETEVENT_LOG) &&
-        size == sizeof(netevent_message_t)) {
+        size == sizeof(netevent_payload_t)) {
 
         // Cast the event and print its details
-        netevent_message_t* demo_event = reinterpret_cast<netevent_message_t*>(data);
-        std::cout << "\rNetwork event [" << demo_event->payload.event_counter << "]: {"
-                  << "src: " << (int)demo_event->payload.source_ip.octet1 << "."
-                  << (int)demo_event->payload.source_ip.octet2 << "." << (int)demo_event->payload.source_ip.octet3
-                  << "." << (int)demo_event->payload.source_ip.octet4 << ":" << demo_event->payload.source_port << ", "
-                  << "dst: " << (int)demo_event->payload.destination_ip.octet1 << "."
-                  << (int)demo_event->payload.destination_ip.octet2 << "."
-                  << (int)demo_event->payload.destination_ip.octet3 << "."
-                  << (int)demo_event->payload.destination_ip.octet4 << ":" << demo_event->payload.destination_port
-                  << ", "
-                  << "reason: " << (int)demo_event->header.metadata.drop_reason;
+        netevent_payload_t* demo_payload = reinterpret_cast<netevent_payload_t*>(data);
+        std::cout << "\rNetwork event [" << demo_payload->event_counter << "]: {"
+                  << "src: " << (int)demo_payload->source_ip.octet1 << "." << (int)demo_payload->source_ip.octet2 << "."
+                  << (int)demo_payload->source_ip.octet3 << "." << (int)demo_payload->source_ip.octet4 << ":"
+                  << demo_payload->source_port << ", "
+                  << "dst: " << (int)demo_payload->destination_ip.octet1 << "."
+                  << (int)demo_payload->destination_ip.octet2 << "." << (int)demo_payload->destination_ip.octet3 << "."
+                  << (int)demo_payload->destination_ip.octet4 << ":" << demo_payload->destination_port;
         std::cout << "}" << std::flush;
     } else {
         // Simply dump the event data as hex bytes.

@@ -38,7 +38,7 @@ typedef enum _drop_reason
 } drop_reason;
 typedef struct _netevent_payload
 {
-
+    unsigned char event_id;
     ip_address_t source_ip;
     ip_address_t destination_ip;
     unsigned short source_port;

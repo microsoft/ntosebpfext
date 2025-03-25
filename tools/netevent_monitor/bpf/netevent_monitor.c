@@ -32,6 +32,7 @@ NetEventMonitor(netevent_event_md_t* ctx)
         ctx->payload_end > ctx->payload_start) {
 
         // Push the event to the netevent_events_map.
+        // TODO: switch to perf_event_output when it is available.
         result =
             bpf_ringbuf_output(&netevent_events_map, ctx->payload_start, (ctx->payload_end - ctx->payload_start), 0);
     }

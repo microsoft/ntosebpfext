@@ -100,6 +100,7 @@ timer_dpc_routine(
                 {.event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
                  .packet_descriptor = {.packet_metadata_length = sizeof(netevent_message_metadata_t)}},
             .payload = {
+                .event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
                 .source_ip = {192, 168, 1, 1},
                 .destination_ip = {10, 11, 12, 1},
                 .source_port = 12345,
@@ -109,6 +110,7 @@ timer_dpc_routine(
         if (_netevent_provider_binding_context.client_dispatch->capture_type == NeteventCapture_Drop) {
             demo_event.header.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
             demo_event.header.metadata.drop_reason = DROP_REASON_SECURITY_POLICY;
+            demo_event.payload.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
         }
 
         // Create the event payload
