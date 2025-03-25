@@ -308,8 +308,9 @@ _ebpf_process_context_destroy(
     }
 
     // Copy the command to the data_out.
-    if (data_out != NULL && *data_size_out >= (size_t)(process_context->process_md.command_end -
-                                                       process_context->process_md.command_start)) {
+    if (data_out != NULL &&
+        *data_size_out >=
+            (size_t)(process_context->process_md.command_end - process_context->process_md.command_start)) {
         memcpy(
             data_out,
             process_context->process_md.command_start,
