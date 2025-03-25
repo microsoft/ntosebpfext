@@ -7,9 +7,7 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
-//
-// Packet descriptor used for event streaming
-//
+// Packet descriptor used for event streaming.
 typedef struct _netevent_packet_descriptor
 {
     uint32_t packet_original_length;
@@ -17,9 +15,7 @@ typedef struct _netevent_packet_descriptor
     uint32_t packet_metadata_length;
 } netevent_packet_descriptor_t;
 
-//
-// Metadata information used for event streaming
-//
+// Metadata information used for event streaming.
 typedef struct _netevent_metadata
 {
     uint64_t pkt_group_id;
@@ -36,9 +32,7 @@ typedef struct _netevent_metadata
     uint64_t timestamp;
 } netevent_metadata_t;
 
-//
-// Packet header used for event streaming
-//
+// Packet header used for event streaming.
 typedef struct _netevent_packet_header
 {
     uint8_t event_id;
@@ -46,7 +40,7 @@ typedef struct _netevent_packet_header
     netevent_metadata_t metadata;
 } netevent_packet_header_t;
 
-//// This structure is used to pass event data to the eBPF program.
+// This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {
     netevent_packet_header_t header;
@@ -54,9 +48,7 @@ typedef struct _netevent_event_md
     uint8_t* payload_end;
 } netevent_event_md_t;
 
-//
-// Packet capture type
-//
+// Packet capture type.
 typedef enum _netevent_capture_type
 {
     NeteventCapture_All = 1,

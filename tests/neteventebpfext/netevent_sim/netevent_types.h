@@ -3,11 +3,6 @@
 
 #pragma once
 
-// #include <ntdef.h>
-// typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
-// #include <pktmonnpik.h>
-
-// #include "..\..\..\include\ebpf_netevent_hooks.h"
 //
 // Define some demo event types
 //
@@ -48,9 +43,7 @@ typedef struct _netevent_payload
     unsigned long event_counter;
 } netevent_payload_t;
 
-//
-// Packet descriptor used for event streaming
-//
+// Packet descriptor used for event streaming.
 typedef struct _netevent_message_descriptor
 {
     unsigned int packet_original_length;
@@ -58,9 +51,7 @@ typedef struct _netevent_message_descriptor
     unsigned int packet_metadata_length;
 } netevent_message_descriptor_t;
 
-//
-// Metadata information used for event streaming
-//
+// Metadata information used for event streaming.
 typedef struct _netevent_message_metadata
 {
     unsigned long long pkt_group_id;
@@ -77,9 +68,7 @@ typedef struct _netevent_message_metadata
     unsigned long long timestamp;
 } netevent_message_metadata_t;
 
-//
-// Packet header used for event streaming
-//
+// Packet header used for event streaming.
 typedef struct _netevent_message_header
 {
     unsigned char event_id;
@@ -87,9 +76,7 @@ typedef struct _netevent_message_header
     netevent_message_metadata_t metadata;
 } netevent_message_header_t;
 
-//
 // This structure is used to pass event data to the eBPF program.
-//
 typedef struct _netevent_message
 {
     netevent_message_header_t header;

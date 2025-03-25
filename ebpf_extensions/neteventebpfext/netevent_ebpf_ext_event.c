@@ -7,7 +7,6 @@
  */
 
 #include "ebpf_netevent_hooks.h"
-#include "framework.h"
 #include "netevent_ebpf_ext_event.h"
 #include "netevent_ebpf_ext_program_info.h"
 typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
@@ -527,8 +526,8 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     bool spin_lock_acquired = false;
 
     PKTMON_EVT_STREAM_PACKET_HEADER* packetHeader = netevent_event->BufferStart;
-    // NOTE: For backwards compatibility, do not rely on sizeof(PKTMON_EVT_STREAM_METADATA), as in the future
-    // PKTMON_EVT_STREAM_METADATA might be expanded. Use PacketMetaDataLength instead to skip over the metadata.
+    // Using PacketMetaDataLength instead of sizeof(PKTMON_EVT_STREAM_METADATA) for backward compatibility
+    // since  PKTMON_EVT_STREAM_METADATA can be expanded in the future.
     uint8_t* payload_start = (uint8_t*)(&packetHeader->Metadata);
     payload_start += packetHeader->PacketDescriptor.PacketMetaDataLength;
     uint64_t payload_size = netevent_event->BufferEnd - payload_start;
