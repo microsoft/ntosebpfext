@@ -7,6 +7,8 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
+#pragma pack(push, 1)
+
 // Packet descriptor used for event streaming.
 typedef struct _netevent_packet_descriptor
 {
@@ -39,6 +41,8 @@ typedef struct _netevent_packet_header
     netevent_packet_descriptor_t packet_descriptor;
     netevent_metadata_t metadata;
 } netevent_packet_header_t;
+
+#pragma pack(pop)
 
 // This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md

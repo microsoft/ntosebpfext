@@ -554,8 +554,12 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         _event_buffer = new_event_buffer;
         _event_buffer_size = payload_size;
     }
-    netevent_event_notify_context.netevent_event_md.header.event_id = packetHeader->EventId;
-    netevent_event_notify_context.netevent_event_md.header.metadata.drop_reason = packetHeader->Metadata.DropReason;
+
+    C_ASSERT(sizeof(netevent_event_notify_context.netevent_event_md.header) == sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
+    memcpy(
+        &netevent_event_notify_context.netevent_event_md.header,
+        packetHeader,
+        sizeof(netevent_event_notify_context.netevent_event_md.header));
 
     memcpy(_event_buffer, payload_start, payload_size);
     netevent_event_notify_context.netevent_event_md.payload_start = _event_buffer;
