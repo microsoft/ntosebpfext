@@ -3,6 +3,11 @@
 
 #pragma once
 
+// #include <ntdef.h>
+// typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
+// #include <pktmonnpik.h>
+
+// #include "..\..\..\include\ebpf_netevent_hooks.h"
 //
 // Define some demo event types
 //
@@ -46,45 +51,48 @@ typedef struct _netevent_payload
 //
 // Packet descriptor used for event streaming
 //
-typedef struct _netevent_packet_descriptor
+typedef struct _netevent_message_descriptor
 {
-    unsigned int PacketOriginalLength;
-    unsigned int PacketLoggedLength;
-    unsigned int PacketMetaDataLength;
-} netevent_packet_descriptor_t;
+    unsigned int packet_original_length;
+    unsigned int packet_logged_length;
+    unsigned int packet_metadata_length;
+} netevent_message_descriptor_t;
 
 //
 // Metadata information used for event streaming
 //
-typedef struct _netevent_stream_metadata
+typedef struct _netevent_message_metadata
 {
-    unsigned long long PktGroupId;
-    unsigned short PktCount;
-    unsigned short AppearanceCount;
-    unsigned short DirectionName;
-    unsigned short PacketType;
-    unsigned short ComponentId;
-    unsigned short EdgeId;
-    unsigned short FilterId;
-    unsigned int DropReason;
-    unsigned int DropLocation;
-    unsigned short ProcNum;
-    long TimeStamp;
-} netevent_stream_metadata_t;
+    unsigned long long pkt_group_id;
+    unsigned short pkt_count;
+    unsigned short appearance_count;
+    unsigned short direction_name;
+    unsigned short packet_type;
+    unsigned short component_id;
+    unsigned short edge_id;
+    unsigned short filter_id;
+    unsigned int drop_reason;
+    unsigned int drop_location;
+    unsigned short proc_num;
+    unsigned long long timestamp;
+} netevent_message_metadata_t;
 
 //
 // Packet header used for event streaming
 //
-typedef struct _netevent_stream_packet_header
+typedef struct _netevent_message_header
 {
-    unsigned char EventId;
-    netevent_packet_descriptor_t PacketDescriptor;
-    netevent_stream_metadata_t Metadata;
-} netevent_stream_packet_header_t;
+    unsigned char event_id;
+    netevent_message_descriptor_t packet_descriptor;
+    netevent_message_metadata_t metadata;
+} netevent_message_header_t;
 
-typedef struct _netevent_messsage
+//
+// This structure is used to pass event data to the eBPF program.
+//
+typedef struct _netevent_message
 {
-    netevent_stream_packet_header_t header;
+    netevent_message_header_t header;
     netevent_payload_t payload;
 } netevent_message_t;
 

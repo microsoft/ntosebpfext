@@ -7,10 +7,12 @@
  */
 
 #include "ebpf_netevent_hooks.h"
+#include "framework.h"
 #include "netevent_ebpf_ext_event.h"
 #include "netevent_ebpf_ext_program_info.h"
-
+typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
 #include <errno.h>
+#include <pktmonnpik.h>
 
 //
 // Global variables.
@@ -553,7 +555,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         _event_buffer = new_event_buffer;
         _event_buffer_size = payload_size;
     }
-    netevent_event_notify_context.netevent_event_md.header = *packetHeader;
+    netevent_event_notify_context.netevent_event_md.header.event_id = packetHeader->EventId;
+    netevent_event_notify_context.netevent_event_md.header.metadata.drop_reason = packetHeader->Metadata.DropReason;
+
     memcpy(_event_buffer, payload_start, payload_size);
     netevent_event_notify_context.netevent_event_md.payload_start = _event_buffer;
     netevent_event_notify_context.netevent_event_md.payload_end = _event_buffer + payload_size;

@@ -28,12 +28,12 @@ NetEventMonitor(netevent_event_md_t* ctx)
 {
     int result = -1;
 
-    if (ctx != NULL && ctx->event_data_start != NULL && ctx->event_data_end != NULL &&
-        ctx->event_data_end > ctx->event_data_start) {
+    if (ctx != NULL && ctx->payload_start != NULL && ctx->payload_end != NULL &&
+        ctx->payload_end > ctx->payload_start) {
 
         // Push the event to the netevent_events_map.
-        result = bpf_ringbuf_output(
-            &netevent_events_map, ctx->event_data_start, (ctx->event_data_end - ctx->event_data_start), 0);
+        result =
+            bpf_ringbuf_output(&netevent_events_map, ctx->payload_start, (ctx->payload_end - ctx->payload_start), 0);
     }
 
     return result;

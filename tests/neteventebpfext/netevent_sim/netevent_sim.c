@@ -96,7 +96,7 @@ timer_dpc_routine(
         // Create a test event
         LONG counter = InterlockedIncrement(&_event_counter);
         netevent_message_t demo_event = {
-            .header = {.EventId = NOTIFY_EVENT_TYPE_NETEVENT_LOG},
+            .header = {.event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG},
             .payload = {
                 .source_ip = {192, 168, 1, 1},
                 .destination_ip = {10, 11, 12, 1},
@@ -105,8 +105,8 @@ timer_dpc_routine(
                 .event_counter = counter}};
 
         if (_netevent_provider_binding_context.client_dispatch->capture_type == NeteventCapture_Drop) {
-            demo_event.header.event_type = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
-            demo_event.reason = DROP_REASON_SECURITY_POLICY;
+            demo_event.header.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+            demo_event.header.metadata.drop_reason = DROP_REASON_SECURITY_POLICY;
         }
 
         // Create the event payload

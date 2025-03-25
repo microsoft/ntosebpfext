@@ -53,7 +53,7 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
                   << (int)demo_event->payload.destination_ip.octet3 << "."
                   << (int)demo_event->payload.destination_ip.octet4 << ":" << demo_event->payload.destination_port
                   << ", "
-                  << "reason: " << (int)demo_event->header.Metadata.DropReason;
+                  << "reason: " << (int)demo_event->header.metadata.drop_reason;
         std::cout << "}" << std::flush;
     } else {
         // Simply dump the event data as hex bytes.

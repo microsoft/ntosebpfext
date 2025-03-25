@@ -1,20 +1,55 @@
 // Copyright (c) Microsoft Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include "framework.h"
-
 #include <stddef.h>
 #include <stdint.h>
-typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
-#include <pktmonnpik.h>
 
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
+//
+// Packet descriptor used for event streaming
+//
+typedef struct _netevent_packet_descriptor
+{
+    uint32_t packet_original_length;
+    uint32_t packet_logged_length;
+    uint32_t packet_metadata_length;
+} netevent_packet_descriptor_t;
+
+//
+// Metadata information used for event streaming
+//
+typedef struct _netevent_metadata
+{
+    uint64_t pkt_group_id;
+    uint16_t pkt_count;
+    uint16_t appearance_count;
+    uint16_t direction_name;
+    uint16_t packet_type;
+    uint16_t component_id;
+    uint16_t edge_id;
+    uint16_t filter_id;
+    uint32_t drop_reason;
+    uint32_t drop_location;
+    uint16_t proc_num;
+    uint64_t timestamp;
+} netevent_metadata_t;
+
+//
+// Packet header used for event streaming
+//
+typedef struct _netevent_packet_header
+{
+    uint8_t event_id;
+    netevent_packet_descriptor_t packet_descriptor;
+    netevent_metadata_t metadata;
+} netevent_packet_header_t;
+
 //// This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {
-    PKTMON_EVT_STREAM_PACKET_HEADER header;
+    netevent_packet_header_t header;
     uint8_t* payload_start;
     uint8_t* payload_end;
 } netevent_event_md_t;
