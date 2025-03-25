@@ -96,7 +96,9 @@ timer_dpc_routine(
         // Create a test event
         LONG counter = InterlockedIncrement(&_event_counter);
         netevent_message_t demo_event = {
-            .header = {.event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG},
+            .header =
+                {.event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
+                 .packet_descriptor = {.packet_metadata_length = sizeof(netevent_message_metadata_t)}},
             .payload = {
                 .source_ip = {192, 168, 1, 1},
                 .destination_ip = {10, 11, 12, 1},
