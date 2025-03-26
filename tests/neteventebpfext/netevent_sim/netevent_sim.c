@@ -97,8 +97,8 @@ timer_dpc_routine(
         LONG counter = InterlockedIncrement(&_event_counter);
         netevent_message_t demo_event = {
             .header =
-                {.event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
-                 .packet_descriptor = {.packet_metadata_length = sizeof(netevent_message_metadata_t)}},
+                {.EventId = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
+                 .PacketDescriptor = {.PacketMetaDataLength = sizeof(PKTMON_EVT_STREAM_METADATA)}},
             .payload = {
                 .event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
                 .source_ip = {192, 168, 1, 1},
@@ -108,8 +108,8 @@ timer_dpc_routine(
                 .event_counter = counter}};
 
         if (_netevent_provider_binding_context.client_dispatch->capture_type == NeteventCapture_Drop) {
-            demo_event.header.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
-            demo_event.header.metadata.drop_reason = DROP_REASON_SECURITY_POLICY;
+            demo_event.header.EventId = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+            demo_event.header.Metadata.DropReason = DROP_REASON_SECURITY_POLICY;
             demo_event.payload.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
         }
 

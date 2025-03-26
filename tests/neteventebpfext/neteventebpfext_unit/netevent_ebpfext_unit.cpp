@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 #define CATCH_CONFIG_MAIN
+// clang-format off
+#include "framework.h"
 #include "..\netevent_sim\netevent_types.h"
+// clang-format on
 #include "catch_wrapper.hpp"
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
