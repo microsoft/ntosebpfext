@@ -12,9 +12,11 @@
 // Packet descriptor used for event streaming.
 typedef struct _netevent_packet_descriptor
 {
-    uint32_t packet_original_length;
-    uint32_t packet_logged_length;
-    uint32_t packet_metadata_length;
+    uint32_t packet_original_length; // Original length of the packet.
+    uint32_t packet_logged_length;   // The original packet might have been truncated during logging. This field
+                                     // represents the size of the received packet pointed to by `data_start`.
+    uint32_t packet_metadata_length; // Length of the packet metadata. Can be greater that sizeof(packet_metadata_t) if
+                                     // metadata fields are added in the future.
 } netevent_packet_descriptor_t;
 
 // Metadata information used for event streaming.
@@ -48,8 +50,8 @@ typedef struct _netevent_packet_header
 typedef struct _netevent_event_md
 {
     netevent_packet_header_t header;
-    uint8_t* payload_start;
-    uint8_t* payload_end;
+    uint8_t* data_start;
+    uint8_t* data_end;
 } netevent_event_md_t;
 
 // Packet capture type.

@@ -444,8 +444,8 @@ _ebpf_netevent_program_context_create(
     memcpy(&netevent_event_context->netevent_event_md, context_in, sizeof(netevent_event_md_t));
 
     // Copy the event's pointer & size from the caller, to the out context.
-    netevent_event_context->netevent_event_md.payload_start = (uint8_t*)data_in;
-    netevent_event_context->netevent_event_md.payload_end = (uint8_t*)data_in + data_size_in;
+    netevent_event_context->netevent_event_md.data_start = (uint8_t*)data_in;
+    netevent_event_context->netevent_event_md.data_end = (uint8_t*)data_in + data_size_in;
     *context = &netevent_event_context->netevent_event_md;
     netevent_event_context = NULL;
     result = EBPF_SUCCESS;
@@ -482,23 +482,22 @@ _ebpf_netevent_program_context_destroy(
         memcpy(netevent_event_context_out, &netevent_event_context->netevent_event_md, sizeof(netevent_event_md_t));
 
         // Zero out the event context info.
-        netevent_event_context_out->payload_start = 0;
-        netevent_event_context_out->payload_end = 0;
+        netevent_event_context_out->data_start = 0;
+        netevent_event_context_out->data_end = 0;
         *context_size_out = sizeof(netevent_event_md_t);
     } else {
         *context_size_out = 0;
     }
 
     // Copy the event data to 'data_out'.
-    if (data_out != NULL && *data_size_out >= (size_t)(netevent_event_context->netevent_event_md.payload_end -
-                                                       netevent_event_context->netevent_event_md.payload_start)) {
+    if (data_out != NULL && *data_size_out >= (size_t)(netevent_event_context->netevent_event_md.data_end -
+                                                       netevent_event_context->netevent_event_md.data_start)) {
         memcpy(
             data_out,
-            netevent_event_context->netevent_event_md.payload_start,
-            netevent_event_context->netevent_event_md.payload_end -
-                netevent_event_context->netevent_event_md.payload_start);
-        *data_size_out = netevent_event_context->netevent_event_md.payload_end -
-                         netevent_event_context->netevent_event_md.payload_start;
+            netevent_event_context->netevent_event_md.data_start,
+            netevent_event_context->netevent_event_md.data_end - netevent_event_context->netevent_event_md.data_start);
+        *data_size_out =
+            netevent_event_context->netevent_event_md.data_end - netevent_event_context->netevent_event_md.data_start;
     } else {
         *data_size_out = 0;
     }
@@ -528,9 +527,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     PKTMON_EVT_STREAM_PACKET_HEADER* packetHeader = netevent_event->BufferStart;
     // Using PacketMetaDataLength instead of sizeof(PKTMON_EVT_STREAM_METADATA) for backward compatibility
     // since  PKTMON_EVT_STREAM_METADATA can be expanded in the future.
-    uint8_t* payload_start = (uint8_t*)(&packetHeader->Metadata);
-    payload_start += packetHeader->PacketDescriptor.PacketMetaDataLength;
-    uint64_t payload_size = netevent_event->BufferEnd - payload_start;
+    uint8_t* data_start = (uint8_t*)(&packetHeader->Metadata);
+    data_start += packetHeader->PacketDescriptor.PacketMetaDataLength;
+    uint64_t payload_size = netevent_event->BufferEnd - data_start;
 
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
@@ -561,9 +560,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         packetHeader,
         sizeof(netevent_event_notify_context.netevent_event_md.header));
 
-    memcpy(_event_buffer, payload_start, payload_size);
-    netevent_event_notify_context.netevent_event_md.payload_start = _event_buffer;
-    netevent_event_notify_context.netevent_event_md.payload_end = _event_buffer + payload_size;
+    memcpy(_event_buffer, data_start, payload_size);
+    netevent_event_notify_context.netevent_event_md.data_start = _event_buffer;
+    netevent_event_notify_context.netevent_event_md.data_end = _event_buffer + payload_size;
 
     // For each attached client call the netevent hook.
     client_context = ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, NULL);
