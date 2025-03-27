@@ -559,7 +559,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
 
     // C_ASSERT(sizeof(netevent_event_notify_context.netevent_event_md.header) ==
     // sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
-    memcpy(_event_buffer, packetHeader, sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
+    if (sizeof(PKTMON_EVT_STREAM_PACKET_HEADER) < payload_size) {
+        memcpy(_event_buffer, packetHeader, sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
+    }
     memcpy(_event_buffer_data_start, data_start, payload_size - sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
 
     netevent_event_notify_context.netevent_event_md.data_meta = _event_buffer;
