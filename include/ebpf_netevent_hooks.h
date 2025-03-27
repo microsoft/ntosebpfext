@@ -49,7 +49,7 @@ typedef struct _netevent_packet_header
 // This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {
-    netevent_packet_header_t header;
+    uint8_t* data_meta;
     uint8_t* data_start;
     uint8_t* data_end;
 } netevent_event_md_t;

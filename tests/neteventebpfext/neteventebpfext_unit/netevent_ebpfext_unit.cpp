@@ -43,10 +43,11 @@ void
 _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size)
 {
     if ((event_type == NOTIFY_EVENT_TYPE_NETEVENT_DROP || event_type == NOTIFY_EVENT_TYPE_NETEVENT_LOG) &&
-        size == sizeof(netevent_payload_t)) {
+        size == sizeof(netevent_message_t)) {
 
         // Cast the event and print its details
-        netevent_payload_t* test_payload = reinterpret_cast<netevent_payload_t*>(data);
+        netevent_message_t* test_message = reinterpret_cast<netevent_message_t*>(data);
+        netevent_payload_t* test_payload = static_cast<netevent_payload_t*>(&test_message->payload);
         std::cout << "\rNetwork event [" << test_payload->event_counter << "]: {"
                   << "src: " << (int)test_payload->source_ip.octet1 << "." << (int)test_payload->source_ip.octet2 << "."
                   << (int)test_payload->source_ip.octet3 << "." << (int)test_payload->source_ip.octet4 << ":"
