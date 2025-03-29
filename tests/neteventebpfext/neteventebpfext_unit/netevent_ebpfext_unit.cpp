@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 #define CATCH_CONFIG_MAIN
+// clang-format off
+#include "framework.h"
 #include "..\netevent_sim\netevent_types.h"
+// clang-format on
 #include "catch_wrapper.hpp"
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
@@ -43,15 +46,15 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
         size == sizeof(netevent_message_t)) {
 
         // Cast the event and print its details
-        netevent_message_t* demo_event = reinterpret_cast<netevent_message_t*>(data);
-        std::cout << "\rNetwork event [" << demo_event->event_counter << "]: {"
-                  << "src: " << (int)demo_event->source_ip.octet1 << "." << (int)demo_event->source_ip.octet2 << "."
-                  << (int)demo_event->source_ip.octet3 << "." << (int)demo_event->source_ip.octet4 << ":"
-                  << demo_event->source_port << ", "
-                  << "dst: " << (int)demo_event->destination_ip.octet1 << "." << (int)demo_event->destination_ip.octet2
-                  << "." << (int)demo_event->destination_ip.octet3 << "." << (int)demo_event->destination_ip.octet4
-                  << ":" << demo_event->destination_port << ", "
-                  << "reason: " << (int)demo_event->reason;
+        netevent_message_t* test_message = reinterpret_cast<netevent_message_t*>(data);
+        netevent_payload_t* test_payload = static_cast<netevent_payload_t*>(&test_message->payload);
+        std::cout << "\rNetwork event [" << test_payload->event_counter << "]: {"
+                  << "src: " << (int)test_payload->source_ip.octet1 << "." << (int)test_payload->source_ip.octet2 << "."
+                  << (int)test_payload->source_ip.octet3 << "." << (int)test_payload->source_ip.octet4 << ":"
+                  << test_payload->source_port << ", "
+                  << "dst: " << (int)test_payload->destination_ip.octet1 << "."
+                  << (int)test_payload->destination_ip.octet2 << "." << (int)test_payload->destination_ip.octet3 << "."
+                  << (int)test_payload->destination_ip.octet4 << ":" << test_payload->destination_port;
         std::cout << "}" << std::flush;
     } else {
         // Simply dump the event data as hex bytes.

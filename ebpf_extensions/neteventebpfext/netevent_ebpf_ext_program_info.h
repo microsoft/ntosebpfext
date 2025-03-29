@@ -22,9 +22,9 @@ static const ebpf_helper_function_prototype_t _netevent_event_ebpf_extension_hel
 
 static const ebpf_context_descriptor_t _ebpf_netevent_program_context_descriptor = {
     (int)sizeof(netevent_event_md_t),
-    EBPF_OFFSET_OF(netevent_event_md_t, event_data_start),
-    EBPF_OFFSET_OF(netevent_event_md_t, event_data_end),
-    -1,
+    EBPF_OFFSET_OF(netevent_event_md_t, data_start),
+    EBPF_OFFSET_OF(netevent_event_md_t, data_end),
+    EBPF_OFFSET_OF(netevent_event_md_t, data_meta),
 };
 
 static const ebpf_program_type_descriptor_t _ebpf_program_type_netevent_guid = {
