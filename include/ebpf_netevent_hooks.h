@@ -7,45 +7,6 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
-#pragma pack(push, 1)
-
-// Packet descriptor used for event streaming.
-typedef struct _netevent_packet_descriptor
-{
-    uint32_t packet_original_length; // Original length of the packet.
-    uint32_t packet_logged_length;   // The original packet might have been truncated during logging. This field
-                                     // represents the size of the received packet pointed to by `data_start`.
-    uint32_t packet_metadata_length; // Length of the packet metadata. Can be greater that sizeof(packet_metadata_t) if
-                                     // metadata fields are added in the future.
-} netevent_packet_descriptor_t;
-
-// Metadata information used for event streaming.
-typedef struct _netevent_metadata
-{
-    uint64_t pkt_group_id;
-    uint16_t pkt_count;
-    uint16_t appearance_count;
-    uint16_t direction_name;
-    uint16_t packet_type;
-    uint16_t component_id;
-    uint16_t edge_id;
-    uint16_t filter_id;
-    uint32_t drop_reason;
-    uint32_t drop_location;
-    uint16_t proc_num;
-    uint64_t timestamp;
-} netevent_metadata_t;
-
-// Packet header used for event streaming.
-typedef struct _netevent_packet_header
-{
-    uint8_t event_id;
-    netevent_packet_descriptor_t packet_descriptor;
-    netevent_metadata_t metadata;
-} netevent_packet_header_t;
-
-#pragma pack(pop)
-
 // This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {

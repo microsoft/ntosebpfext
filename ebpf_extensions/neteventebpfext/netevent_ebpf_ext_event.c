@@ -9,9 +9,8 @@
 #include "ebpf_netevent_hooks.h"
 #include "netevent_ebpf_ext_event.h"
 #include "netevent_ebpf_ext_program_info.h"
-typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
+
 #include <errno.h>
-#include <pktmonnpik.h>
 
 //
 // Global variables.
@@ -28,6 +27,8 @@ const NPIID netevent_npiid = {0x2227e81a, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x9
 // Define the client module's ID
 const NPI_MODULEID netevent_client_module_id = {
     sizeof(NPI_MODULEID), MIT_GUID, {0x8a9a5ef1, 0x2aa1, 0x42e9, {0x89, 0x5, 0xd1, 0xcf, 0x6, 0xc5, 0x77, 0x64}}};
+// Define the length of the event header expected prior to the event data.
+#define NETEVENT_HEADER_LENGTH 0x35
 
 //
 // Prototypes.
@@ -48,7 +49,11 @@ _ebpf_netevent_program_context_destroy(
     _Out_writes_bytes_to_(*context_size_out, *context_size_out) uint8_t* context_out,
     _Inout_ size_t* context_size_out);
 
-typedef PKTMON_NETEVT_CLIENT_REPORT_PACKET_DROP_OUT netevent_event_t;
+typedef struct _netevent_event
+{
+    uint8_t* event_start;
+    uint8_t* event_end;
+} netevent_event_t;
 
 static void
 _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event);
@@ -524,13 +529,8 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     bool spin_lock_acquired = false;
     uint8_t* _event_buffer_data_start = NULL;
-
-    PKTMON_EVT_STREAM_PACKET_HEADER* packetHeader = netevent_event->BufferStart;
-    // Using PacketMetaDataLength instead of sizeof(PKTMON_EVT_STREAM_METADATA) for backward compatibility
-    // since  PKTMON_EVT_STREAM_METADATA can be expanded in the future.
-    uint8_t* data_start = (uint8_t*)(&packetHeader->Metadata);
-    data_start += packetHeader->PacketDescriptor.PacketMetaDataLength;
-    uint64_t payload_size = netevent_event->BufferEnd - (UCHAR*)netevent_event->BufferStart;
+    uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
+    uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
 
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
@@ -555,20 +555,16 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         _event_buffer_size = payload_size;
     }
 
-    _event_buffer_data_start = _event_buffer + sizeof(PKTMON_EVT_STREAM_PACKET_HEADER);
-
-    // C_ASSERT(sizeof(netevent_event_notify_context.netevent_event_md.header) ==
-    // sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
-    if (sizeof(PKTMON_EVT_STREAM_PACKET_HEADER) < payload_size) {
-        memcpy(_event_buffer, packetHeader, sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
+    if (NETEVENT_HEADER_LENGTH < payload_size) {
+        _event_buffer_data_start = _event_buffer + NETEVENT_HEADER_LENGTH;
+        memcpy(_event_buffer, netevent_event->event_start, NETEVENT_HEADER_LENGTH);
+        memcpy(_event_buffer_data_start, data_start, payload_size - NETEVENT_HEADER_LENGTH);
+        netevent_event_notify_context.netevent_event_md.data_meta = _event_buffer;
+    } else {
+        _event_buffer_data_start = _event_buffer;
+        memcpy(_event_buffer, netevent_event->event_start, payload_size);
     }
-    memcpy(_event_buffer_data_start, data_start, payload_size - sizeof(PKTMON_EVT_STREAM_PACKET_HEADER));
-
-    netevent_event_notify_context.netevent_event_md.data_meta = _event_buffer;
     netevent_event_notify_context.netevent_event_md.data_start = _event_buffer_data_start;
-
-    // memcpy(_event_buffer, data_start, payload_size);
-    // netevent_event_notify_context.netevent_event_md.data_start = _event_buffer;
     netevent_event_notify_context.netevent_event_md.data_end = _event_buffer + payload_size;
 
     // For each attached client call the netevent hook.
