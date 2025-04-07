@@ -28,15 +28,15 @@ NetEventMonitor(netevent_event_md_t* ctx)
 {
     int result = -1;
 
-    if (ctx != NULL && ctx->data_start != NULL && ctx->data_end != NULL && ctx->data_end > ctx->data_start) {
+    if (ctx != NULL && ctx->data != NULL && ctx->data_end != NULL && ctx->data_end > ctx->data) {
 
-        if (ctx->data_meta != NULL && ctx->data_meta < ctx->data_start) {
-            bpf_printk("NetEventMonitor: data_meta length: %u\n", (ctx->data_start - ctx->data_meta));
+        if (ctx->data_meta != NULL && ctx->data_meta < ctx->data) {
+            bpf_printk("NetEventMonitor: data_meta length: %u\n", (ctx->data - ctx->data_meta));
         }
         // Push the event to the netevent_events_map.
         // TODO: switch to perf_event_output when it is available.
         // Issue: https://github.com/microsoft/ntosebpfext/issues/204.
-        result = bpf_ringbuf_output(&netevent_events_map, ctx->data_start, (ctx->data_end - ctx->data_start), 0);
+        result = bpf_ringbuf_output(&netevent_events_map, ctx->data, (ctx->data_end - ctx->data), 0);
     }
 
     return result;

@@ -449,7 +449,7 @@ _ebpf_netevent_program_context_create(
     memcpy(&netevent_event_context->netevent_event_md, context_in, sizeof(netevent_event_md_t));
 
     // Copy the event's pointer & size from the caller, to the out context.
-    netevent_event_context->netevent_event_md.data_start = (uint8_t*)data_in;
+    netevent_event_context->netevent_event_md.data = (uint8_t*)data_in;
     netevent_event_context->netevent_event_md.data_end = (uint8_t*)data_in + data_size_in;
     *context = &netevent_event_context->netevent_event_md;
     netevent_event_context = NULL;
@@ -487,7 +487,7 @@ _ebpf_netevent_program_context_destroy(
         memcpy(netevent_event_context_out, &netevent_event_context->netevent_event_md, sizeof(netevent_event_md_t));
 
         // Zero out the event context info.
-        netevent_event_context_out->data_start = 0;
+        netevent_event_context_out->data = 0;
         netevent_event_context_out->data_end = 0;
         *context_size_out = sizeof(netevent_event_md_t);
     } else {
@@ -496,13 +496,13 @@ _ebpf_netevent_program_context_destroy(
 
     // Copy the event data to 'data_out'.
     if (data_out != NULL && *data_size_out >= (size_t)(netevent_event_context->netevent_event_md.data_end -
-                                                       netevent_event_context->netevent_event_md.data_start)) {
+                                                       netevent_event_context->netevent_event_md.data)) {
         memcpy(
             data_out,
-            netevent_event_context->netevent_event_md.data_start,
-            netevent_event_context->netevent_event_md.data_end - netevent_event_context->netevent_event_md.data_start);
+            netevent_event_context->netevent_event_md.data,
+            netevent_event_context->netevent_event_md.data_end - netevent_event_context->netevent_event_md.data);
         *data_size_out =
-            netevent_event_context->netevent_event_md.data_end - netevent_event_context->netevent_event_md.data_start;
+            netevent_event_context->netevent_event_md.data_end - netevent_event_context->netevent_event_md.data;
     } else {
         *data_size_out = 0;
     }
@@ -564,7 +564,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         _event_buffer_data_start = _event_buffer;
         memcpy(_event_buffer, netevent_event->event_start, payload_size);
     }
-    netevent_event_notify_context.netevent_event_md.data_start = _event_buffer_data_start;
+    netevent_event_notify_context.netevent_event_md.data = _event_buffer_data_start;
     netevent_event_notify_context.netevent_event_md.data_end = _event_buffer + payload_size;
 
     // For each attached client call the netevent hook.
