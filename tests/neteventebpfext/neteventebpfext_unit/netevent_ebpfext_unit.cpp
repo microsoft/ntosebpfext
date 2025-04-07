@@ -440,8 +440,31 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(bpf_opts.data_size_out == dummy_data_size);
     REQUIRE(memcmp(dummy_data_in, data_out, dummy_data_size) == 0);
     REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
+
+    // Run prog_test with data > NETEVENT_HEADER_LENGTH
+    netevent_message_t netevent_message = {0};
+    netevent_message.payload.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+    const size_t netevent_message_size = sizeof(netevent_message_t);
+    bpf_opts.repeat = 1;
+    bpf_opts.ctx_in = &netevent_ctx_in;
+    bpf_opts.ctx_size_in = sizeof(netevent_ctx_in);
+    bpf_opts.ctx_out = &netevent_ctx_out;
+    bpf_opts.ctx_size_out = sizeof(netevent_ctx_out);
+    bpf_opts.data_in = &netevent_message;
+    bpf_opts.data_size_in = static_cast<uint32_t>(netevent_message_size);
+    // Set the data_out buffer to hold the output.
+    bpf_opts.data_out = data_out;
+    bpf_opts.data_size_out = sizeof(data_out);
+
+    // Execute the program
+    REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) == 0);
+
+    REQUIRE(bpf_opts.data_size_out == netevent_message_size);
+    REQUIRE(memcmp(&netevent_message, data_out, netevent_message_size) == 0);
+    REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
+
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    REQUIRE(event_count == event_count_before + 1);
+    REQUIRE(event_count == event_count_before + 2);
 
     // Execute negative cases
     bpf_opts.ctx_in = NULL;
