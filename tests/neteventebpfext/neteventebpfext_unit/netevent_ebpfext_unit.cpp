@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 #define CATCH_CONFIG_MAIN
+// clang-format off
+#include "framework.h"
 #include "..\netevent_sim\netevent_types.h"
+// clang-format on
 #include "catch_wrapper.hpp"
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
@@ -43,15 +46,15 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
         size == sizeof(netevent_message_t)) {
 
         // Cast the event and print its details
-        netevent_message_t* demo_event = reinterpret_cast<netevent_message_t*>(data);
-        std::cout << "\rNetwork event [" << demo_event->event_counter << "]: {"
-                  << "src: " << (int)demo_event->source_ip.octet1 << "." << (int)demo_event->source_ip.octet2 << "."
-                  << (int)demo_event->source_ip.octet3 << "." << (int)demo_event->source_ip.octet4 << ":"
-                  << demo_event->source_port << ", "
-                  << "dst: " << (int)demo_event->destination_ip.octet1 << "." << (int)demo_event->destination_ip.octet2
-                  << "." << (int)demo_event->destination_ip.octet3 << "." << (int)demo_event->destination_ip.octet4
-                  << ":" << demo_event->destination_port << ", "
-                  << "reason: " << (int)demo_event->reason;
+        netevent_message_t* test_message = reinterpret_cast<netevent_message_t*>(data);
+        netevent_payload_t* test_payload = static_cast<netevent_payload_t*>(&test_message->payload);
+        std::cout << "\rNetwork event [" << test_payload->event_counter << "]: {"
+                  << "src: " << (int)test_payload->source_ip.octet1 << "." << (int)test_payload->source_ip.octet2 << "."
+                  << (int)test_payload->source_ip.octet3 << "." << (int)test_payload->source_ip.octet4 << ":"
+                  << test_payload->source_port << ", "
+                  << "dst: " << (int)test_payload->destination_ip.octet1 << "."
+                  << (int)test_payload->destination_ip.octet2 << "." << (int)test_payload->destination_ip.octet3 << "."
+                  << (int)test_payload->destination_ip.octet4 << ":" << test_payload->destination_port;
         std::cout << "}" << std::flush;
     } else {
         // Simply dump the event data as hex bytes.
@@ -437,8 +440,31 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(bpf_opts.data_size_out == dummy_data_size);
     REQUIRE(memcmp(dummy_data_in, data_out, dummy_data_size) == 0);
     REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
+
+    // Run prog_test with data > NETEVENT_HEADER_LENGTH
+    netevent_message_t netevent_message = {0};
+    netevent_message.payload.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+    const size_t netevent_message_size = sizeof(netevent_message_t);
+    bpf_opts.repeat = 1;
+    bpf_opts.ctx_in = &netevent_ctx_in;
+    bpf_opts.ctx_size_in = sizeof(netevent_ctx_in);
+    bpf_opts.ctx_out = &netevent_ctx_out;
+    bpf_opts.ctx_size_out = sizeof(netevent_ctx_out);
+    bpf_opts.data_in = &netevent_message;
+    bpf_opts.data_size_in = static_cast<uint32_t>(netevent_message_size);
+    // Set the data_out buffer to hold the output.
+    bpf_opts.data_out = data_out;
+    bpf_opts.data_size_out = sizeof(data_out);
+
+    // Execute the program
+    REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) == 0);
+
+    REQUIRE(bpf_opts.data_size_out == netevent_message_size);
+    REQUIRE(memcmp(&netevent_message, data_out, netevent_message_size) == 0);
+    REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
+
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    REQUIRE(event_count == event_count_before + 1);
+    REQUIRE(event_count == event_count_before + 2);
 
     // Execute negative cases
     bpf_opts.ctx_in = NULL;

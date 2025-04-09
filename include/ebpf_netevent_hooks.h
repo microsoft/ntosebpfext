@@ -7,17 +7,15 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
-//// This structure is used to pass event data to the eBPF program.
+// This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {
-    uint8_t* event_data_start; ///< Pointer to start of the data associated with the event.
-    uint8_t* event_data_end;   ///< Pointer to end of the data associated with the event.
-
+    uint8_t* data_meta;
+    uint8_t* data;
+    uint8_t* data_end;
 } netevent_event_md_t;
 
-//
-// Packet capture type
-//
+// Packet capture type.
 typedef enum _netevent_capture_type
 {
     NeteventCapture_All = 1,
