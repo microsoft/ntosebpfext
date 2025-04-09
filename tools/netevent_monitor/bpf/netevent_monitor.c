@@ -29,10 +29,6 @@ NetEventMonitor(netevent_event_md_t* ctx)
     int result = -1;
 
     if (ctx != NULL && ctx->data != NULL && ctx->data_end != NULL && ctx->data_end > ctx->data) {
-
-        if (ctx->data_meta != NULL && ctx->data_meta < ctx->data) {
-            bpf_printk("NetEventMonitor: data_meta length: %u\n", (ctx->data - ctx->data_meta));
-        }
         // Push the event to the netevent_events_map.
         // TODO: switch to perf_event_output when it is available.
         // Issue: https://github.com/microsoft/ntosebpfext/issues/204.
