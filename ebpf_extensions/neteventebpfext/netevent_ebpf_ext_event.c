@@ -207,7 +207,7 @@ static ebpf_program_data_t _ebpf_netevent_event_program_data = {
     .context_create = _ebpf_netevent_program_context_create,
     .context_destroy = _ebpf_netevent_program_context_destroy,
     .required_irql = PASSIVE_LEVEL,
-    .capabilities = {.supports_context_header = true},
+    .capabilities = {0},
 };
 static ebpf_extension_data_t _ebpf_netevent_event_program_info_provider_data = {
     .header = {EBPF_EXTENSION_NPI_PROVIDER_VERSION, sizeof(_ebpf_netevent_event_program_data)},
