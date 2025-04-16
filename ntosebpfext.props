@@ -2,6 +2,6 @@
   <PropertyGroup>
     <!-- eBPF -->
     <eBPFForWindowsVersion>0.21.0</eBPFForWindowsVersion>
-    <eBPFForWindowsPackagePath>$(SolutionDir)packages\eBPF-for-Windows.x64.$(eBPFForWindowsVersion)\</eBPFForWindowsPackagePath>
+    <eBPFForWindowsPackagePath>$(SolutionDir)packages\eBPF-for-Windows.x64.$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
   </PropertyGroup>
 </Project>
