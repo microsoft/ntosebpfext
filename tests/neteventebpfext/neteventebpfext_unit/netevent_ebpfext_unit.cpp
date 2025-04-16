@@ -419,8 +419,10 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
-    test_netevent_event_md_t netevent_ctx_in = {0};
-    test_netevent_event_md_t netevent_ctx_out = {0};
+    test_netevent_event_md_t test_netevent_ctx_in = {0};
+    test_netevent_event_md_t test_netevent_ctx_out = {0};
+    netevent_event_md_t& netevent_ctx_in = test_netevent_ctx_in.context;
+    netevent_event_md_t& netevent_ctx_out = test_netevent_ctx_out.context;
     unsigned char dummy_data_in[] = {NOTIFY_EVENT_TYPE_NETEVENT_DROP, 'a', 'b'};
     const size_t dummy_data_size = sizeof(dummy_data_in);
     unsigned char data_out[MAX_PACKET_SIZE] = {0};
@@ -430,10 +432,10 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     // Prepare bpf_opts
     bpf_opts.repeat = 1;
-    bpf_opts.ctx_in = &netevent_ctx_in.context;
-    bpf_opts.ctx_size_in = sizeof(netevent_ctx_in.context);
-    bpf_opts.ctx_out = &netevent_ctx_out.context;
-    bpf_opts.ctx_size_out = sizeof(netevent_ctx_out.context);
+    bpf_opts.ctx_in = &netevent_ctx_in;
+    bpf_opts.ctx_size_in = sizeof(netevent_ctx_in);
+    bpf_opts.ctx_out = &netevent_ctx_out;
+    bpf_opts.ctx_size_out = sizeof(netevent_ctx_out);
     bpf_opts.data_in = &dummy_data_in;
     bpf_opts.data_size_in = static_cast<uint32_t>(dummy_data_size);
     // Set the data_out buffer to hold the output.
