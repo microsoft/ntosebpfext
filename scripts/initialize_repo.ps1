@@ -12,7 +12,9 @@ $commands = @(
     "git submodule update --init --recursive",
     "cmake -G 'Visual Studio 17 2022' -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF",
     "nuget restore ntosebpfext.sln",
-    "packages\eBPF-for-Windows.0.21.0\build\native\bin\export_program_info.exe"
+    "Get-ChildItem -Path .\ -Recurse",
+    "Test-Path -Path .\pacakges\eBPF-for-Windows.0.21.0\build\native\bin\export_program_info.exe",
+    ".\packages\eBPF-for-Windows.0.21.0\build\native\bin\export_program_info.exe"
 )
 
 # Loop through each command and run them sequentially without opening a new window
