@@ -7,9 +7,7 @@
 #include "ebpf_netevent_hooks.h"
 #include "ebpf_netevent_program_attach_type_guids.h"
 #include "ebpf_program_types.h"
-
-#define BPF_ATTACH_TYPE_NETEVENT 99900
-#define BPF_PROG_TYPE_NETEVENT 99901
+#include "ebpf_structs.h"
 
 static const ebpf_helper_function_prototype_t _netevent_event_ebpf_extension_helper_function_prototype[] = {
     {.header =
