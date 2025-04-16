@@ -430,10 +430,10 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     // Prepare bpf_opts
     bpf_opts.repeat = 1;
-    bpf_opts.ctx_in = &netevent_ctx_in;
-    bpf_opts.ctx_size_in = sizeof(netevent_ctx_in);
-    bpf_opts.ctx_out = &netevent_ctx_out;
-    bpf_opts.ctx_size_out = sizeof(netevent_ctx_out);
+    bpf_opts.ctx_in = &netevent_ctx_in.context;
+    bpf_opts.ctx_size_in = sizeof(netevent_ctx_in.context);
+    bpf_opts.ctx_out = &netevent_ctx_out.context;
+    bpf_opts.ctx_size_out = sizeof(netevent_ctx_out.context);
     bpf_opts.data_in = &dummy_data_in;
     bpf_opts.data_size_in = static_cast<uint32_t>(dummy_data_size);
     // Set the data_out buffer to hold the output.
