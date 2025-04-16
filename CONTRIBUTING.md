@@ -2,14 +2,20 @@
 
 We'd love your help with eBPF for Windows! Here are our contribution guidelines.
 
-- [Code of Conduct](#code-of-conduct)
-- [Bugs](#bugs)
-- [New Features](#new-features)
-- [Building the code](#building-the-code)
-- [Testing the code](#testing-the-code)
-- [Contributor License Agreement](#contributor-license-agreement)
-- [Contributing Code](#contributing-code)
-  - [Tests](#tests)
+- [Contributing to eBPF for Windows](#contributing-to-ebpf-for-windows)
+  - [Code of Conduct](#code-of-conduct)
+  - [Bugs](#bugs)
+    - [Did you find a bug?](#did-you-find-a-bug)
+    - [Did you write a patch that fixes a bug?](#did-you-write-a-patch-that-fixes-a-bug)
+  - [New Features](#new-features)
+  - [Building the code](#building-the-code)
+  - [Testing the code](#testing-the-code)
+    - [Unit tests](#unit-tests)
+    - [E2E tests](#e2e-tests)
+      - [Running the E2E tests in Visual Studio](#running-the-e2e-tests-in-visual-studio)
+    - [Debugging locally](#debugging-locally)
+  - [Contributor License Agreement](#contributor-license-agreement)
+  - [Contributing Code](#contributing-code)
 
  ## Code of Conduct
 
@@ -91,7 +97,7 @@ Do the following once:
 1. Open a command prompt as admin
 1. `cd <your local clone root>`
 1. `cd x64\Debug\bin\process_monitor.Tests\win-x64`
-1. `powershell -file .\Install-eBpfForWindows.ps1 0.18.0`
+1. `powershell -file .\Install-eBpfForWindows.ps1 0.21.0`
 1. `powershell -file .\Setup-ProcessMonitorTests.ps1`
 
 Then do this each time you want to re-run the tests:
