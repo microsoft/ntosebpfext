@@ -39,6 +39,12 @@ static volatile uint32_t event_count = 0;
 static volatile uint32_t log_event_count = 0;
 static volatile uint32_t drop_event_count = 0;
 
+typedef struct test_netevent_event_md
+{
+    EBPF_CONTEXT_HEADER;
+    netevent_event_md_t context;
+} test_netevent_event_md_t;
+
 void
 _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size)
 {
@@ -413,8 +419,8 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
-    netevent_event_md_t netevent_ctx_in = {0};
-    netevent_event_md_t netevent_ctx_out = {0};
+    test_netevent_event_md_t netevent_ctx_in = {0};
+    test_netevent_event_md_t netevent_ctx_out = {0};
     unsigned char dummy_data_in[] = {NOTIFY_EVENT_TYPE_NETEVENT_DROP, 'a', 'b'};
     const size_t dummy_data_size = sizeof(dummy_data_in);
     unsigned char data_out[MAX_PACKET_SIZE] = {0};
