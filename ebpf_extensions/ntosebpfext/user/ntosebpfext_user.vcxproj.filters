@@ -25,13 +25,13 @@
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_hook_provider.c">
+    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_hook_provider.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c">
+    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.c">
+    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -45,16 +45,16 @@
     <ClInclude Include="..\ntos_ebpf_ext_process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext.h">
+    <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_hook_provider.h">
+    <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_hook_provider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.h">
+    <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.h">
+    <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="eBPF-for-Windows" GeneratePathProperty="true" />
+    <PackageReference Include="eBPF-for-Windows.x64" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 

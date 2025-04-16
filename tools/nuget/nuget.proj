@@ -5,8 +5,8 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <OutputPath>$(MSBuildThisFileDirectory)..\..\$(Platform)\$(Configuration)</OutputPath>
-    <PackageId Condition="'$(Configuration)' == 'Release'">eBPF-for-Windows.Extensions</PackageId>
-    <PackageId Condition="'$(Configuration)' == 'Debug'">eBPF-for-Windows.Extensions.Debug</PackageId>
+    <PackageId Condition="'$(Configuration)' == 'Release'">eBPF-for-Windows.x64.Extensions</PackageId>
+    <PackageId Condition="'$(Configuration)' == 'Debug'">eBPF-for-Windows.x64.Extensions.Debug</PackageId>
     <IsPackable>true</IsPackable>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>eBPF for Windows Contributors</Authors>
@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="eBPF-for-Windows" />
+    <PackageReference Include="eBPF-for-Windows.x64" />
   </ItemGroup>
 
   <Target Name="_Get_NetNativeContent" BeforeTargets="PrepareForBuild;_IntermediatePack">

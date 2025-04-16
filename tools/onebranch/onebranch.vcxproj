@@ -27,7 +27,8 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{988a1731-f674-472f-8063-84d6dea8988d}</ProjectGuid>
     <RootNamespace>onebranch</RootNamespace>
-    </PropertyGroup>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>

@@ -4,7 +4,7 @@
   SPDX-License-Identifier: MIT
 -->
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props" Condition="Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props')" />
+  <Import Project="$(SolutionDir)\packages\eBPF-for-Windows.x64.0.21.0\build\native\ebpf-for-windows.x64.props" Condition="Exists('$(SolutionDir)\packages\eBPF-for-Windows.x64.0.21.0\build\native\ebpf-for-windows.x64.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -29,6 +29,7 @@
     <ProjectGuid>{1132BFD8-EECA-4372-B08E-D349D86FE616}</ProjectGuid>
     <RootNamespace>netevent_monitor</RootNamespace>
     <ClangFlags>-g -target bpf -O2 -Werror</ClangFlags>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -184,6 +185,6 @@ $(Outdir)netevent_ebpf_ext_export_program_info.exe</Command>
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\eBPF-for-Windows.x64.0.21.0\build\native\ebpf-for-windows.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\eBPF-for-Windows.x64.0.21.0\build\native\ebpf-for-windows.x64.props'))" />
   </Target>
 </Project>
