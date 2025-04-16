@@ -10,7 +10,7 @@
     <!-- Try to keep these in alphabetical order -->
     <PackageVersion Include="DotNet.ReproducibleBuilds" Version="1.2.4" />
     <PackageVersion Include="DotNet.ReproducibleBuilds.Isolated" Version="1.2.4" />
-    <PackageVersion Include="eBPF-for-Windows" Version="0.21" />
+    <PackageVersion Include="eBPF-for-Windows.x64" Version="0.21" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
