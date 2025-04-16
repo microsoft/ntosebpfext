@@ -19,10 +19,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="eBPF-for-Windows" />
-  </ItemGroup>
-
   <Target Name="_Get_NetNativeContent" BeforeTargets="PrepareForBuild;_IntermediatePack">
     <ItemGroup>
       <None Include="README.md" PackagePath="." Pack="true" />
