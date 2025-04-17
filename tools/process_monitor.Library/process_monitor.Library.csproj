@@ -3,18 +3,18 @@
   SPDX-License-Identifier: MIT
 -->
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(SolutionDir)\ntosebpfext.props" />
 
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="eBPF-for-Windows" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="$(PkgeBPF-for-Windows)\build\native\bin\EbpfApi.dll">
+    <Content Include="$(eBPFForWindowsPackagePath)\build\native\bin\EbpfApi.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\..\$(Platform)\$(Configuration)\process_monitor.sys" Link="process_monitor.sys">

@@ -4,7 +4,8 @@
   SPDX-License-Identifier: MIT
 -->
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props" Condition="Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props')" />
+  <Import Project="$(SolutionDir)\ntosebpfext.props" />
+  <Import Project="$(eBPFForWindowsPackagePath)\build\native\ebpf-for-windows.x64.props" Condition="Exists('$(eBPFForWindowsPackagePath)\build\native\ebpf-for-windows.x64.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -229,6 +230,6 @@ $(OutDir)netevent_ebpf_ext_export_program_info.exe</Command>
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\eBPF-for-Windows.0.18.0\build\native\ebpf-for-windows.props'))" />
+    <Error Condition="!Exists('$(eBPFForWindowsPackagePath)\build\native\ebpf-for-windows.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '$(eBPFForWindowsPackagePath)\build\native\ebpf-for-windows.x64.props'))" />
   </Target>
 </Project>

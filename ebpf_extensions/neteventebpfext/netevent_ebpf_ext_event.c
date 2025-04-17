@@ -207,7 +207,6 @@ static ebpf_program_data_t _ebpf_netevent_event_program_data = {
     .context_create = _ebpf_netevent_program_context_create,
     .context_destroy = _ebpf_netevent_program_context_destroy,
     .required_irql = PASSIVE_LEVEL,
-    .capabilities = {.supports_context_header = true},
 };
 static ebpf_extension_data_t _ebpf_netevent_event_program_info_provider_data = {
     .header = {EBPF_EXTENSION_NPI_PROVIDER_VERSION, sizeof(_ebpf_netevent_event_program_data)},
@@ -237,18 +236,28 @@ _netevent_ebpf_extension_netevent_on_client_attach(
 
     UNREFERENCED_PARAMETER(provider_context);
 
-    if (client_data != NULL && client_data->data != NULL) {
-        attach_opts = (netevent_attach_opts_t*)client_data->data;
-        if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NeteventCapture_None)) {
-            _netevent_client_dispatch.capture_type = attach_opts->capture_type;
-        } else {
-            EBPF_EXT_LOG_MESSAGE(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
-                "Incorrect capture type in attach opts.");
-            result = EBPF_OPERATION_NOT_SUPPORTED;
-            goto Exit;
-        }
+    if (client_data == NULL ||
+        client_data->header.version < EBPF_ATTACH_CLIENT_DATA_CURRENT_VERSION ||
+        client_data->data_size != sizeof(*attach_opts) ||
+        client_data->data == NULL) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Invalid client data passed to attach.");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
+    }
+
+    attach_opts = (netevent_attach_opts_t*)client_data->data;
+    if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NeteventCapture_None)) {
+        _netevent_client_dispatch.capture_type = attach_opts->capture_type;
+    } else {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Incorrect capture type in attach opts.");
+        result = EBPF_OPERATION_NOT_SUPPORTED;
+        goto Exit;
     }
 
     ExAcquirePushLockExclusive(&_ebpf_netevent_event_hook_provider_lock);

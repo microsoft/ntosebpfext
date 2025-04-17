@@ -7,6 +7,7 @@
 #include "ebpf_ntos_hooks.h"
 #include "ebpf_ntos_program_attach_type_guids.h"
 #include "ebpf_program_types.h"
+#include "ebpf_structs.h"
 
 // Process program information.
 static const ebpf_helper_function_prototype_t _process_ebpf_extension_helper_function_prototype[] = {
@@ -24,10 +25,6 @@ static const ebpf_context_descriptor_t _ebpf_process_context_descriptor = {
     EBPF_OFFSET_OF(process_md_t, command_end),
     -1,
 };
-
-// Need to allocate these in ebpf_structs.h in ebpf-for-windows repo.
-#define BPF_PROG_TYPE_PROCESS 99999
-#define BPF_ATTACH_TYPE_PROCESS 99999
 
 static const ebpf_program_type_descriptor_t _ebpf_process_program_type_descriptor = {
     .header = {EBPF_PROGRAM_TYPE_DESCRIPTOR_CURRENT_VERSION, EBPF_PROGRAM_TYPE_DESCRIPTOR_CURRENT_VERSION_SIZE},

@@ -7,7 +7,7 @@ param(
 )
 
 # Define the URL to download the eBPF for Windows installer
-$installer_url = "https://github.com/microsoft/ebpf-for-windows/releases/download/Release-v%%VER%%/ebpf-for-windows.%%VER%%.msi"
+$installer_url = "https://github.com/microsoft/ebpf-for-windows/releases/download/Release-v%%VER%%/ebpf-for-windows.x64.%%VER%%.msi"
 $installer_url = $installer_url -replace "%%VER%%", $version
 
 # Define the path to download the eBPF for Windows installer

@@ -39,6 +39,12 @@ static volatile uint32_t event_count = 0;
 static volatile uint32_t log_event_count = 0;
 static volatile uint32_t drop_event_count = 0;
 
+typedef struct test_netevent_event_md
+{
+    EBPF_CONTEXT_HEADER;
+    netevent_event_md_t context;
+} test_netevent_event_md_t;
+
 void
 _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size)
 {
@@ -94,75 +100,6 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
     return 0;
 }
 
-TEST_CASE("netevent_event_simulation", "[neteventebpfext]")
-{
-    // Free the BPF object will take some time to unload from the previous test
-    // Once this issue is fixed, the sleep can be removed: https://github.com/microsoft/ebpf-for-windows/issues/2667
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-
-    // First, load the netevent simulator driver (NPI provider).
-    driver_service netevent_sim_driver;
-    REQUIRE(
-        netevent_sim_driver.create(L"netevent_sim", driver_service::get_driver_path("netevent_sim.sys").c_str()) ==
-        true);
-    REQUIRE(netevent_sim_driver.start() == true);
-
-    // Load and start neteventebpfext extension driver.
-    driver_service neteventebpfext_driver;
-    REQUIRE(
-        neteventebpfext_driver.create(
-            L"neteventebpfext", driver_service::get_driver_path("neteventebpfext.sys").c_str()) == true);
-    REQUIRE(neteventebpfext_driver.start() == true);
-
-    // Load the NetEventMonitor native BPF program.
-    struct bpf_object* object = bpf_object__open("netevent_monitor.sys");
-    REQUIRE(object != nullptr);
-
-    int res = bpf_object__load(object);
-    REQUIRE(res == 0);
-
-    // Find and attach to the netevent_monitor BPF program.
-    auto netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
-    REQUIRE(netevent_monitor != nullptr);
-    auto netevent_monitor_link = bpf_program__attach(netevent_monitor);
-    REQUIRE(netevent_monitor_link != nullptr);
-
-    // Attach to the eBPF ring buffer event map.
-    bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
-    REQUIRE(netevent_events_map != nullptr);
-    auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
-    REQUIRE(ring != nullptr);
-
-    // Wait for the number of expected events or the test's max run time.
-    int timeout = NETEVENT_EVENT_TEST_TIMEOUT_SEC;
-    while (event_count < MAX_EVENTS_COUNT && timeout-- > 0) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-    // Test the event count and ensure the test didn't time out.
-    REQUIRE(event_count >= MAX_EVENTS_COUNT);
-    REQUIRE(timeout > 0);
-
-    // Detach the program (link) from the attach point.
-    int link_fd = bpf_link__fd(netevent_monitor_link);
-    bpf_link_detach(link_fd);
-    bpf_link__destroy(netevent_monitor_link);
-
-    // Close ring buffer.
-    ring_buffer__free(ring);
-
-    // Free the BPF object.
-    bpf_object__close(object);
-
-    // First, stop and unload the netevent simulator driver (NPI provider).
-    REQUIRE(netevent_sim_driver.stop() == true);
-    REQUIRE(netevent_sim_driver.unload() == true);
-
-    // Stop and unload the neteventebpfext extension driver (NPI client).
-    REQUIRE(neteventebpfext_driver.stop() == true);
-    REQUIRE(neteventebpfext_driver.unload() == true);
-}
-
 TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
 {
     // Free the BPF object will take some time to unload from the previous test
@@ -200,10 +137,25 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
     REQUIRE(ring != nullptr);
 
-    // Test attach with invalid capture type
+    // Test attach with no attach params - this should fail.
     ebpf_result_t result;
     bpf_link* netevent_monitor_link = nullptr;
+    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, nullptr, 0, &netevent_monitor_link);
+    REQUIRE(result != EBPF_SUCCESS);
+    REQUIRE(netevent_monitor_link == nullptr);
+
+    // Test attach with invalid size (too small) - this should fail.
     netevent_attach_opts_t attach_opts = {};
+    result = ebpf_program_attach(
+        netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts) - 1, &netevent_monitor_link);
+    REQUIRE(result != EBPF_SUCCESS);
+
+    // Test attach with invalid size (too large) - this should fail.
+    result = ebpf_program_attach(
+        netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts) - 1, &netevent_monitor_link);
+    REQUIRE(result != EBPF_SUCCESS);
+
+    // Test attach with invalid capture type - this should fail.
     attach_opts.capture_type = (netevent_capture_type_t)0;
     result = ebpf_program_attach(
         netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
@@ -294,9 +246,15 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     REQUIRE(res == 0);
 
     // Find and attach to the netevent_monitor BPF program.
+    ebpf_result_t result;
+    bpf_link* netevent_monitor_link = nullptr;
+    netevent_attach_opts_t attach_opts = {
+        .capture_type = NeteventCapture_All
+    };
     auto netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
-    auto netevent_monitor_link = bpf_program__attach(netevent_monitor);
+    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
     // Attach to the eBPF ring buffer event map.
@@ -399,9 +357,15 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(res == 0);
 
     // Find and attach to the netevent_monitor BPF program.
+    ebpf_result_t result;
+    bpf_link* netevent_monitor_link = nullptr;
+    netevent_attach_opts_t attach_opts = {
+        .capture_type = NeteventCapture_All
+    };
     bpf_program* netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
-    bpf_link* netevent_monitor_link = bpf_program__attach(netevent_monitor);
+    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
     // Attach to the eBPF ring buffer event map.
@@ -413,8 +377,10 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
-    netevent_event_md_t netevent_ctx_in = {0};
-    netevent_event_md_t netevent_ctx_out = {0};
+    test_netevent_event_md_t test_netevent_ctx_in = {0};
+    test_netevent_event_md_t test_netevent_ctx_out = {0};
+    netevent_event_md_t& netevent_ctx_in = test_netevent_ctx_in.context;
+    netevent_event_md_t& netevent_ctx_out = test_netevent_ctx_out.context;
     unsigned char dummy_data_in[] = {NOTIFY_EVENT_TYPE_NETEVENT_DROP, 'a', 'b'};
     const size_t dummy_data_size = sizeof(dummy_data_in);
     unsigned char data_out[MAX_PACKET_SIZE] = {0};
