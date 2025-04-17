@@ -53,7 +53,6 @@ static ebpf_program_data_t _ebpf_process_program_data = {
     .context_create = _ebpf_process_context_create,
     .context_destroy = _ebpf_process_context_destroy,
     .required_irql = PASSIVE_LEVEL,
-    .capabilities = {0},
 };
 
 static ebpf_extension_data_t _ebpf_process_program_info_provider_data = {
