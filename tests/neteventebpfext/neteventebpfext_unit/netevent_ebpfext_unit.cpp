@@ -236,12 +236,15 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     REQUIRE(res == 0);
 
     // Find and attach to the netevent_monitor BPF program.
+    ebpf_result_t result;
+    bpf_link* netevent_monitor_link = nullptr;
     netevent_attach_opts_t attach_opts = {
         .capture_type = NeteventCapture_All
     };
     auto netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
-    auto netevent_monitor_link = bpf_program__attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts));
+    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
     // Attach to the eBPF ring buffer event map.
@@ -344,12 +347,15 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(res == 0);
 
     // Find and attach to the netevent_monitor BPF program.
+    ebpf_result_t result;
+    bpf_link* netevent_monitor_link = nullptr;
     netevent_attach_opts_t attach_opts = {
         .capture_type = NeteventCapture_All
     };
     bpf_program* netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
-    bpf_link* netevent_monitor_link = bpf_program__attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts));
+    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
     // Attach to the eBPF ring buffer event map.
