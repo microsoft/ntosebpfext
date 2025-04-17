@@ -144,8 +144,18 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     REQUIRE(result != EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link == nullptr);
 
-    // Test attach with invalid capture type - this should fail.
+    // Test attach with invalid size (too small) - this should fail.
     netevent_attach_opts_t attach_opts = {};
+    result = ebpf_program_attach(
+        netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts) - 1, &netevent_monitor_link);
+    REQUIRE(result != EBPF_SUCCESS);
+
+    // Test attach with invalid size (too large) - this should fail.
+    result = ebpf_program_attach(
+        netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts) - 1, &netevent_monitor_link);
+    REQUIRE(result != EBPF_SUCCESS);
+
+    // Test attach with invalid capture type - this should fail.
     attach_opts.capture_type = (netevent_capture_type_t)0;
     result = ebpf_program_attach(
         netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
