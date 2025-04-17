@@ -237,18 +237,6 @@ _netevent_ebpf_extension_netevent_on_client_attach(
 
     UNREFERENCED_PARAMETER(provider_context);
 
-    if (client_data == NULL ||
-        client_data->header.version < EBPF_ATTACH_CLIENT_DATA_CURRENT_VERSION ||
-        client_data->data_size != sizeof(*attach_opts) ||
-        client_data->data == NULL) {
-        EBPF_EXT_LOG_MESSAGE(
-            EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
-            "Invalid client data passed to attach.");
-        result = EBPF_INVALID_ARGUMENT;
-        goto Exit;
-    }
-
     if (client_data != NULL && client_data->data != NULL) {
         attach_opts = (netevent_attach_opts_t*)client_data->data;
         if ((attach_opts->capture_type >= NeteventCapture_All) && (attach_opts->capture_type <= NeteventCapture_None)) {
