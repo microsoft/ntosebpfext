@@ -137,12 +137,14 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
     REQUIRE(ring != nullptr);
 
-    // Test attach with no attach params
-    result = ebpf_program_attach(netevent_monitor);
+    // Test attach with no attach params - this should fail.
+    ebpf_result_t result;
+    bpf_link* netevent_monitor_link = nullptr;
+    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, nullptr, 0, &netevent_monitor_link);
     REQUIRE(result != EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link == nullptr);
 
-    // Test attach with invalid capture type
+    // Test attach with invalid capture type - this should fail.
     netevent_attach_opts_t attach_opts = {};
     attach_opts.capture_type = (netevent_capture_type_t)0;
     result = ebpf_program_attach(
