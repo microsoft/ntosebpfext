@@ -22,6 +22,7 @@
   <Target Name="_Get_NetNativeContent" BeforeTargets="PrepareForBuild;_IntermediatePack">
     <ItemGroup>
       <None Include="README.md" PackagePath="." Pack="true" />
+      <None Include="ebpf-for-windows.extensions.props" PackagePath="build\native\$(PackageId).props" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\ntosebpfext.sys" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\ntosebpfext.pdb" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\include\ebpf_ntos_hooks.h" PackagePath="build\native\include" Pack="true" />
