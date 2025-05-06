@@ -11,16 +11,17 @@ Set-Location $scriptPath\..\..
 
 $OneBranchArch = $env:ONEBRANCH_ARCH
 $OneBranchConfig = $env:ONEBRANCH_CONFIG
-$SignedBinFolder = ".\build\bin\$($OneBranchArch)_$($OneBranchConfig)"
-$DestinationFolder = ".\build\bin\$($OneBranchArch)_$($OneBranchConfig)"
+# Folder where the build output is located. Note that these may not be signed.
 $BuildFolder = ".\$($OneBranchArch)\$($OneBranchConfig)"
+# Folder where the signed binaries are located.
+$SignedOutputFolder = ".\build\bin\$($OneBranchArch)_$($OneBranchConfig)"
 
 # Produce a zip file of the signed binaries
-$OutputZipFolder = Join-Path $DestinationFolder "Build-$($OneBranchArch)-$($OneBranchConfig).zip"
-Compress-Archive -Path $SignedBinFolder -DestinationPath $OutputZipFolder
+$OutputZipFile = Join-Path $SignedOutputFolder "Build-$($OneBranchArch)-$($OneBranchConfig).zip"
+Compress-Archive -Path $SignedOutputFolder -DestinationPath $OutputZipFile
 
-# Copy signed binaries to the output directory for usage in the nuget package creation.
-xcopy /y $SignedBinFolder $BuildFolder
+# Copy signed binaries to the build output directory for usage in the nuget package creation.
+xcopy /y $SignedOutputFolder $BuildFolder
 
 # Create the nuget package with the signed binaries.
 Import-Module "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
@@ -30,7 +31,7 @@ $SolutionDir = Get-Location
 msbuild /p:SolutionDir=$SolutionDir\ /p:Configuration=$OneBranchConfig /p:Platform=$OneBranchArch /p:BuildProjectReferences=false .\tools\nuget\nuget.proj /t:Restore,Build,Pack
 
 # Copy the nuget package to the output directory.
-$DestinationNupkgPath = Join-Path $DestinationFolder "packages"
+$DestinationNupkgPath = Join-Path $SignedOutputFolder "packages"
 if (-not (Test-Path -Path $DestinationNupkgPath)) {
     New-Item -ItemType Directory -Path $DestinationNupkgPath
 }

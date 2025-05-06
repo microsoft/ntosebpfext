@@ -35,7 +35,7 @@
       <None Include="..\..\include\ebpf_netevent_program_attach_type_guids.h" PackagePath="build\native\include" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\netevent_ebpf_ext_export_program_info.exe" PackagePath="build\native\bin" Pack="true" />
       <None Include="..\..\$(Platform)\$(Configuration)\netevent_ebpf_ext_export_program_info.pdb" PackagePath="build\native\bin" Pack="true" />
-      <None Include="..\..\$(Platform\$(Configuration)scripts\Install-Extension.ps1" PackagePath="build\native\bin" Pack="true" />
+      <None Include="..\..\$(Platform)\$(Configuration)scripts\Install-Extension.ps1" PackagePath="build\native\bin" Pack="true" />
     </ItemGroup>
   </Target>
 </Project>
