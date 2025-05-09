@@ -176,6 +176,11 @@ jobs:
         path: ${{github.workspace}}/build-${{ matrix.configurations }}.zip
         retention-days: 5
 
+    - name: Copy required scripts to build output
+      if: inputs.build_nuget == true && matrix.configurations == 'Release' && steps.skip_check.outputs.should_skip != 'true'
+      run: |
+        Copy-Item -Path scripts\Install-Extension.ps1 -Destination ${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}} -Force
+
     - name: Build the NuGet package
       if: inputs.build_nuget == true && matrix.configurations == 'Release' && steps.skip_check.outputs.should_skip != 'true'
       working-directory: ${{env.GITHUB_WORKSPACE}}
