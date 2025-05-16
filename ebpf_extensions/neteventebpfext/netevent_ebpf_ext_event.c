@@ -373,7 +373,7 @@ ebpf_ext_register_netevent()
     // initialize per-cpu event buffers
     cpu_count = KeQueryMaximumProcessorCountEx(ALL_PROCESSOR_GROUPS);
     event_buffers_array_size = cpu_count * sizeof(uint8_t*);
-    event_buffer_sizes_array_size = cpu_count * sizeof(uint8_t*);
+    event_buffer_sizes_array_size = cpu_count * sizeof(size_t);
 
     _event_buffers = (uint8_t**)ExAllocatePoolUninitialized(
         NonPagedPoolNx, event_buffers_array_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
@@ -391,7 +391,7 @@ ebpf_ext_register_netevent()
         goto Exit;
     }
 
-    for (size_t i = 0; i < cpu_count; i++) {
+    for (size_t i = 0; i < cpu_count && (i * sizeof(uint8_t*) < event_buffers_array_size); i++) {
         // Allocate a buffer for each CPU.
         _event_buffer_sizes[i] = INIT_EVENT_BUFFER_SIZE;
         _event_buffers[i] = (uint8_t*)ExAllocatePoolUninitialized(
@@ -586,6 +586,14 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     KIRQL old_irql = KeGetCurrentIrql();
     if (old_irql < DISPATCH_LEVEL) {
         old_irql = KeRaiseIrqlToDpcLevel();
+    }
+
+    if (_event_buffers == NULL || _event_buffer_sizes == NULL) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Event buffer arrays have not been initialized - event lost");
+        goto Exit;
     }
 
     if (payload_size > _event_buffer_sizes[current_cpu]) {
