@@ -391,7 +391,12 @@ ebpf_ext_register_netevent()
         goto Exit;
     }
 
-    for (size_t i = 0; i < cpu_count && (i * sizeof(uint8_t*) < event_buffers_array_size); i++) {
+#pragma warning(push)
+#pragma warning(disable : 6386) // Buffer overrun while writing to '_event_buffer_sizes':  the writable size is
+                                // 'event_buffer_sizes_array_size' bytes, but '16' bytes might be written.
+#pragma warning(disable : 6385) // Reading invalid data from '_event_buffer_sizes':  the readable size is
+                                // 'event_buffer_sizes_array_size' bytes, but '16' bytes may be read.
+    for (size_t i = 0; i < cpu_count; i++) {
         // Allocate a buffer for each CPU.
         _event_buffer_sizes[i] = INIT_EVENT_BUFFER_SIZE;
         _event_buffers[i] = (uint8_t*)ExAllocatePoolUninitialized(
@@ -406,6 +411,7 @@ ebpf_ext_register_netevent()
             goto Exit;
         }
     }
+#pragma warning(pop)
 
 Exit:
     if (!NT_SUCCESS(status)) {
@@ -610,7 +616,12 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         if (_event_buffers[current_cpu]) {
             ExFreePool(_event_buffers);
         }
+// Suppress warning 6001: Using uninitialized memory '_event_buffers'.
+// This is a false positive.  The memory is initialized in ebpf_ext_register_netevent
+#pragma warning(push)
+#pragma warning(disable : 6001)
         _event_buffers[current_cpu] = new_event_buffer;
+#pragma warning(pop)
         _event_buffer_sizes[current_cpu] = payload_size;
     }
 
