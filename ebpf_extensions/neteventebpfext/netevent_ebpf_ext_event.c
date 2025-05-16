@@ -376,6 +376,16 @@ ebpf_ext_register_netevent()
     _event_buffer_sizes = (size_t*)ExAllocatePoolUninitialized(
         NonPagedPoolNx, cpu_count * sizeof(size_t), EBPF_NETEVENT_EXTENSION_POOL_TAG);
 
+    if (_event_buffers == NULL || _event_buffer_sizes == NULL) {
+        status = STATUS_INSUFFICIENT_RESOURCES;
+        EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Insufficient memory initializing the event buffer array",
+            status);
+        goto Exit;
+    }
+
     for (size_t i = 0; i < cpu_count; i++) {
         // Allocate a buffer for each CPU.
         _event_buffer_sizes[i] = INIT_EVENT_BUFFER_SIZE;
