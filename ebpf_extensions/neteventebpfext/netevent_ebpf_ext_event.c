@@ -328,6 +328,9 @@ ebpf_ext_register_netevent()
 
     EBPF_EXT_LOG_ENTRY();
 
+    size_t event_buffers_array_size = 0;
+    size_t event_buffer_sizes_array_size = 0;
+
     const ebpf_extension_program_info_provider_parameters_t program_info_provider_parameters = {
         &_ebpf_netevent_event_program_info_provider_moduleid, &_ebpf_netevent_event_program_data};
     const ebpf_extension_hook_provider_parameters_t hook_provider_parameters = {
@@ -369,12 +372,14 @@ ebpf_ext_register_netevent()
 
     // initialize per-cpu event buffers
     cpu_count = KeQueryMaximumProcessorCountEx(ALL_PROCESSOR_GROUPS);
+    event_buffers_array_size = cpu_count * sizeof(uint8_t*);
+    event_buffer_sizes_array_size = cpu_count * sizeof(uint8_t*);
 
     _event_buffers = (uint8_t**)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, cpu_count * sizeof(uint8_t*), EBPF_NETEVENT_EXTENSION_POOL_TAG);
+        NonPagedPoolNx, event_buffers_array_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
 
     _event_buffer_sizes = (size_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, cpu_count * sizeof(size_t), EBPF_NETEVENT_EXTENSION_POOL_TAG);
+        NonPagedPoolNx, event_buffer_sizes_array_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
 
     if (_event_buffers == NULL || _event_buffer_sizes == NULL) {
         status = STATUS_INSUFFICIENT_RESOURCES;
