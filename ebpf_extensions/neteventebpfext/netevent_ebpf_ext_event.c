@@ -16,7 +16,7 @@
 // Global variables.
 //
 #define INIT_EVENT_BUFFER_SIZE 4096
-static uint32_t cpu_count = 0;
+static uint32_t _cpu_count = 0;
 // Define a per-cpu dynamic event buffer for optimizing the event data copy.
 static uint8_t** _event_buffers = NULL;
 static size_t* _event_buffer_sizes = NULL;
@@ -371,9 +371,9 @@ ebpf_ext_register_netevent()
     }
 
     // initialize per-cpu event buffers
-    cpu_count = KeQueryMaximumProcessorCountEx(ALL_PROCESSOR_GROUPS);
-    event_buffers_array_size = cpu_count * sizeof(uint8_t*);
-    event_buffer_sizes_array_size = cpu_count * sizeof(size_t);
+    _cpu_count = KeQueryMaximumProcessorCountEx(ALL_PROCESSOR_GROUPS);
+    event_buffers_array_size = _cpu_count * sizeof(uint8_t*);
+    event_buffer_sizes_array_size = _cpu_count * sizeof(size_t);
 
     _event_buffers = (uint8_t**)ExAllocatePoolUninitialized(
         NonPagedPoolNx, event_buffers_array_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
@@ -396,7 +396,7 @@ ebpf_ext_register_netevent()
                                 // 'event_buffer_sizes_array_size' bytes, but '16' bytes might be written.
 #pragma warning(disable : 6385) // Reading invalid data from '_event_buffer_sizes':  the readable size is
                                 // 'event_buffer_sizes_array_size' bytes, but '16' bytes may be read.
-    for (size_t i = 0; i < cpu_count; i++) {
+    for (size_t i = 0; i < _cpu_count; i++) {
         // Allocate a buffer for each CPU.
         _event_buffer_sizes[i] = INIT_EVENT_BUFFER_SIZE;
         _event_buffers[i] = (uint8_t*)ExAllocatePoolUninitialized(
@@ -436,7 +436,7 @@ ebpf_ext_unregister_netevent()
         _event_buffer_sizes = NULL;
     }
     if (_event_buffers != NULL) {
-        for (size_t i = 0; i < cpu_count; i++) {
+        for (size_t i = 0; i < _cpu_count; i++) {
             if (_event_buffers[i] != NULL) {
                 ExFreePool(_event_buffers[i]);
                 _event_buffers[i] = NULL;
@@ -584,12 +584,12 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     uint8_t* _event_buffer_data_start = NULL;
     uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
-    uint32_t current_cpu = KeGetCurrentProcessorNumberEx(NULL);
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
 
     KIRQL old_irql = KeGetCurrentIrql();
+    uint32_t current_cpu = KeGetCurrentProcessorNumberEx(NULL);
     if (old_irql < DISPATCH_LEVEL) {
         old_irql = KeRaiseIrqlToDpcLevel();
     }
@@ -599,6 +599,14 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
             EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
             "Event buffer arrays have not been initialized - event lost");
+        goto Exit;
+    }
+
+    if (current_cpu > _cpu_count) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Current cpu number is greater than max cpu count - event lost");
         goto Exit;
     }
 
@@ -614,14 +622,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
             goto Exit;
         }
         if (_event_buffers[current_cpu]) {
-            ExFreePool(_event_buffers);
+            ExFreePool(_event_buffers[current_cpu]);
         }
-// Suppress warning 6001: Using uninitialized memory '_event_buffers'.
-// This is a false positive.  The memory is initialized in ebpf_ext_register_netevent
-#pragma warning(push)
-#pragma warning(disable : 6001)
         _event_buffers[current_cpu] = new_event_buffer;
-#pragma warning(pop)
         _event_buffer_sizes[current_cpu] = payload_size;
     }
 
