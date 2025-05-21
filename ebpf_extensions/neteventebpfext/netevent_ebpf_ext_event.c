@@ -603,7 +603,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         goto Exit;
     }
 
-    if (current_cpu > _cpu_count) {
+    if (current_cpu >= _cpu_count) {
         EBPF_EXT_LOG_MESSAGE(
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
             EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
