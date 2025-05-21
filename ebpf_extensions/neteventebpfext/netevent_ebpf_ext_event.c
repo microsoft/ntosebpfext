@@ -584,15 +584,16 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     uint8_t* _event_buffer_data_start = NULL;
     uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
+    uint32_t current_cpu;
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
 
     KIRQL old_irql = KeGetCurrentIrql();
-    uint32_t current_cpu = KeGetCurrentProcessorNumberEx(NULL);
     if (old_irql < DISPATCH_LEVEL) {
         old_irql = KeRaiseIrqlToDpcLevel();
     }
+    current_cpu = KeGetCurrentProcessorNumberEx(NULL);
 
     if (_event_buffers == NULL || _event_buffer_sizes == NULL) {
         EBPF_EXT_LOG_MESSAGE(
