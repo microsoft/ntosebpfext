@@ -6,7 +6,6 @@
 
 version: 2
 updates:
-
   - package-ecosystem: "github-actions"
     # Workflow files stored in the
     # default location of `.github/workflows`
@@ -18,7 +17,6 @@ updates:
       actions:
         patterns:
           - "*"
-
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
@@ -28,7 +26,6 @@ updates:
       actions:
         patterns:
           - "*"
-
   - package-ecosystem: "docker"
     directory: "/images"
     schedule:
@@ -38,3 +35,13 @@ updates:
       actions:
         patterns:
           - "*"
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
