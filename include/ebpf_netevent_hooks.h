@@ -7,6 +7,35 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
+// Versioning header structures for BPF program compatibility
+#define NOTIFY_COMMON_HDR \
+    uint8_t type;         \
+    uint8_t subtype;      \
+    uint16_t source;      \
+    uint32_t hash;
+
+#define NOTIFY_CAPTURE_HDR                           \
+    NOTIFY_COMMON_HDR                                \
+    uint32_t len_orig; /* Length of original packet */ \
+    uint16_t len_cap;  /* Length of captured bytes */  \
+    uint16_t version;  /* Capture header version */
+
+// Define capture header version
+#define NETEVENT_CAPTURE_HDR_VERSION 1
+
+// Capture header structure
+typedef struct _netevent_capture_hdr {
+    NOTIFY_CAPTURE_HDR
+} netevent_capture_hdr_t;
+
+// Forward declaration for PKTMON structures (defined in platform headers)
+#ifndef PKTMON_EVT_STREAM_PACKET_HEADER
+typedef struct _pktmon_evt_stream_packet_header {
+    uint32_t EventId;
+    // Additional fields would be defined by the platform header
+} PKTMON_EVT_STREAM_PACKET_HEADER;
+#endif
+
 // This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_event_md
 {

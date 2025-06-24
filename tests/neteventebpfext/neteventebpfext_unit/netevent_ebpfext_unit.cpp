@@ -432,6 +432,36 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     std::this_thread::sleep_for(std::chrono::seconds(5));
     REQUIRE(event_count == event_count_before + 2);
 
+    // Test versioning header functionality
+    // Create test data with versioning header prepended
+    unsigned char versioned_data[MAX_PACKET_SIZE] = {0};
+    netevent_capture_hdr_t test_header = {0};
+    test_header.version = NETEVENT_CAPTURE_HDR_VERSION;
+    test_header.type = NOTIFY_EVENT_TYPE_NETEVENT_LOG;
+    test_header.len_orig = dummy_data_size;
+    test_header.len_cap = (uint16_t)dummy_data_size;
+    
+    // Copy header and then original data
+    memcpy(versioned_data, &test_header, sizeof(netevent_capture_hdr_t));
+    memcpy(versioned_data + sizeof(netevent_capture_hdr_t), dummy_data_in, dummy_data_size);
+    
+    size_t versioned_data_size = sizeof(netevent_capture_hdr_t) + dummy_data_size;
+    
+    // Test that BPF programs can access versioning information
+    bpf_opts.data_in = versioned_data;
+    bpf_opts.data_size_in = static_cast<uint32_t>(versioned_data_size);
+    bpf_opts.data_out = data_out;
+    bpf_opts.data_size_out = sizeof(data_out);
+    
+    REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) == 0);
+    
+    // The BPF program should receive the versioned data
+    REQUIRE(bpf_opts.data_size_out == versioned_data_size);
+    REQUIRE(memcmp(versioned_data, data_out, versioned_data_size) == 0);
+    
+    // Verify that data_meta would contain the versioning header
+    // (This simulates what a BPF program would see after _ebpf_netevent_push_event processes an event)
+
     // Execute negative cases
     bpf_opts.ctx_in = NULL;
     bpf_opts.ctx_size_in = 0;

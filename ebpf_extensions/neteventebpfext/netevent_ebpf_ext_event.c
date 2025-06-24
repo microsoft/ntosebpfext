@@ -584,6 +584,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     uint8_t* _event_buffer_data_start = NULL;
     uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
+    uint64_t total_size = payload_size + sizeof(netevent_capture_hdr_t);
     uint32_t current_cpu;
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
@@ -611,10 +612,10 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         goto Exit;
     }
 
-    if (payload_size > _event_buffer_sizes[current_cpu]) {
+    if (total_size > _event_buffer_sizes[current_cpu]) {
         // If the event buffer is too small, attempt to resize it.
         uint8_t* new_event_buffer =
-            (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, payload_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
+            (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, total_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
         if (new_event_buffer == NULL) {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -626,20 +627,36 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
             ExFreePool(_event_buffers[current_cpu]);
         }
         _event_buffers[current_cpu] = new_event_buffer;
-        _event_buffer_sizes[current_cpu] = payload_size;
+        _event_buffer_sizes[current_cpu] = total_size;
     }
 
+    // Prepare the capture header with versioning information
+    netevent_capture_hdr_t capture_header = {0};
+    capture_header.version = NETEVENT_CAPTURE_HDR_VERSION;
+    capture_header.len_orig = (uint32_t)payload_size;
+    capture_header.len_cap = (uint16_t)payload_size;
+    
+    // Determine the event type from the original event data
+    if (NETEVENT_HEADER_LENGTH <= payload_size) {
+        // Cast the event_start to PKTMON_EVT_STREAM_PACKET_HEADER to get the EventId
+        PKTMON_EVT_STREAM_PACKET_HEADER* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER*)netevent_event->event_start;
+        capture_header.type = (uint8_t)pktmon_header->EventId;
+    }
+
+    // Copy the capture header to the beginning of the buffer
+    memcpy(_event_buffers[current_cpu], &capture_header, sizeof(netevent_capture_hdr_t));
+    
     if (NETEVENT_HEADER_LENGTH < payload_size) {
-        _event_buffer_data_start = _event_buffers[current_cpu] + NETEVENT_HEADER_LENGTH;
-        memcpy(_event_buffers[current_cpu], netevent_event->event_start, NETEVENT_HEADER_LENGTH);
+        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_capture_hdr_t) + NETEVENT_HEADER_LENGTH;
+        memcpy(_event_buffers[current_cpu] + sizeof(netevent_capture_hdr_t), netevent_event->event_start, NETEVENT_HEADER_LENGTH);
         memcpy(_event_buffer_data_start, data_start, payload_size - NETEVENT_HEADER_LENGTH);
     } else {
-        _event_buffer_data_start = _event_buffers[current_cpu];
-        memcpy(_event_buffers[current_cpu], netevent_event->event_start, payload_size);
+        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_capture_hdr_t);
+        memcpy(_event_buffers[current_cpu] + sizeof(netevent_capture_hdr_t), netevent_event->event_start, payload_size);
     }
     netevent_event_notify_context.netevent_event_md.data_meta = _event_buffers[current_cpu];
     netevent_event_notify_context.netevent_event_md.data = _event_buffer_data_start;
-    netevent_event_notify_context.netevent_event_md.data_end = _event_buffers[current_cpu] + payload_size;
+    netevent_event_notify_context.netevent_event_md.data_end = _event_buffers[current_cpu] + total_size;
 
     // For each attached client call the netevent hook.
     client_context = ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, NULL);
