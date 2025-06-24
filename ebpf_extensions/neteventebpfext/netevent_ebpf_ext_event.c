@@ -592,7 +592,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     uint8_t* _event_buffer_data_start = NULL;
     uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
-    uint64_t total_size = payload_size + sizeof(netevent_capture_header_t);
+    // Ensure buffer is large enough for header + max(payload_size, NETEVENT_HEADER_LENGTH)
+    uint64_t event_data_size = (payload_size > NETEVENT_HEADER_LENGTH) ? payload_size : NETEVENT_HEADER_LENGTH;
+    uint64_t total_size = sizeof(netevent_capture_header_t) + event_data_size;
     uint32_t current_cpu;
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
