@@ -16,12 +16,12 @@
 
 #define NOTIFY_CAPTURE_HDR                           \
     NOTIFY_COMMON_HDR                                \
-    uint32_t len_orig; /* Length of original packet */ \
-    uint16_t len_cap;  /* Length of captured bytes */  \
+    uint32_t length_original; /* Length of original packet */ \
+    uint16_t length_captured;  /* Length of captured bytes */  \
     uint16_t version;  /* Capture header version */
 
 // Define capture header version
-#define NETEVENT_CAPTURE_HDR_VERSION 1
+#define NETEVENT_CAPTURE_HDR_CURRENT_VERSION 1
 
 // Capture header structure
 typedef struct _netevent_capture_hdr {
@@ -30,17 +30,20 @@ typedef struct _netevent_capture_hdr {
 
 // Example usage in BPF programs:
 // netevent_capture_hdr_t* header = (netevent_capture_hdr_t*)ctx->data_meta;
-// if (header && header->version == NETEVENT_CAPTURE_HDR_VERSION) {
+// if (header && header->version == NETEVENT_CAPTURE_HDR_CURRENT_VERSION) {
 //     // Access versioning information
 //     uint8_t event_type = header->type;
-//     uint32_t original_length = header->len_orig;
+//     uint32_t original_length = header->length_original;
 // }
 // // Access event data (backward compatible)
 // uint8_t* event_data = ctx->data;
 // uint8_t* event_end = ctx->data_end;
 
-// Forward declaration for PKTMON structures (defined in platform headers)
-#ifndef PKTMON_EVT_STREAM_PACKET_HEADER
+// PKTMON structures are available from DDK headers
+#ifdef _KERNEL_MODE
+#include <pktmonnpik.h>
+#else
+// Forward declaration for user-mode compilation
 typedef struct _pktmon_evt_stream_packet_header {
     uint32_t EventId;
     // Additional fields would be defined by the platform header

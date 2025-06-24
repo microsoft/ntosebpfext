@@ -632,10 +632,10 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
 
     // Prepare the capture header with versioning information
     netevent_capture_hdr_t capture_header = {0};
-    capture_header.version = NETEVENT_CAPTURE_HDR_VERSION;
-    capture_header.len_orig = (uint32_t)payload_size;
-    // Ensure len_cap doesn't overflow uint16_t
-    capture_header.len_cap = (payload_size > 65535) ? 65535 : (uint16_t)payload_size;
+    capture_header.version = NETEVENT_CAPTURE_HDR_CURRENT_VERSION;
+    capture_header.length_original = (uint32_t)payload_size;
+    // Ensure length_captured doesn't overflow uint16_t
+    capture_header.length_captured = (payload_size > 65535) ? 65535 : (uint16_t)payload_size;
     
     // Determine the event type from the original event data
     if (payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER)) {
