@@ -39,12 +39,7 @@ typedef struct _netevent_capture_header {
 // uint8_t* event_data = ctx->data;
 // uint8_t* event_end = ctx->data_end;
 
-// Forward declaration for PKTMON event stream packet header
-// Only the EventId field is needed for event type extraction
-typedef struct _pktmon_evt_stream_packet_header {
-    uint32_t EventId;
-    // Additional fields would be defined by the platform header
-} PKTMON_EVT_STREAM_PACKET_HEADER;
+
 
 // This structure is used to pass event data to the eBPF program.
 // After versioning changes:

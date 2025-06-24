@@ -12,6 +12,13 @@
 
 #include <errno.h>
 
+// Minimal structure definition for accessing EventId from PKTMON event stream packet header
+// This avoids redefinition conflicts with system headers
+typedef struct _pktmon_evt_stream_packet_header_minimal {
+    uint32_t EventId;
+    // Only EventId field is accessed, other fields are not defined here
+} PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL;
+
 //
 // Global variables.
 //
@@ -638,9 +645,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     capture_header.length_captured = (payload_size > 65535) ? 65535 : (uint16_t)payload_size;
     
     // Determine the event type from the original event data
-    if (payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER)) {
-        // Cast the event_start to PKTMON_EVT_STREAM_PACKET_HEADER to get the EventId
-        PKTMON_EVT_STREAM_PACKET_HEADER* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER*)netevent_event->event_start;
+    if (payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)) {
+        // Cast the event_start to access the EventId field
+        PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
         capture_header.type = (uint8_t)pktmon_header->EventId;
     }
 
