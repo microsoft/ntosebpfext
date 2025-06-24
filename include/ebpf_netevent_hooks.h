@@ -28,6 +28,17 @@ typedef struct _netevent_capture_hdr {
     NOTIFY_CAPTURE_HDR
 } netevent_capture_hdr_t;
 
+// Example usage in BPF programs:
+// netevent_capture_hdr_t* header = (netevent_capture_hdr_t*)ctx->data_meta;
+// if (header && header->version == NETEVENT_CAPTURE_HDR_VERSION) {
+//     // Access versioning information
+//     uint8_t event_type = header->type;
+//     uint32_t original_length = header->len_orig;
+// }
+// // Access event data (backward compatible)
+// uint8_t* event_data = ctx->data;
+// uint8_t* event_end = ctx->data_end;
+
 // Forward declaration for PKTMON structures (defined in platform headers)
 #ifndef PKTMON_EVT_STREAM_PACKET_HEADER
 typedef struct _pktmon_evt_stream_packet_header {
@@ -37,6 +48,10 @@ typedef struct _pktmon_evt_stream_packet_header {
 #endif
 
 // This structure is used to pass event data to the eBPF program.
+// After versioning changes:
+// - data_meta points to netevent_capture_hdr_t with versioning information
+// - data points to the actual event payload (maintains backward compatibility)
+// - data_end points to the end of the entire buffer (header + payload)
 typedef struct _netevent_event_md
 {
     uint8_t* data_meta;
