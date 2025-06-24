@@ -8,29 +8,29 @@
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
 // Versioning header structures for BPF program compatibility
-#define NOTIFY_COMMON_HDR \
+#define NOTIFY_COMMON_HEADER \
     uint8_t type;         \
     uint8_t subtype;      \
     uint16_t source;      \
     uint32_t hash;
 
-#define NOTIFY_CAPTURE_HDR                           \
-    NOTIFY_COMMON_HDR                                \
+#define NOTIFY_CAPTURE_HEADER                           \
+    NOTIFY_COMMON_HEADER                                \
     uint32_t length_original; /* Length of original packet */ \
     uint16_t length_captured;  /* Length of captured bytes */  \
     uint16_t version;  /* Capture header version */
 
 // Define capture header version
-#define NETEVENT_CAPTURE_HDR_CURRENT_VERSION 1
+#define NETEVENT_CAPTURE_HEADER_CURRENT_VERSION 1
 
 // Capture header structure
-typedef struct _netevent_capture_hdr {
-    NOTIFY_CAPTURE_HDR
-} netevent_capture_hdr_t;
+typedef struct _netevent_capture_header {
+    NOTIFY_CAPTURE_HEADER
+} netevent_capture_header_t;
 
 // Example usage in BPF programs:
-// netevent_capture_hdr_t* header = (netevent_capture_hdr_t*)ctx->data_meta;
-// if (header && header->version == NETEVENT_CAPTURE_HDR_CURRENT_VERSION) {
+// netevent_capture_header_t* header = (netevent_capture_header_t*)ctx->data_meta;
+// if (header && header->version == NETEVENT_CAPTURE_HEADER_CURRENT_VERSION) {
 //     // Access versioning information
 //     uint8_t event_type = header->type;
 //     uint32_t original_length = header->length_original;
@@ -52,7 +52,7 @@ typedef struct _pktmon_evt_stream_packet_header {
 
 // This structure is used to pass event data to the eBPF program.
 // After versioning changes:
-// - data_meta points to netevent_capture_hdr_t with versioning information
+// - data_meta points to netevent_capture_header_t with versioning information
 // - data points to the actual event payload (maintains backward compatibility)
 // - data_end points to the end of the entire buffer (header + payload)
 typedef struct _netevent_event_md

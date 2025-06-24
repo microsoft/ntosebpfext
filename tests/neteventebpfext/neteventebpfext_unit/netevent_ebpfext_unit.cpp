@@ -435,17 +435,17 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     // Test versioning header functionality
     // Create test data with versioning header prepended
     unsigned char versioned_data[MAX_PACKET_SIZE] = {0};
-    netevent_capture_hdr_t test_header = {0};
-    test_header.version = NETEVENT_CAPTURE_HDR_VERSION;
+    netevent_capture_header_t test_header = {0};
+    test_header.version = NETEVENT_CAPTURE_HEADER_CURRENT_VERSION;
     test_header.type = NOTIFY_EVENT_TYPE_NETEVENT_LOG;
-    test_header.len_orig = dummy_data_size;
-    test_header.len_cap = (uint16_t)dummy_data_size;
+    test_header.length_original = dummy_data_size;
+    test_header.length_captured = (uint16_t)dummy_data_size;
     
     // Copy header and then original data
-    memcpy(versioned_data, &test_header, sizeof(netevent_capture_hdr_t));
-    memcpy(versioned_data + sizeof(netevent_capture_hdr_t), dummy_data_in, dummy_data_size);
+    memcpy(versioned_data, &test_header, sizeof(netevent_capture_header_t));
+    memcpy(versioned_data + sizeof(netevent_capture_header_t), dummy_data_in, dummy_data_size);
     
-    size_t versioned_data_size = sizeof(netevent_capture_hdr_t) + dummy_data_size;
+    size_t versioned_data_size = sizeof(netevent_capture_header_t) + dummy_data_size;
     
     // Test that BPF programs can access versioning information
     bpf_opts.data_in = versioned_data;
