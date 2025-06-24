@@ -28,24 +28,8 @@ typedef struct _netevent_capture_header {
     NOTIFY_CAPTURE_HEADER
 } netevent_capture_header_t;
 
-// Example usage in BPF programs:
-// netevent_capture_header_t* header = (netevent_capture_header_t*)ctx->data_meta;
-// if (header && header->version == NETEVENT_CAPTURE_HEADER_CURRENT_VERSION) {
-//     // Access versioning information
-//     uint8_t event_type = header->type;
-//     uint32_t original_length = header->length_original;
-// }
-// // Access event data (backward compatible)
-// uint8_t* event_data = ctx->data;
-// uint8_t* event_end = ctx->data_end;
-
-
-
 // This structure is used to pass event data to the eBPF program.
-// After versioning changes:
-// - data_meta points to netevent_capture_header_t with versioning information
-// - data points to the actual event payload (maintains backward compatibility)
-// - data_end points to the end of the entire buffer (header + payload)
+// data_meta points to netevent_capture_header_t (with versioning information) followed by pktmon structure
 typedef struct _netevent_event_md
 {
     uint8_t* data_meta;
