@@ -640,22 +640,18 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         _event_buffer_sizes[current_cpu] = total_size;
     }
 
-    // Prepare the capture header with versioning information
-    capture_header.version = NETEVENT_CAPTURE_HEADER_CURRENT_VERSION;
-    capture_header.length_original = (uint32_t)payload_size;
-    // Ensure length_captured doesn't overflow uint16_t
-    capture_header.length_captured = (payload_size > 65535) ? 65535 : (uint16_t)payload_size;
-    
-    // Determine the event type from the original event data
+    // Write the capture header directly into the buffer
+    netevent_capture_header_t* header_ptr = (netevent_capture_header_t*)_event_buffers[current_cpu];
+    header_ptr->version = NETEVENT_CAPTURE_HEADER_CURRENT_VERSION;
+    header_ptr->length_original = (uint32_t)payload_size;
+    header_ptr->length_captured = (payload_size > 65535) ? 65535 : (uint16_t)payload_size;
     if (payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)) {
-        // Cast the event_start to access the EventId field
         PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
-        capture_header.type = (uint8_t)pktmon_header->EventId;
+        header_ptr->type = (uint8_t)pktmon_header->EventId;
+    } else {
+        header_ptr->type = 0;
     }
 
-    // Copy the capture header to the beginning of the buffer
-    memcpy(_event_buffers[current_cpu], &capture_header, sizeof(netevent_capture_header_t));
-    
     if (NETEVENT_HEADER_LENGTH < payload_size) {
         _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_capture_header_t) + NETEVENT_HEADER_LENGTH;
         memcpy(_event_buffers[current_cpu] + sizeof(netevent_capture_header_t), netevent_event->event_start, NETEVENT_HEADER_LENGTH);
