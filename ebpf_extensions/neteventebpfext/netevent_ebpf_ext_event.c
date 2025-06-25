@@ -588,6 +588,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     ebpf_result_t result;
     ebpf_extension_hook_client_t* client_context = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
+    netevent_capture_header_t* header_ptr = NULL;
     uint8_t* _event_buffer_data_start = NULL;
     uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
@@ -640,7 +641,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     }
 
     // Write the capture header directly into the buffer
-    netevent_capture_header_t* header_ptr = (netevent_capture_header_t*)_event_buffers[current_cpu];
+    header_ptr = (netevent_capture_header_t*)_event_buffers[current_cpu];
     header_ptr->version = NETEVENT_CAPTURE_HEADER_CURRENT_VERSION;
     header_ptr->length_original = (uint32_t)payload_size;
     header_ptr->length_captured = (payload_size > 65535) ? 65535 : (uint16_t)payload_size;
