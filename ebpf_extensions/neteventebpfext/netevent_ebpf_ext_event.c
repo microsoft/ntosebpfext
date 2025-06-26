@@ -34,6 +34,7 @@ const NPIID netevent_npiid = {0x2227e81a, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x9
 const NPI_MODULEID netevent_client_module_id = {
     sizeof(NPI_MODULEID), MIT_GUID, {0x8a9a5ef1, 0x2aa1, 0x42e9, {0x89, 0x5, 0xd1, 0xcf, 0x6, 0xc5, 0x77, 0x64}}};
 // Define the length of the event header expected prior to the event data.
+// Currently this length is equal to the size of PKTMON_EVT_STREAM_PACKET_HEADER which is defined in pktmonnpik.h.
 #define NETEVENT_HEADER_LENGTH 0x35
 
 //
