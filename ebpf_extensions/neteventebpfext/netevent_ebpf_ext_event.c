@@ -589,13 +589,13 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     ebpf_result_t result;
     ebpf_extension_hook_client_t* client_context = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
-    netevent_capture_header_t* header_ptr = NULL;
+    netevent_data_header_t* header_ptr = NULL;
     uint8_t* _event_buffer_data_start = NULL;
     uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
     // Allocate buffer for header + actual payload size
     uint64_t event_data_size = payload_size;
-    uint64_t total_size = sizeof(netevent_capture_header_t) + event_data_size;
+    uint64_t total_size = sizeof(netevent_data_header_t) + event_data_size;
     uint32_t current_cpu;
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
@@ -642,24 +642,21 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     }
 
     // Write the capture header directly into the buffer
-    header_ptr = (netevent_capture_header_t*)_event_buffers[current_cpu];
-    header_ptr->version = NETEVENT_CAPTURE_HEADER_CURRENT_VERSION;
-    header_ptr->length_original = (uint32_t)payload_size;
-    header_ptr->length_captured = (payload_size > 65535) ? 65535 : (uint16_t)payload_size;
-    if (payload_size >= sizeof(NETEVENT_EVT_STREAM_PACKET_HEADER_MINIMAL)) {
-        NETEVENT_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (NETEVENT_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
+    header_ptr = (netevent_data_header_t*)_event_buffers[current_cpu];
+    header_ptr->version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
+    header_ptr->type = 0;
+    if (payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)) {
+        PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
         header_ptr->type = (uint8_t)pktmon_header->EventId;
-    } else {
-        header_ptr->type = 0;
     }
 
     if (NETEVENT_HEADER_LENGTH < payload_size) {
-        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_capture_header_t) + NETEVENT_HEADER_LENGTH;
-        memcpy(_event_buffers[current_cpu] + sizeof(netevent_capture_header_t), netevent_event->event_start, NETEVENT_HEADER_LENGTH);
+        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_data_header_t) + NETEVENT_HEADER_LENGTH;
+        memcpy(_event_buffers[current_cpu] + sizeof(netevent_data_header_t), netevent_event->event_start, NETEVENT_HEADER_LENGTH);
         memcpy(_event_buffer_data_start, data_start, payload_size - NETEVENT_HEADER_LENGTH);
     } else {
-        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_capture_header_t);
-        memcpy(_event_buffers[current_cpu] + sizeof(netevent_capture_header_t), netevent_event->event_start, payload_size);
+        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_data_header_t);
+        memcpy(_event_buffers[current_cpu] + sizeof(netevent_data_header_t), netevent_event->event_start, payload_size);
     }
     netevent_event_notify_context.netevent_event_md.data_meta = _event_buffers[current_cpu];
     netevent_event_notify_context.netevent_event_md.data = _event_buffer_data_start;

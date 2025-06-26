@@ -8,28 +8,18 @@
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
 // Versioning header structures for BPF program compatibility
-#define NOTIFY_COMMON_HEADER \
-    uint8_t type;         \
-    uint8_t subtype;      \
-    uint16_t source;      \
-    uint32_t hash;
-
-#define NOTIFY_CAPTURE_HEADER                           \
-    NOTIFY_COMMON_HEADER                                \
-    uint32_t length_original; /* Length of original packet */ \
-    uint16_t length_captured;  /* Length of captured bytes */  \
-    uint16_t version;  /* Capture header version */
 
 // Define capture header version
-#define NETEVENT_CAPTURE_HEADER_CURRENT_VERSION 1
+#define PKTMON_CAPTURE_HEADER_CURRENT_VERSION 1
 
 // Capture header structure
-typedef struct _netevent_capture_header {
-    NOTIFY_CAPTURE_HEADER
-} netevent_capture_header_t;
+typedef struct _netevent_data_header {
+    uint8_t type;
+    uint16_t version;
+} netevent_data_header_t;
 
 // This structure is used to pass event data to the eBPF program.
-// data_meta points to netevent_capture_header_t (with versioning information) followed by pktmon structure
+// data_meta points to netevent_data_header_t (with versioning information) followed by pktmon structure
 typedef struct _netevent_event_md
 {
     uint8_t* data_meta;
