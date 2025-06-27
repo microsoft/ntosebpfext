@@ -9,6 +9,7 @@
 #include "ebpf_netevent_hooks.h"
 #include "netevent_ebpf_ext_event.h"
 #include "netevent_ebpf_ext_program_info.h"
+#include <assert.h>
 
 #include <errno.h>
 
@@ -583,7 +584,12 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     // EBPF_EXT_LOG_ENTRY();
 
     if (netevent_event == NULL) {
-        return;
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "netevent_evnet is NULL"
+        )
+        goto Exit;
     }
 
     ebpf_result_t result;
@@ -593,6 +599,25 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     uint8_t* _event_buffer_data_start = NULL;
     uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
+
+    // Ensure that we have valid netevent event data.
+    if (netevent_event->event_end <= netevent_event->event_start) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Invalid event: netevent_event->event_end <= netevent_event->event_start");
+        goto Exit;
+    }
+
+    // Ensure that the payload is at least as large as the header length.
+    if (payload_size < NETEVENT_HEADER_LENGTH) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Invalid event: payload_size < NETEVENT_HEADER_LENGTH");
+        goto Exit;
+    }
+
     // Allocate buffer for header + actual payload size
     uint64_t event_data_size = payload_size;
     uint64_t total_size = sizeof(netevent_data_header_t) + event_data_size;
@@ -645,19 +670,16 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     header_ptr = (netevent_data_header_t*)_event_buffers[current_cpu];
     header_ptr->version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
     header_ptr->type = 0;
-    if (payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)) {
-        PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
-        header_ptr->type = (uint8_t)pktmon_header->EventId;
-    }
 
-    if (NETEVENT_HEADER_LENGTH < payload_size) {
-        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_data_header_t) + NETEVENT_HEADER_LENGTH;
-        memcpy(_event_buffers[current_cpu] + sizeof(netevent_data_header_t), netevent_event->event_start, NETEVENT_HEADER_LENGTH);
-        memcpy(_event_buffer_data_start, data_start, payload_size - NETEVENT_HEADER_LENGTH);
-    } else {
-        _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_data_header_t);
-        memcpy(_event_buffers[current_cpu] + sizeof(netevent_data_header_t), netevent_event->event_start, payload_size);
-    }
+    // Assert that payload_size is always large enough for PKTMON header
+    assert(payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL));
+    PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
+    header_ptr->type = (uint8_t)pktmon_header->EventId;
+
+    _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_data_header_t) + NETEVENT_HEADER_LENGTH;
+    memcpy(_event_buffers[current_cpu] + sizeof(netevent_data_header_t), netevent_event->event_start, NETEVENT_HEADER_LENGTH);
+    memcpy(_event_buffer_data_start, data_start, payload_size - NETEVENT_HEADER_LENGTH);
+
     netevent_event_notify_context.netevent_event_md.data_meta = _event_buffers[current_cpu];
     netevent_event_notify_context.netevent_event_md.data = _event_buffer_data_start;
     netevent_event_notify_context.netevent_event_md.data_end = _event_buffers[current_cpu] + total_size;
