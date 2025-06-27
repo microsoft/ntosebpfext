@@ -600,6 +600,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
     uint64_t total_size = sizeof(netevent_data_header_t) + payload_size;
     uint32_t current_cpu;
+    PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = NULL;
     KIRQL old_irql = KeGetCurrentIrql();
 
     // Ensure that we have valid netevent event data.
@@ -668,13 +669,16 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     header_ptr = (netevent_data_header_t*)_event_buffers[current_cpu];
     header_ptr->version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
     header_ptr->type = 0;
-    PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
+    pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
     header_ptr->type = (uint8_t)pktmon_header->EventId;
 
+    // Copy header into the event buffer.
     _event_buffer_data_start = _event_buffers[current_cpu] + sizeof(netevent_data_header_t) + NETEVENT_HEADER_LENGTH;
     memcpy(_event_buffers[current_cpu] + sizeof(netevent_data_header_t), netevent_event->event_start, NETEVENT_HEADER_LENGTH);
+    // Copy the payload data into the event buffer.
     memcpy(_event_buffer_data_start, data_start, payload_size - NETEVENT_HEADER_LENGTH);
 
+    // Assign pointers to the bpf program context.
     netevent_event_notify_context.netevent_event_md.data_meta = _event_buffers[current_cpu];
     netevent_event_notify_context.netevent_event_md.data = _event_buffer_data_start;
     netevent_event_notify_context.netevent_event_md.data_end = _event_buffers[current_cpu] + total_size;
