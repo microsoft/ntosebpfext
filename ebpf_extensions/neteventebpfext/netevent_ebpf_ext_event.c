@@ -14,10 +14,10 @@
 
 // Minimal structure definition for accessing EventId from event stream packet header
 // This avoids redefinition conflicts with system headers and can be used by other providers
-typedef struct _netevent_evt_stream_packet_header_minimal {
+typedef struct _pktmon_evt_stream_packet_header_minimal {
     uint32_t EventId;
     // Only EventId field is accessed, other fields are not defined here
-} NETEVENT_EVT_STREAM_PACKET_HEADER_MINIMAL;
+} PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL;
 
 //
 // Global variables.
