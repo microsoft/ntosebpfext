@@ -596,9 +596,9 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     netevent_event_notify_context_t netevent_event_notify_context = {0};
     netevent_data_header_t* header_ptr = NULL;
     uint8_t* _event_buffer_data_start = NULL;
-    uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
-    uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
-    uint64_t total_size = sizeof(netevent_data_header_t) + payload_size;
+    uint8_t* data_start = NULL;
+    uint64_t payload_size = 0;
+    uint64_t total_size = 0;
     uint32_t current_cpu;
     PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = NULL;
     KIRQL old_irql = KeGetCurrentIrql();
@@ -612,12 +612,26 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         goto Exit;
     }
 
+    // Calculate sizes after validating the event data pointers
+    payload_size = netevent_event->event_end - netevent_event->event_start;
+    total_size = sizeof(netevent_data_header_t) + payload_size;
+    data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
+
     // Ensure that the payload is at least as large as the header length.
     if (payload_size < NETEVENT_HEADER_LENGTH) {
         EBPF_EXT_LOG_MESSAGE(
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
             EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
             "Invalid event: payload_size < NETEVENT_HEADER_LENGTH");
+        goto Exit;
+    }
+
+    // Ensure that the payload is large enough to contain the minimal PKTMON header for EventId access.
+    if (payload_size < sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Invalid event: payload_size < sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)");
         goto Exit;
     }
 
