@@ -381,8 +381,20 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     test_netevent_event_md_t test_netevent_ctx_out = {0};
     netevent_event_md_t& netevent_ctx_in = test_netevent_ctx_in.context;
     netevent_event_md_t& netevent_ctx_out = test_netevent_ctx_out.context;
-    unsigned char dummy_data_in[] = {NOTIFY_EVENT_TYPE_NETEVENT_DROP, 'a', 'b'};
-    const size_t dummy_data_size = sizeof(dummy_data_in);
+    unsigned char dummy_payload[] = {NOTIFY_EVENT_TYPE_NETEVENT_DROP, 'a', 'b'};
+    const size_t dummy_payload_size = sizeof(dummy_payload);
+    
+    // Create versioned data with header prepended
+    unsigned char dummy_data_in[MAX_PACKET_SIZE] = {0};
+    netevent_data_header_t dummy_header = {0};
+    dummy_header.version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
+    dummy_header.type = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+    
+    // Copy header and then payload
+    memcpy(dummy_data_in, &dummy_header, sizeof(netevent_data_header_t));
+    memcpy(dummy_data_in + sizeof(netevent_data_header_t), dummy_payload, dummy_payload_size);
+    
+    const size_t dummy_data_size = sizeof(netevent_data_header_t) + dummy_payload_size;
     unsigned char data_out[MAX_PACKET_SIZE] = {0};
     uint32_t event_count_before = event_count;
     fd_t netevent_program_fd = bpf_program__fd(netevent_monitor);
@@ -394,7 +406,7 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     bpf_opts.ctx_size_in = sizeof(netevent_ctx_in);
     bpf_opts.ctx_out = &netevent_ctx_out;
     bpf_opts.ctx_size_out = sizeof(netevent_ctx_out);
-    bpf_opts.data_in = &dummy_data_in;
+    bpf_opts.data_in = dummy_data_in;
     bpf_opts.data_size_in = static_cast<uint32_t>(dummy_data_size);
     // Set the data_out buffer to hold the output.
     bpf_opts.data_out = data_out;
@@ -407,17 +419,30 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(memcmp(dummy_data_in, data_out, dummy_data_size) == 0);
     REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
 
-    // Run prog_test with data > NETEVENT_HEADER_LENGTH
+    // Run prog_test with data > NETEVENT_HEADER_LENGTH using versioned format
     netevent_message_t netevent_message = {0};
     netevent_message.payload.event_id = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
-    const size_t netevent_message_size = sizeof(netevent_message_t);
+    const size_t netevent_message_payload_size = sizeof(netevent_message_t);
+    
+    // Create versioned data with header prepended
+    unsigned char versioned_netevent_data[MAX_PACKET_SIZE] = {0};
+    netevent_data_header_t netevent_header = {0};
+    netevent_header.version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
+    netevent_header.type = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+    
+    // Copy header and then netevent_message
+    memcpy(versioned_netevent_data, &netevent_header, sizeof(netevent_data_header_t));
+    memcpy(versioned_netevent_data + sizeof(netevent_data_header_t), &netevent_message, netevent_message_payload_size);
+    
+    const size_t total_netevent_size = sizeof(netevent_data_header_t) + netevent_message_payload_size;
+    
     bpf_opts.repeat = 1;
     bpf_opts.ctx_in = &netevent_ctx_in;
     bpf_opts.ctx_size_in = sizeof(netevent_ctx_in);
     bpf_opts.ctx_out = &netevent_ctx_out;
     bpf_opts.ctx_size_out = sizeof(netevent_ctx_out);
-    bpf_opts.data_in = &netevent_message;
-    bpf_opts.data_size_in = static_cast<uint32_t>(netevent_message_size);
+    bpf_opts.data_in = versioned_netevent_data;
+    bpf_opts.data_size_in = static_cast<uint32_t>(total_netevent_size);
     // Set the data_out buffer to hold the output.
     bpf_opts.data_out = data_out;
     bpf_opts.data_size_out = sizeof(data_out);
@@ -425,25 +450,25 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     // Execute the program
     REQUIRE(bpf_prog_test_run_opts(netevent_program_fd, &bpf_opts) == 0);
 
-    REQUIRE(bpf_opts.data_size_out == netevent_message_size);
-    REQUIRE(memcmp(&netevent_message, data_out, netevent_message_size) == 0);
+    REQUIRE(bpf_opts.data_size_out == total_netevent_size);
+    REQUIRE(memcmp(versioned_netevent_data, data_out, total_netevent_size) == 0);
     REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
 
     std::this_thread::sleep_for(std::chrono::seconds(5));
     REQUIRE(event_count == event_count_before + 2);
 
-    // Test versioning header functionality
-    // Create test data with versioning header prepended
+    // Test versioning header access functionality specifically
+    // Create test data with versioning header prepended (similar to above tests but with different payload)
     unsigned char versioned_data[MAX_PACKET_SIZE] = {0};
     netevent_data_header_t test_header = {0};
     test_header.version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
     test_header.type = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
     
-    // Copy header and then original data
+    // Copy header and then original payload data
     memcpy(versioned_data, &test_header, sizeof(netevent_data_header_t));
-    memcpy(versioned_data + sizeof(netevent_data_header_t), dummy_data_in, dummy_data_size);
+    memcpy(versioned_data + sizeof(netevent_data_header_t), dummy_payload, dummy_payload_size);
     
-    size_t versioned_data_size = sizeof(netevent_data_header_t) + dummy_data_size;
+    size_t versioned_data_size = sizeof(netevent_data_header_t) + dummy_payload_size;
     
     // Test that BPF programs can access versioning information
     bpf_opts.data_in = versioned_data;
