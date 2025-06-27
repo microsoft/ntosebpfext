@@ -9,7 +9,6 @@
 #include "ebpf_netevent_hooks.h"
 #include "netevent_ebpf_ext_event.h"
 #include "netevent_ebpf_ext_program_info.h"
-#include <assert.h>
 
 #include <errno.h>
 
@@ -669,9 +668,6 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     header_ptr = (netevent_data_header_t*)_event_buffers[current_cpu];
     header_ptr->version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
     header_ptr->type = 0;
-
-    // Assert that payload_size is always large enough for PKTMON header
-    assert(payload_size >= sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL));
     PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
     header_ptr->type = (uint8_t)pktmon_header->EventId;
 
