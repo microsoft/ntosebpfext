@@ -586,7 +586,7 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         EBPF_EXT_LOG_MESSAGE(
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
             EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
-            "netevent_evnet is NULL"
+            "netevent_event is NULL"
         )
         return;
     }
