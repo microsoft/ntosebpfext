@@ -682,7 +682,6 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     // Write the capture header directly into the buffer
     header_ptr = (netevent_data_header_t*)_event_buffers[current_cpu];
     header_ptr->version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
-    header_ptr->type = 0;
     pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
     header_ptr->type = (uint8_t)pktmon_header->EventId;
 
