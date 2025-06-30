@@ -436,7 +436,7 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
 
     // Validate the output params are as expected.
     REQUIRE(bpf_opts.data_size_out == test_pktmon_data_size);
-    REQUIRE(memcmp(test_pktmon_data_in, data_out, test_pktmon_data_size) == 0);
+    REQUIRE(memcmp(test_data_in, data_out, test_pktmon_data_size) == 0);
     REQUIRE(bpf_opts.ctx_size_out == sizeof(netevent_ctx_out));
 
     std::this_thread::sleep_for(std::chrono::seconds(5));
