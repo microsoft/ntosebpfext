@@ -53,11 +53,10 @@ typedef struct test_netevent_event_md
 void
 _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size)
 {
-    if ((event_type == NETEVENT_EVENT_TYPE_PKTMON_DROP || event_type == NETEVENT_EVENT_TYPE_PKTMON_FLOW) &&
-        size == sizeof(netevent_message_t)) {
-
+    netevent_data_header_t* header_ptr = reinterpret_cast<netevent_data_header_t*>(data);
+    if ((event_type == NETEVENT_EVENT_TYPE_PKTMON_DROP || event_type == NETEVENT_EVENT_TYPE_PKTMON_FLOW)) {
         // Cast the event and print its details
-        netevent_message_t* test_message = reinterpret_cast<netevent_message_t*>(data);
+        netevent_message_t* test_message = reinterpret_cast<netevent_message_t*>(data + sizeof(netevent_data_header_t));
         netevent_payload_t* test_payload = static_cast<netevent_payload_t*>(&test_message->payload);
         std::cout << "\rNetwork event [" << test_payload->event_counter << "]: {"
                   << "src: " << (int)test_payload->source_ip.octet1 << "." << (int)test_payload->source_ip.octet2 << "."
@@ -85,12 +84,15 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
 {
     // Parameter checks.
     UNREFERENCED_PARAMETER(ctx);
-    if (data == nullptr || size == 0) {
+    if (data == nullptr || size == 0 || size < sizeof(netevent_data_header_t)) {
+        std::cout << "empty event fired" << std::flush;
         return 0;
     }
 
     // Check if this event is actually a netevent event (i.e. first byte is NOTIFY_EVENT_TYPE_NETEVENT).
-    uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
+    netevent_data_header_t* header_ptr = reinterpret_cast<netevent_data_header_t*>(data);
+    uint8_t event_type = header_ptr->type;
+    event_count++;
     std::cout << "event type fired" << (int)event_type << std::flush;
     if (event_type == NETEVENT_EVENT_TYPE_PKTMON_FLOW) {
         log_event_count++;
@@ -99,7 +101,6 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
     } else {
         return 0;
     }
-    event_count++;
     _dump_event(event_type, "netevent_event", data, size);
 
     return 0;
