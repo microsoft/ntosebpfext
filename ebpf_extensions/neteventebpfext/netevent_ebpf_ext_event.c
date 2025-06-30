@@ -478,6 +478,7 @@ _ebpf_netevent_program_context_create(
     EBPF_EXT_LOG_ENTRY();
     ebpf_result_t result;
     netevent_event_notify_context_t* netevent_event_context = NULL;
+    netevent_data_header_t* header_ptr = (netevent_data_header_t*) data_in;
 
     if (context_in == NULL || context_size_in < sizeof(netevent_event_md_t)) {
         EBPF_EXT_LOG_MESSAGE(
@@ -512,9 +513,6 @@ _ebpf_netevent_program_context_create(
     memcpy(&netevent_event_context->netevent_event_md, context_in, sizeof(netevent_event_md_t));
 
     // Copy the event's pointer & size from the caller, to the out context.
-    
-    netevent_data_header_t* header_ptr = (netevent_data_header_t*)data_in;
-
     if ((header_ptr->type == NETEVENT_EVENT_TYPE_PKTMON_DROP) ||
         (header_ptr->type == NETEVENT_EVENT_TYPE_PKTMON_FLOW)) {
         const size_t header_size = NETEVENT_HEADER_LENGTH + sizeof(netevent_data_header_t);
