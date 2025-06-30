@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+#include "ebpf_netevent_hooks.h"
 #include "ebpf_windows.h"
 
 // Specific Event type to the neteventebpfext extension.
@@ -13,14 +14,6 @@ typedef struct
                                    ///< the memory range).
 } netevent_event_info_t;
 typedef void (*netevent_push_event)(netevent_event_info_t*);
-
-typedef enum _netevent_capture_type
-{
-    NeteventCapture_All = 1,
-    NeteventCapture_Flow,
-    NeteventCapture_Drop,
-    NeteventCapture_None
-} netevent_capture_type_t;
 
 typedef struct netevent_ext_header
 {
