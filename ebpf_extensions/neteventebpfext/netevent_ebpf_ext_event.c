@@ -638,15 +638,6 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         goto Exit;
     }
 
-    // Ensure that the payload is large enough to contain the minimal PKTMON header for EventId access.
-    if (payload_size < sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)) {
-        EBPF_EXT_LOG_MESSAGE(
-            EBPF_EXT_TRACELOG_LEVEL_ERROR,
-            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
-            "Invalid event: payload_size < sizeof(PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)");
-        goto Exit;
-    }
-
     // Allocate buffer for header + actual payload size
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
