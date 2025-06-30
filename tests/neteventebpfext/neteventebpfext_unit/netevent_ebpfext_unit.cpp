@@ -25,6 +25,8 @@
 
 // Define NETEVENT_HEADER_LENGTH to match the implementation
 #define NETEVENT_HEADER_LENGTH 0x35
+#define NETEVENT_EVENT_TYPE_PKTMON_DROP 100
+#define NETEVENT_EVENT_TYPE_PKTMON_FLOW 101
 
 struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
 
@@ -51,7 +53,7 @@ typedef struct test_netevent_event_md
 void
 _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size)
 {
-    if ((event_type == NOTIFY_EVENT_TYPE_NETEVENT_DROP || event_type == NOTIFY_EVENT_TYPE_NETEVENT_LOG) &&
+    if ((event_type == NETEVENT_EVENT_TYPE_PKTMON_DROP || event_type == NETEVENT_EVENT_TYPE_PKTMON_FLOW) &&
         size == sizeof(netevent_message_t)) {
 
         // Cast the event and print its details
@@ -90,9 +92,9 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
     // Check if this event is actually a netevent event (i.e. first byte is NOTIFY_EVENT_TYPE_NETEVENT).
     uint8_t event_type = static_cast<uint8_t>(*reinterpret_cast<const std::byte*>(data));
     std::cout << "event type fired" << (int)event_type << std::flush;
-    if (event_type == NOTIFY_EVENT_TYPE_NETEVENT_LOG) {
+    if (event_type == NETEVENT_EVENT_TYPE_PKTMON_FLOW) {
         log_event_count++;
-    } else if (event_type == NOTIFY_EVENT_TYPE_NETEVENT_DROP) {
+    } else if (event_type == NETEVENT_EVENT_TYPE_PKTMON_DROP) {
         drop_event_count++;
     } else {
         return 0;

@@ -5,14 +5,7 @@
 
 typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
 #include <pktmonnpik.h>
-
-//
-// Define some demo event types
-//
-
-// The event type we want to process
-#define NOTIFY_EVENT_TYPE_NETEVENT_DROP 100
-#define NOTIFY_EVENT_TYPE_NETEVENT_LOG 101
+#include "ebpf_netevent_hooks.h"
 
 #pragma pack(push, 1) // Set packing to 1 byte boundary
 
