@@ -23,11 +23,6 @@
 #include <string>
 #include <thread>
 
-// Define NETEVENT_HEADER_LENGTH to match the implementation
-#define NETEVENT_HEADER_LENGTH 0x35
-#define NETEVENT_EVENT_TYPE_PKTMON_DROP 100
-#define NETEVENT_EVENT_TYPE_PKTMON_FLOW 101
-
 struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
 
 CATCH_REGISTER_LISTENER(_watchdog)
@@ -56,7 +51,8 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
     netevent_data_header_t* header_ptr = reinterpret_cast<netevent_data_header_t*>(data);
     if ((event_type == NETEVENT_EVENT_TYPE_PKTMON_DROP || event_type == NETEVENT_EVENT_TYPE_PKTMON_FLOW)) {
         // Cast the event and print its details
-        netevent_message_t* test_message = reinterpret_cast<netevent_message_t*>(data + sizeof(netevent_data_header_t));
+        netevent_message_t* test_message =
+            reinterpret_cast<netevent_message_t*>((static_cast<char*>(data) + sizeof(netevent_data_header_t)));
         netevent_payload_t* test_payload = static_cast<netevent_payload_t*>(&test_message->payload);
         std::cout << "\rNetwork event [" << test_payload->event_counter << "]: {"
                   << "src: " << (int)test_payload->source_ip.octet1 << "." << (int)test_payload->source_ip.octet2 << "."
@@ -89,7 +85,7 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
         return 0;
     }
 
-    // Check if this event is actually a netevent event (i.e. first byte is NOTIFY_EVENT_TYPE_NETEVENT).
+    // Check if this event is actually a netevent event (i.e. first byte is NETEVENT_EVENT_TYPE_PKTMON_DROP).
     netevent_data_header_t* header_ptr = reinterpret_cast<netevent_data_header_t*>(data);
     uint8_t event_type = header_ptr->type;
     event_count++;
@@ -254,12 +250,11 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     // Find and attach to the netevent_monitor BPF program.
     ebpf_result_t result;
     bpf_link* netevent_monitor_link = nullptr;
-    netevent_attach_opts_t attach_opts = {
-        .capture_type = NeteventCapture_All
-    };
+    netevent_attach_opts_t attach_opts = {.capture_type = NeteventCapture_All};
     auto netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
-    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    result = ebpf_program_attach(
+        netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
     REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
@@ -365,12 +360,11 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     // Find and attach to the netevent_monitor BPF program.
     ebpf_result_t result;
     bpf_link* netevent_monitor_link = nullptr;
-    netevent_attach_opts_t attach_opts = {
-        .capture_type = NeteventCapture_All
-    };
+    netevent_attach_opts_t attach_opts = {.capture_type = NeteventCapture_All};
     bpf_program* netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
-    result = ebpf_program_attach(netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
+    result = ebpf_program_attach(
+        netevent_monitor, &EBPF_ATTACH_TYPE_NETEVENT, &attach_opts, sizeof(attach_opts), &netevent_monitor_link);
     REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
@@ -391,18 +385,18 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     fd_t netevent_program_fd = bpf_program__fd(netevent_monitor);
     REQUIRE(netevent_program_fd != ebpf_fd_invalid);
 
-    // Validate well formatted pktmon data: [netevent_data_header_t (3 bytes)][PKTMON header (53 bytes)][additional payload]
-    // Netevent header.
+    // Validate well formatted pktmon data: [netevent_data_header_t (3 bytes)][PKTMON header (53 bytes)][additional
+    // payload] Netevent header.
     netevent_data_header_t netevent_ext_pktmon_header = {0};
-    netevent_ext_pktmon_header.version = PKTMON_CAPTURE_HEADER_CURRENT_VERSION;
-    netevent_ext_pktmon_header.type = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+    netevent_ext_pktmon_header.version = NETEVENT_PKTMON_EVENT_CURRENT_VERSION;
+    netevent_ext_pktmon_header.type = NETEVENT_EVENT_TYPE_PKTMON_DROP;
 
     // Pktmon header.
-    unsigned char pktmon_header_data[NETEVENT_HEADER_LENGTH] = {0};
+    unsigned char pktmon_header_data[PKTMON_EVENT_HEADER_LENGTH] = {0};
     // Set the first 4 bytes as EventId (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL)
-    *(uint32_t*)pktmon_header_data = NOTIFY_EVENT_TYPE_NETEVENT_DROP;
+    *(uint32_t*)pktmon_header_data = NETEVENT_EVENT_TYPE_PKTMON_DROP;
     // Fill the rest with dummy Pktmon header data
-    for (size_t i = 4; i < NETEVENT_HEADER_LENGTH; i++) {
+    for (size_t i = 4; i < PKTMON_EVENT_HEADER_LENGTH; i++) {
         pktmon_header_data[i] = (unsigned char)(i % 256);
     }
 
@@ -414,12 +408,13 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     size_t offset = 0;
     memcpy(test_data_in + offset, &netevent_ext_pktmon_header, sizeof(netevent_data_header_t));
     offset += sizeof(netevent_data_header_t);
-    memcpy(test_data_in + offset, pktmon_header_data, NETEVENT_HEADER_LENGTH);
-    offset += NETEVENT_HEADER_LENGTH;
+    memcpy(test_data_in + offset, pktmon_header_data, PKTMON_EVENT_HEADER_LENGTH);
+    offset += PKTMON_EVENT_HEADER_LENGTH;
     memcpy(test_data_in + offset, additional_payload, additional_payload_size);
     offset += additional_payload_size;
 
-    const size_t test_pktmon_data_size = sizeof(netevent_data_header_t) + NETEVENT_HEADER_LENGTH + additional_payload_size;
+    const size_t test_pktmon_data_size =
+        sizeof(netevent_data_header_t) + PKTMON_EVENT_HEADER_LENGTH + additional_payload_size;
     unsigned char data_out[MAX_PACKET_SIZE] = {0};
     uint32_t event_count_before = event_count;
 

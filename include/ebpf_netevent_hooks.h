@@ -14,10 +14,14 @@
 #define NETEVENT_EVENT_TYPE_PKTMON_FLOW 101
 
 // Define capture header version
-#define PKTMON_CAPTURE_HEADER_CURRENT_VERSION 1
+#define NETEVENT_PKTMON_EVENT_CURRENT_VERSION 1
+// Define the length of the event header expected prior to the event data.
+// Currently this length is equal to the size of PKTMON_EVT_STREAM_PACKET_HEADER which is defined in pktmonnpik.h.
+#define PKTMON_EVENT_HEADER_LENGTH 0x35
 
 // Capture header structure
-typedef struct _netevent_data_header {
+typedef struct _netevent_data_header
+{
     uint8_t type;
     uint16_t version;
 } netevent_data_header_t;

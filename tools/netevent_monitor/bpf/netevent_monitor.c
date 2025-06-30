@@ -27,12 +27,13 @@ int
 NetEventMonitor(netevent_event_md_t* ctx)
 {
     int result = -1;
-
-    if (ctx != NULL && ctx->data != NULL && ctx->data_end != NULL && ctx->data_end > ctx->data_meta) {
+    uint32_t event_header = sizeof(netevent_data_header_t) + PKTMON_EVENT_HEADER_LENGTH;
+    uint32_t full_context_size = ctx->data_end - ctx->data_meta;
+    if (ctx != NULL && ctx->data != NULL && ctx->data_end != NULL && ctx->data_meta + event_header == ctx->data) {
         // Push the event to the netevent_events_map.
         // TODO: switch to perf_event_output when it is available.
         // Issue: https://github.com/microsoft/ntosebpfext/issues/204.
-        result = bpf_ringbuf_output(&netevent_events_map, ctx->data, (ctx->data_end - ctx->data_meta), 0);
+        result = bpf_ringbuf_output(&netevent_events_map, ctx->data_meta, full_context_size, 0);
     }
 
     return result;
