@@ -494,6 +494,14 @@ _ebpf_netevent_program_context_create(
     }
     *context = NULL;
 
+    // Require data_in to be non-null and of sufficient size.
+    if (data_in == NULL || data_size_in < sizeof(netevent_data_header_t)) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "Input Data is required to be non-null and at least sizeof(netevent_data_header_t) bytes");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
+    }
+
     // Allocate memory for the context.
     netevent_event_context = (netevent_event_notify_context_t*)ExAllocatePoolUninitialized(
         NonPagedPoolNx, sizeof(netevent_event_notify_context_t), EBPF_NETEVENT_EXTENSION_POOL_TAG);
@@ -504,13 +512,24 @@ _ebpf_netevent_program_context_create(
     memcpy(&netevent_event_context->netevent_event_md, context_in, sizeof(netevent_event_md_t));
 
     // Copy the event's pointer & size from the caller, to the out context.
-    if (data_size_in > NETEVENT_HEADER_LENGTH) {
+    
+    netevent_data_header_t* header_ptr = (netevent_data_header_t*)data_in;
+
+    if ((header_ptr->type == NETEVENT_EVENT_TYPE_PKTMON_DROP) ||
+        (header_ptr->type == NETEVENT_EVENT_TYPE_PKTMON_FLOW)) {
+        const size_t header_size = NETEVENT_HEADER_LENGTH + sizeof(netevent_data_header_t);
         netevent_event_context->netevent_event_md.data_meta = (uint8_t*)data_in;
-        netevent_event_context->netevent_event_md.data = (uint8_t*)data_in + NETEVENT_HEADER_LENGTH;
+        netevent_event_context->netevent_event_md.data = (uint8_t*)data_in + header_size;
     } else {
-        netevent_event_context->netevent_event_md.data = (uint8_t*)data_in;
-        netevent_event_context->netevent_event_md.data_meta = netevent_event_context->netevent_event_md.data;
+        // Currently, no other event types are supported.
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Unsupported event type in data_in");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
     }
+
     netevent_event_context->netevent_event_md.data_end = (uint8_t*)data_in + data_size_in;
     *context = &netevent_event_context->netevent_event_md;
     netevent_event_context = NULL;

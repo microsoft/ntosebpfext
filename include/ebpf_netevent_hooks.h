@@ -9,6 +9,10 @@
 
 // Versioning header structures for BPF program compatibility
 
+// Define event types
+#define NETEVENT_EVENT_TYPE_PKTMON_DROP 100
+#define NETEVENT_EVENT_TYPE_PKTMON_FLOW 101
+
 // Define capture header version
 #define PKTMON_CAPTURE_HEADER_CURRENT_VERSION 1
 
