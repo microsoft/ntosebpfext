@@ -7,7 +7,27 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by neteventebpfext.sys for use by eBPF programs.
 
+// Versioning header structures for BPF program compatibility
+
+// Define event types
+#define NETEVENT_EVENT_TYPE_PKTMON_DROP 100
+#define NETEVENT_EVENT_TYPE_PKTMON_FLOW 101
+
+// Define capture header version
+#define NETEVENT_PKTMON_EVENT_CURRENT_VERSION 1
+// Define the length of the event header expected prior to the event data.
+// Currently this length is equal to the size of PKTMON_EVT_STREAM_PACKET_HEADER which is defined in pktmonnpik.h.
+#define PKTMON_EVENT_HEADER_LENGTH 0x35
+
+// Capture header structure
+typedef struct _netevent_data_header
+{
+    uint8_t type;
+    uint16_t version;
+} netevent_data_header_t;
+
 // This structure is used to pass event data to the eBPF program.
+// data_meta points to netevent_data_header_t (with versioning information) followed by pktmon structure
 typedef struct _netevent_event_md
 {
     uint8_t* data_meta;

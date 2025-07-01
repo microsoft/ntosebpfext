@@ -12,6 +12,14 @@
 
 #include <errno.h>
 
+// Minimal structure definition for accessing EventId from event stream packet header
+// This avoids redefinition conflicts with system headers and can be used by other providers
+typedef struct _pktmon_evt_stream_packet_header_minimal
+{
+    uint32_t EventId;
+    // Only EventId field is accessed, other fields are not defined here
+} PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL;
+
 //
 // Global variables.
 //
@@ -26,8 +34,6 @@ const NPIID netevent_npiid = {0x2227e81a, 0x8d8b, 0x11d4, {0xab, 0xad, 0x00, 0x9
 // Define the client module's ID
 const NPI_MODULEID netevent_client_module_id = {
     sizeof(NPI_MODULEID), MIT_GUID, {0x8a9a5ef1, 0x2aa1, 0x42e9, {0x89, 0x5, 0xd1, 0xcf, 0x6, 0xc5, 0x77, 0x64}}};
-// Define the length of the event header expected prior to the event data.
-#define NETEVENT_HEADER_LENGTH 0x35
 
 //
 // Prototypes.
@@ -470,6 +476,7 @@ _ebpf_netevent_program_context_create(
     EBPF_EXT_LOG_ENTRY();
     ebpf_result_t result;
     netevent_event_notify_context_t* netevent_event_context = NULL;
+    netevent_data_header_t* header_ptr = (netevent_data_header_t*)data_in;
 
     if (context_in == NULL || context_size_in < sizeof(netevent_event_md_t)) {
         EBPF_EXT_LOG_MESSAGE(
@@ -486,6 +493,16 @@ _ebpf_netevent_program_context_create(
     }
     *context = NULL;
 
+    // Require data_in to be non-null and of sufficient size.
+    if (data_in == NULL || data_size_in < sizeof(netevent_data_header_t)) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Input Data is required to be non-null and at least sizeof(netevent_data_header_t) bytes");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
+    }
+
     // Allocate memory for the context.
     netevent_event_context = (netevent_event_notify_context_t*)ExAllocatePoolUninitialized(
         NonPagedPoolNx, sizeof(netevent_event_notify_context_t), EBPF_NETEVENT_EXTENSION_POOL_TAG);
@@ -496,13 +513,19 @@ _ebpf_netevent_program_context_create(
     memcpy(&netevent_event_context->netevent_event_md, context_in, sizeof(netevent_event_md_t));
 
     // Copy the event's pointer & size from the caller, to the out context.
-    if (data_size_in > NETEVENT_HEADER_LENGTH) {
+    if ((header_ptr->type == NETEVENT_EVENT_TYPE_PKTMON_DROP) ||
+        (header_ptr->type == NETEVENT_EVENT_TYPE_PKTMON_FLOW)) {
+        const size_t header_size = PKTMON_EVENT_HEADER_LENGTH + sizeof(netevent_data_header_t);
         netevent_event_context->netevent_event_md.data_meta = (uint8_t*)data_in;
-        netevent_event_context->netevent_event_md.data = (uint8_t*)data_in + NETEVENT_HEADER_LENGTH;
+        netevent_event_context->netevent_event_md.data = (uint8_t*)data_in + header_size;
     } else {
-        netevent_event_context->netevent_event_md.data = (uint8_t*)data_in;
-        netevent_event_context->netevent_event_md.data_meta = netevent_event_context->netevent_event_md.data;
+        // Currently, no other event types are supported.
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "Unsupported event type in data_in");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
     }
+
     netevent_event_context->netevent_event_md.data_end = (uint8_t*)data_in + data_size_in;
     *context = &netevent_event_context->netevent_event_md;
     netevent_event_context = NULL;
@@ -575,21 +598,51 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
     // EBPF_EXT_LOG_ENTRY();
 
     if (netevent_event == NULL) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_NETEVENT, "netevent_event is NULL")
         return;
     }
 
     ebpf_result_t result;
     ebpf_extension_hook_client_t* client_context = NULL;
     netevent_event_notify_context_t netevent_event_notify_context = {0};
+    netevent_data_header_t* header_ptr = NULL;
     uint8_t* _event_buffer_data_start = NULL;
-    uint8_t* data_start = netevent_event->event_start + NETEVENT_HEADER_LENGTH;
-    uint64_t payload_size = netevent_event->event_end - netevent_event->event_start;
+    uint8_t* data_start = NULL;
+    uint64_t payload_size = 0;
+    uint64_t total_size = 0;
     uint32_t current_cpu;
+    PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL* pktmon_header = NULL;
+    KIRQL old_irql = KeGetCurrentIrql();
+
+    // Ensure that we have valid netevent event data.
+    if (netevent_event->event_end <= netevent_event->event_start) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Invalid event: netevent_event->event_end <= netevent_event->event_start");
+        goto Exit;
+    }
+
+    // Calculate sizes after validating the event data pointers
+    payload_size = netevent_event->event_end - netevent_event->event_start;
+    total_size = sizeof(netevent_data_header_t) + payload_size;
+    data_start = netevent_event->event_start + PKTMON_EVENT_HEADER_LENGTH;
+
+    // Ensure that the payload is at least as large as the header length.
+    if (payload_size < PKTMON_EVENT_HEADER_LENGTH) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_NETEVENT,
+            "Invalid event: payload_size < PKTMON_EVENT_HEADER_LENGTH");
+        goto Exit;
+    }
+
+    // Allocate buffer for header + actual payload size
     // Currently, the verifier does not support read-only contexts, so we need to copy the event data, rather than
     // directly passing the existing pointers.
     // Verifier feature proposal: https://github.com/vbpf/ebpf-verifier/issues/639
 
-    KIRQL old_irql = KeGetCurrentIrql();
     if (old_irql < DISPATCH_LEVEL) {
         old_irql = KeRaiseIrqlToDpcLevel();
     }
@@ -611,10 +664,10 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
         goto Exit;
     }
 
-    if (payload_size > _event_buffer_sizes[current_cpu]) {
+    if (total_size > _event_buffer_sizes[current_cpu]) {
         // If the event buffer is too small, attempt to resize it.
         uint8_t* new_event_buffer =
-            (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, payload_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
+            (uint8_t*)ExAllocatePoolUninitialized(NonPagedPoolNx, total_size, EBPF_NETEVENT_EXTENSION_POOL_TAG);
         if (new_event_buffer == NULL) {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -626,20 +679,29 @@ _ebpf_netevent_push_event(_In_ netevent_event_t* netevent_event)
             ExFreePool(_event_buffers[current_cpu]);
         }
         _event_buffers[current_cpu] = new_event_buffer;
-        _event_buffer_sizes[current_cpu] = payload_size;
+        _event_buffer_sizes[current_cpu] = total_size;
     }
 
-    if (NETEVENT_HEADER_LENGTH < payload_size) {
-        _event_buffer_data_start = _event_buffers[current_cpu] + NETEVENT_HEADER_LENGTH;
-        memcpy(_event_buffers[current_cpu], netevent_event->event_start, NETEVENT_HEADER_LENGTH);
-        memcpy(_event_buffer_data_start, data_start, payload_size - NETEVENT_HEADER_LENGTH);
-    } else {
-        _event_buffer_data_start = _event_buffers[current_cpu];
-        memcpy(_event_buffers[current_cpu], netevent_event->event_start, payload_size);
-    }
+    // Write the capture header directly into the buffer
+    header_ptr = (netevent_data_header_t*)_event_buffers[current_cpu];
+    header_ptr->version = NETEVENT_PKTMON_EVENT_CURRENT_VERSION;
+    pktmon_header = (PKTMON_EVT_STREAM_PACKET_HEADER_MINIMAL*)netevent_event->event_start;
+    header_ptr->type = (uint8_t)pktmon_header->EventId;
+
+    // Copy header into the event buffer.
+    _event_buffer_data_start =
+        _event_buffers[current_cpu] + sizeof(netevent_data_header_t) + PKTMON_EVENT_HEADER_LENGTH;
+    memcpy(
+        _event_buffers[current_cpu] + sizeof(netevent_data_header_t),
+        netevent_event->event_start,
+        PKTMON_EVENT_HEADER_LENGTH);
+    // Copy the payload data into the event buffer.
+    memcpy(_event_buffer_data_start, data_start, payload_size - PKTMON_EVENT_HEADER_LENGTH);
+
+    // Assign pointers to the bpf program context.
     netevent_event_notify_context.netevent_event_md.data_meta = _event_buffers[current_cpu];
     netevent_event_notify_context.netevent_event_md.data = _event_buffer_data_start;
-    netevent_event_notify_context.netevent_event_md.data_end = _event_buffers[current_cpu] + payload_size;
+    netevent_event_notify_context.netevent_event_md.data_end = _event_buffers[current_cpu] + total_size;
 
     // For each attached client call the netevent hook.
     client_context = ebpf_extension_hook_get_next_attached_client(_ebpf_netevent_event_hook_provider_context, NULL);
