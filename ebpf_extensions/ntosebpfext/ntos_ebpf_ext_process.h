@@ -5,6 +5,8 @@
 
 #include "ebpf_ext.h"
 
+#define EBPF_NTOS_EXTENSION_POOL_TAG 'sotN'
+
 /**
  * @brief Unregister PROCESS NPI providers.
  *
