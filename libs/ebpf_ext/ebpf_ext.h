@@ -18,7 +18,8 @@
 #include <netioapi.h>
 #include <netiodef.h>
 
-#define EBPF_EXTENSION_POOL_TAG 'bEtN'
+// External pool tag variable that must be defined by each extension
+extern ULONG EBPF_EXTENSION_POOL_TAG;
 #define EBPF_EXTENSION_NPI_PROVIDER_VERSION 0
 
 #define EBPF_COUNT_OF(arr) (sizeof(arr) / sizeof(arr[0]))

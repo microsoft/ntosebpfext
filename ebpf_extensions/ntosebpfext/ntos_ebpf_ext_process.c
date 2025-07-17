@@ -12,6 +12,9 @@
 
 #include <errno.h>
 
+// Define the pool tag for this extension
+ULONG EBPF_EXTENSION_POOL_TAG = EBPF_NTOS_EXTENSION_POOL_TAG;
+
 static ebpf_result_t
 _ebpf_process_context_create(
     _In_reads_bytes_opt_(data_size_in) const uint8_t* data_in,
