@@ -14,7 +14,6 @@ typedef struct _EX_RUNDOWN_REF_CACHE_AWARE* PEX_RUNDOWN_REF_CACHE_AWARE;
 #define NOTIFY_EVENT_TYPE_NETEVENT_DROP 100
 #define NOTIFY_EVENT_TYPE_NETEVENT_LOG 101
 
-#define NETEVENT_PKTMON_EVENT_CURRENT_VERSION 1
 #pragma pack(push, 1) // Set packing to 1 byte boundary
 
 // IP address structure
@@ -35,14 +34,6 @@ typedef enum _drop_reason
     DROP_REASON_BANDWIDTH_LIMIT = 3,
     DROP_REASON_INACTIVE_TIMEOUT = 4,
 } drop_reason;
-
-// Capture header structure
-typedef struct _version_header
-{
-    uint8_t type;
-    uint16_t version;
-} version_header_t;
-
 typedef struct _netevent_payload
 {
     unsigned char event_id;
@@ -58,7 +49,6 @@ typedef struct _netevent_payload
 // This structure is used to pass event data to the eBPF program.
 typedef struct _netevent_message
 {
-    version_header_t version_header;
     PKTMON_EVT_STREAM_PACKET_HEADER header;
     netevent_payload_t payload;
 } netevent_message_t;
