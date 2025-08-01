@@ -96,6 +96,8 @@ timer_dpc_routine(
         // Create a test event
         LONG counter = InterlockedIncrement(&_event_counter);
         netevent_message_t demo_event = {
+            .version_header =
+                {.type = NOTIFY_EVENT_TYPE_NETEVENT_LOG, .version = NETEVENT_PKTMON_EVENT_CURRENT_VERSION},
             .header =
                 {.EventId = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
                  .PacketDescriptor = {.PacketMetaDataLength = sizeof(PKTMON_EVT_STREAM_METADATA)}},

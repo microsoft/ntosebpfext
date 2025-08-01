@@ -75,14 +75,15 @@ _dump_event(uint8_t event_type, const char* event_descr, void* data, size_t size
     }
 }
 
-int
-netevent_monitor_event_callback(void* ctx, void* data, size_t size)
+void
+netevent_monitor_event_callback(void* ctx, int cpu, void* data, uint32_t size)
 {
     // Parameter checks.
     UNREFERENCED_PARAMETER(ctx);
+    UNREFERENCED_PARAMETER(cpu);
     if (data == nullptr || size == 0 || size < sizeof(netevent_data_header_t)) {
         std::cout << "empty event fired" << std::flush;
-        return 0;
+        return;
     }
 
     // Check if this event is actually a netevent event (i.e. first byte is NETEVENT_EVENT_TYPE_PKTMON_DROP).
@@ -95,11 +96,19 @@ netevent_monitor_event_callback(void* ctx, void* data, size_t size)
     } else if (event_type == NETEVENT_EVENT_TYPE_PKTMON_DROP) {
         drop_event_count++;
     } else {
-        return 0;
+        return;
     }
     _dump_event(event_type, "netevent_event", data, size);
 
-    return 0;
+    return;
+}
+
+void
+netevent_monitor_lost_event_callback(void* ctx, int cpu, __u64 cnt)
+{
+    UNREFERENCED_PARAMETER(ctx);
+    UNREFERENCED_PARAMETER(cpu);
+    UNREFERENCED_PARAMETER(cnt);
 }
 
 TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
@@ -136,7 +145,13 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     // Attach to the eBPF ring buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
+    auto ring = perf_buffer__new(
+        bpf_map__fd(netevent_events_map),
+        0,
+        netevent_monitor_event_callback,
+        netevent_monitor_lost_event_callback,
+        nullptr,
+        nullptr);
     REQUIRE(ring != nullptr);
 
     // Test attach with no attach params - this should fail.
@@ -206,7 +221,7 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     REQUIRE((event_count - event_count_before) == (drop_event_count - drop_event_count_before));
 
     // Close ring buffer.
-    ring_buffer__free(ring);
+    perf_buffer__free(ring);
 
     // Free the BPF object.
     bpf_object__close(object);
@@ -258,10 +273,16 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
-    // Attach to the eBPF ring buffer event map.
+    // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto ring = ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
+    auto ring = perf_buffer__new(
+        bpf_map__fd(netevent_events_map),
+        0,
+        netevent_monitor_event_callback,
+        netevent_monitor_lost_event_callback,
+        nullptr,
+        nullptr);
     REQUIRE(ring != nullptr);
 
     std::cout << "\n\n********** Test netevent_sim provider load/unload while the extension is running. **********"
@@ -322,8 +343,8 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     bpf_link_detach(link_fd);
     bpf_link__destroy(netevent_monitor_link);
 
-    // Close ring buffer.
-    ring_buffer__free(ring);
+    // Close perf buffer.
+    perf_buffer__free(ring);
 
     // Free the BPF object.
     bpf_object__close(object);
@@ -368,11 +389,16 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(netevent_monitor_link != nullptr);
 
-    // Attach to the eBPF ring buffer event map.
+    // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    ring_buffer* ring =
-        ring_buffer__new(bpf_map__fd(netevent_events_map), netevent_monitor_event_callback, nullptr, nullptr);
+    auto ring = perf_buffer__new(
+        bpf_map__fd(netevent_events_map),
+        0,
+        netevent_monitor_event_callback,
+        netevent_monitor_lost_event_callback,
+        nullptr,
+        nullptr);
     REQUIRE(ring != nullptr);
 
     // Initialize structures required for bpf_prog_test_run_opts
@@ -478,8 +504,8 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(bpf_link_detach(link_fd) == 0);
     REQUIRE(bpf_link__destroy(netevent_monitor_link) == 0);
 
-    // Free the ring buffer manager
-    ring_buffer__free(ring);
+    // Free the perf buffer manager
+    perf_buffer__free(ring);
 
     // Free the BPF object.
     bpf_object__close(object);
