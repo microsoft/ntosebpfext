@@ -142,17 +142,17 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     auto netevent_monitor = bpf_object__find_program_by_name(object, "NetEventMonitor");
     REQUIRE(netevent_monitor != nullptr);
 
-    // Attach to the eBPF ring buffer event map.
+    // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto ring = perf_buffer__new(
+    auto netevent_perf_buff = perf_buffer__new(
         bpf_map__fd(netevent_events_map),
         0,
         netevent_monitor_event_callback,
         netevent_monitor_lost_event_callback,
         nullptr,
         nullptr);
-    REQUIRE(ring != nullptr);
+    REQUIRE(netevent_perf_buff != nullptr);
 
     // Test attach with no attach params - this should fail.
     ebpf_result_t result;
@@ -220,8 +220,8 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     REQUIRE(drop_event_count_before < drop_event_count);
     REQUIRE((event_count - event_count_before) == (drop_event_count - drop_event_count_before));
 
-    // Close ring buffer.
-    perf_buffer__free(ring);
+    // Close perf buffer.
+    perf_buffer__free(netevent_perf_buff);
 
     // Free the BPF object.
     bpf_object__close(object);
@@ -276,14 +276,14 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto ring = perf_buffer__new(
+    auto netevent_perf_buff = perf_buffer__new(
         bpf_map__fd(netevent_events_map),
         0,
         netevent_monitor_event_callback,
         netevent_monitor_lost_event_callback,
         nullptr,
         nullptr);
-    REQUIRE(ring != nullptr);
+    REQUIRE(netevent_perf_buff != nullptr);
 
     std::cout << "\n\n********** Test netevent_sim provider load/unload while the extension is running. **********"
               << std::endl;
@@ -344,7 +344,7 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     bpf_link__destroy(netevent_monitor_link);
 
     // Close perf buffer.
-    perf_buffer__free(ring);
+    perf_buffer__free(netevent_perf_buff);
 
     // Free the BPF object.
     bpf_object__close(object);
@@ -392,14 +392,14 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto ring = perf_buffer__new(
+    auto netevent_perf_buff = perf_buffer__new(
         bpf_map__fd(netevent_events_map),
         0,
         netevent_monitor_event_callback,
         netevent_monitor_lost_event_callback,
         nullptr,
         nullptr);
-    REQUIRE(ring != nullptr);
+    REQUIRE(netevent_perf_buff != nullptr);
 
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
@@ -505,7 +505,7 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     REQUIRE(bpf_link__destroy(netevent_monitor_link) == 0);
 
     // Free the perf buffer manager
-    perf_buffer__free(ring);
+    perf_buffer__free(netevent_perf_buff);
 
     // Free the BPF object.
     bpf_object__close(object);
