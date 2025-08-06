@@ -12,6 +12,9 @@
 
 #include <errno.h>
 
+// Define the pool tag for this extension to use in library allocations
+ULONG EBPF_EXTENSION_POOL_TAG = EBPF_NETEVENT_EXTENSION_POOL_TAG;
+
 // Minimal structure definition for accessing EventId from event stream packet header
 // This avoids redefinition conflicts with system headers and can be used by other providers
 typedef struct _pktmon_evt_stream_packet_header_minimal
