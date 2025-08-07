@@ -21,7 +21,7 @@ struct
 
 enum
 {
-    BPF_F_CURRENT_CPU = 0xffffffff
+    EBPF_MAP_FLAG_CURRENT_CPU = 0xffffffff
 };
 
 // The following line is optional, but is used to verify
@@ -45,7 +45,7 @@ NetEventMonitor(netevent_event_md_t* ctx)
             data_len = EVENT_SIZE_MAX;
         }
         event_len += data_len;
-        return bpf_perf_event_output(ctx, &netevent_events_map, BPF_F_CURRENT_CPU, ctx->data_meta, event_len);
+        return bpf_perf_event_output(ctx, &netevent_events_map, EBPF_MAP_FLAG_CURRENT_CPU, ctx->data_meta, event_len);
     }
 
     return -1;
