@@ -19,7 +19,6 @@ struct
     __uint(max_entries, EVENTS_MAP_SIZE);
 } netevent_events_map SEC(".maps");
 
-
 // The following line is optional, but is used to verify
 // that the NetEventMonitor prototype is correct or the compiler
 // would complain when the function is actually defined below.
