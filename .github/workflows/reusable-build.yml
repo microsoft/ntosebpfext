@@ -66,7 +66,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+      uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
       with:
         egress-policy: audit
 
@@ -103,7 +103,7 @@ jobs:
 
     - name: Initialize CodeQL
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/init@ff0a06e83cb2de871e5a09832bc6a81e7276941f
+      uses: github/codeql-action/init@76621b61decf072c1cee8dd1ce2d2a82d33c17ed
       with:
         languages: 'cpp'
 
@@ -114,7 +114,7 @@ jobs:
 
     - name: Cache chocolatey packages
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+      uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
       env:
         cache-name: cache-choco-packages
       with:
@@ -159,7 +159,7 @@ jobs:
 
     - name: Cache nuget packages
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+      uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
       env:
         cache-name: cache-nuget-modules
       with:
@@ -246,4 +246,4 @@ jobs:
 
     - name: Perform CodeQL Analysis
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/analyze@ff0a06e83cb2de871e5a09832bc6a81e7276941f
+      uses: github/codeql-action/analyze@76621b61decf072c1cee8dd1ce2d2a82d33c17ed
