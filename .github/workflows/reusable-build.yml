@@ -103,7 +103,7 @@ jobs:
 
     - name: Initialize CodeQL
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/init@3c3833e0f8c1c83d449a7478aa59c036a9165498
+      uses: github/codeql-action/init@f1f6e5f6af878fb37288ce1c627459e94dbf7d01
       with:
         languages: 'cpp'
 
@@ -153,7 +153,7 @@ jobs:
 
     - name: Install .NET 8 SDK
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.x
 
@@ -246,4 +246,4 @@ jobs:
 
     - name: Perform CodeQL Analysis
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/analyze@3c3833e0f8c1c83d449a7478aa59c036a9165498
+      uses: github/codeql-action/analyze@f1f6e5f6af878fb37288ce1c627459e94dbf7d01
