@@ -91,4 +91,8 @@
     <ArtifactsPath>$(MSBuildThisFileDirectory)\$(Platform)\$(Configuration)</ArtifactsPath>
     <ArtifactsPivots>$(RuntimeIdentifier)</ArtifactsPivots>
   </PropertyGroup>
+  <!-- Workaround for issue with WDK nuget package -->
+  <PropertyGroup>
+    <DriverCatalog_Enable>true</DriverCatalog_Enable>
+  </PropertyGroup>
 </Project>
