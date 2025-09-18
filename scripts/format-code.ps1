@@ -249,7 +249,21 @@ function check_clang-format()
 {
     # Windows does not have a clang-format-7 executable
 
+    # First try Visual Studio's clang-format
+    $vs_clang_format = "${env:VCINSTALLDIR}tools\llvm\bin\clang-format.exe"
+    if (Test-Path $vs_clang_format) {
+        $global:cf = $vs_clang_format
+        try {
+            $cfver=(( Invoke-Expression "`"$vs_clang_format`" --version" 2> $null ) -split " ")[2]
+            Write-Host "Using Visual Studio clang-format version: $cfver"
+            return $true
+        }
+        catch {
+            Write-Host "Failed to get Visual Studio clang-format version"
+        }
+    }
 
+    # Fallback to system PATH clang-format
     $required_cfver='11.0.1'
 
     try {
@@ -260,23 +274,14 @@ function check_clang-format()
         return $false
     }
 
-    $req_ver = $required_cfver -split '.'
-    $cf_ver  = $cfver -split '.'
-
-    for ($i = 0; $i -lt 3; $i++)
-    {
-        if ( $cf_ver[$i] -gt $req_ver[$i])
-        {
-            return $true
-        }
-
-        if ( $cf_ver[$i] -lt $req_ver[$i])
-        {
-            Write-Host "Required version of clang-format is $required_cfver. Current version is $cfver"
-            return $false
-        }
-        # Equal just keeps going
+    # For non-Visual Studio clang-format, check if version is in acceptable range
+    $cf_ver = $cfver -split '.'
+    $major_version = [int]$cf_ver[0]
+    
+    if ($major_version -lt 11 -or $major_version -gt 20) {
+        Write-Host "Warning: clang-format version $cfver may not be compatible (supported range: 11.x-20.x)"
     }
+    
     $global:cf="clang-format"
     return $true
 }

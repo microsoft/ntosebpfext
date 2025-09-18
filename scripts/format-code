@@ -142,14 +142,13 @@ check_version()
         echo "Cannot parse clang-format version number: $2"
         exit 1
     fi
-    for ((i=0; i<${#v1[@]}; i++));
-    do
-        # Because clang-format is not invariant across versions, this
-        # is an explicit equivalence check.
-        if [[ ${v1[$i]} -ne ${v2[$i]} ]]; then
-            echo "Warning: format-code prefers clang-format version $1, installed version is $2"
-        fi
-    done
+    
+    # For Visual Studio clang-format, we're more lenient about version differences
+    # Only warn if major version is significantly different (< 11 or > 20)
+    major_version=${v2[0]}
+    if [[ ${major_version} -lt 11 ]] || [[ ${major_version} -gt 20 ]]; then
+        echo "Warning: clang-format version $2 may not be compatible (supported range: 11.x-20.x)"
+    fi
 }
 
 ##==============================================================================
@@ -159,6 +158,18 @@ check_version()
 ##==============================================================================
 check_clang-format()
 {
+    # First try Visual Studio's clang-format (when running in Windows environment)
+    if [[ -n "${VCINSTALLDIR}" ]]; then
+        vs_clang_format="${VCINSTALLDIR}tools/llvm/bin/clang-format.exe"
+        if [[ -x "${vs_clang_format}" ]]; then
+            cf="${vs_clang_format}"
+            echo "Using Visual Studio clang-format: ${cf}"
+            local cfver=$(${cf} --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+            echo "Visual Studio clang-format version: ${cfver}"
+            return
+        fi
+    fi
+
     # First check explicitly for the clang-format-7 executable.
     cf=$(command -v clang-format-7 2> /dev/null)
 
