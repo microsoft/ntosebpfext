@@ -1,7 +1,11 @@
+<!--
+  Copyright (c) Microsoft Corporation
+  SPDX-License-Identifier: MIT
+-->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <!-- eBPF -->
-    <eBPFForWindowsVersion>0.21.0</eBPFForWindowsVersion>
+    <eBPFForWindowsVersion>1.0.0-rc1</eBPFForWindowsVersion>
     <eBPFForWindowsPackagePath>$(SolutionDir)packages\eBPF-for-Windows.x64.$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
   </PropertyGroup>
 </Project>
