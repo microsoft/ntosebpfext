@@ -11,6 +11,7 @@
 #include "cxplat_passed_test_log.h"
 #include "ebpf_netevent_hooks.h"
 #include "ebpf_netevent_program_attach_type_guids.h"
+#include "ebpf_structs.h"
 #include "netevent_ebpf_ext_helper.h"
 #include "netevent_ebpf_ext_program_info.h"
 #include "utils.h"
@@ -109,6 +110,17 @@ netevent_monitor_lost_event_callback(void* ctx, int cpu, __u64 cnt)
     UNREFERENCED_PARAMETER(ctx);
     UNREFERENCED_PARAMETER(cpu);
     UNREFERENCED_PARAMETER(cnt);
+}
+
+TEST_CASE("libbpf attach type names", "[libbpf]")
+{
+    enum bpf_attach_type attach_type;
+    const char* type_str = libbpf_bpf_attach_type_str(BPF_ATTACH_TYPE_NETEVENT);
+
+    REQUIRE(libbpf_attach_type_by_name(type_str, &attach_type) == 0);
+    REQUIRE(attach_type == BPF_ATTACH_TYPE_NETEVENT);
+
+    REQUIRE(strcmp(libbpf_bpf_attach_type_str(BPF_ATTACH_TYPE_UNSPEC), "unspec") == 0);
 }
 
 TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
