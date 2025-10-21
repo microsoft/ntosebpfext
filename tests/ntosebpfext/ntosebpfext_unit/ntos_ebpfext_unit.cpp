@@ -6,6 +6,7 @@
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
 #include "ebpf_ntos_hooks.h"
+#include "ebpf_structs.h"
 #include "ntos_ebpf_ext_helper.h"
 #include "watchdog.h"
 
@@ -229,6 +230,15 @@ TEST_CASE("process create and exit times", "[ntosebpfext]")
     REQUIRE(client_context.process_context.creation_time == expectedCreateTime);
     REQUIRE(client_context.process_context.exit_time == expectedExitTime);
     REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_DELETE);
+}
+
+TEST_CASE("libbpf attach type names", "[ntosebpfext][libbpf]")
+{
+    enum bpf_attach_type attach_type;
+    const char* type_str = libbpf_bpf_attach_type_str(BPF_ATTACH_TYPE_PROCESS);
+
+    REQUIRE(libbpf_attach_type_by_name(type_str, &attach_type) == 0);
+    REQUIRE(attach_type == BPF_ATTACH_TYPE_PROCESS);
 }
 
 #pragma endregion process

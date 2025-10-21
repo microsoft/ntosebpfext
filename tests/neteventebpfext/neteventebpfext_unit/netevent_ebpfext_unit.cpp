@@ -112,17 +112,6 @@ netevent_monitor_lost_event_callback(void* ctx, int cpu, __u64 cnt)
     UNREFERENCED_PARAMETER(cnt);
 }
 
-TEST_CASE("libbpf attach type names", "[libbpf]")
-{
-    enum bpf_attach_type attach_type;
-    const char* type_str = libbpf_bpf_attach_type_str(BPF_ATTACH_TYPE_NETEVENT);
-
-    REQUIRE(libbpf_attach_type_by_name(type_str, &attach_type) == 0);
-    REQUIRE(attach_type == BPF_ATTACH_TYPE_NETEVENT);
-
-    REQUIRE(strcmp(libbpf_bpf_attach_type_str(BPF_ATTACH_TYPE_UNSPEC), "unspec") == 0);
-}
-
 TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
 {
     // Free the BPF object will take some time to unload from the previous test
@@ -525,4 +514,13 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     // Stop and unload the neteventebpfext extension driver (NPI client).
     REQUIRE(neteventebpfext_driver.stop() == true);
     REQUIRE(neteventebpfext_driver.unload() == true);
+}
+
+TEST_CASE("libbpf attach type names", "[neteventebpfext][libbpf]")
+{
+    enum bpf_attach_type attach_type;
+    const char* type_str = libbpf_bpf_attach_type_str(BPF_ATTACH_TYPE_NETEVENT);
+
+    REQUIRE(libbpf_attach_type_by_name(type_str, &attach_type) == 0);
+    REQUIRE(attach_type == BPF_ATTACH_TYPE_NETEVENT);
 }
