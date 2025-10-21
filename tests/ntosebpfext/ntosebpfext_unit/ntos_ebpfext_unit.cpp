@@ -10,6 +10,7 @@
 #include "ntos_ebpf_ext_helper.h"
 #include "watchdog.h"
 
+#include <bpf/libbpf.h>
 #include <map>
 #include <stop_token>
 #include <thread>
