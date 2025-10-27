@@ -31,7 +31,7 @@ if ("$majorVersion.$minorVersion.$revisionNumber" -match '^\d+\.\d+\.\d+$') {
         # Set the new version number in the version.json file.
         $version_json_file = "$PSScriptRoot\..\version.json"
         Write-Host -ForegroundColor DarkGreen "Updating the version number in the '$version_json_file' file..."
-        $versionJson = @{
+        $versionJson = [ordered]@{
             major = [int]$majorVersion
             minor = [int]$minorVersion
             patch = [int]$revisionNumber
