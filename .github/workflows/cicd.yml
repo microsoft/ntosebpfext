@@ -88,7 +88,7 @@ jobs:
     uses: ./.github/workflows/reusable-test.yml
     with:
       name: process_monitor
-      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 0.21.0 && powershell -file .\bin\process_monitor.Tests\win-x64\Setup-ProcessMonitorTests.ps1 -ArtifactsRoot .
+      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.0.0-rc1 && powershell -file .\bin\process_monitor.Tests\win-x64\Setup-ProcessMonitorTests.ps1 -ArtifactsRoot .
       test_command: dotnet test .\bin\process_monitor.Tests\win-x64\process_monitor.Tests.dll
       build_artifact: Build-x64
       environment: windows-2022
@@ -102,7 +102,7 @@ jobs:
     uses: ./.github/workflows/reusable-test.yml
     with:
       name: neteventebpfext unit tests
-      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 0.21.0
+      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.0.0-rc1
       test_command: .\neteventebpfext_unit.exe -d yes
       build_artifact: Build-x64
       environment: windows-2022

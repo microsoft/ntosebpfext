@@ -146,13 +146,14 @@ TEST_CASE("netevent_attach_opt_simulation", "[neteventebpfext]")
     // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto netevent_perf_buff = perf_buffer__new(
+    ebpf_perf_buffer_opts perf_opts = {.sz = sizeof(ebpf_perf_buffer_opts), .flags = EBPF_PERFBUF_FLAG_AUTO_CALLBACK};
+    auto netevent_perf_buff = ebpf_perf_buffer__new(
         bpf_map__fd(netevent_events_map),
         0,
         netevent_monitor_event_callback,
         netevent_monitor_lost_event_callback,
         nullptr,
-        nullptr);
+        &perf_opts);
     REQUIRE(netevent_perf_buff != nullptr);
 
     // Test attach with no attach params - this should fail.
@@ -277,13 +278,14 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto netevent_perf_buff = perf_buffer__new(
+    ebpf_perf_buffer_opts perf_opts = {.sz = sizeof(ebpf_perf_buffer_opts), .flags = EBPF_PERFBUF_FLAG_AUTO_CALLBACK};
+    auto netevent_perf_buff = ebpf_perf_buffer__new(
         bpf_map__fd(netevent_events_map),
         0,
         netevent_monitor_event_callback,
         netevent_monitor_lost_event_callback,
         nullptr,
-        nullptr);
+        &perf_opts);
     REQUIRE(netevent_perf_buff != nullptr);
 
     std::cout << "\n\n********** Test netevent_sim provider load/unload while the extension is running. **********"
@@ -393,13 +395,14 @@ TEST_CASE("netevent_bpf_prog_run_test", "[neteventebpfext]")
     // Attach to the eBPF perf buffer event map.
     bpf_map* netevent_events_map = bpf_object__find_map_by_name(object, "netevent_events_map");
     REQUIRE(netevent_events_map != nullptr);
-    auto netevent_perf_buff = perf_buffer__new(
+    ebpf_perf_buffer_opts perf_opts = {.sz = sizeof(ebpf_perf_buffer_opts), .flags = EBPF_PERFBUF_FLAG_AUTO_CALLBACK};
+    auto netevent_perf_buff = ebpf_perf_buffer__new(
         bpf_map__fd(netevent_events_map),
         0,
         netevent_monitor_event_callback,
         netevent_monitor_lost_event_callback,
         nullptr,
-        nullptr);
+        &perf_opts);
     REQUIRE(netevent_perf_buff != nullptr);
 
     // Initialize structures required for bpf_prog_test_run_opts

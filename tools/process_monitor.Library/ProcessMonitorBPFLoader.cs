@@ -38,6 +38,17 @@ namespace process_monitor.Library
             internal readonly byte operation;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+#pragma warning disable IDE1006 // Naming Styles - this matches the native definition's name
+        internal struct ebpf_ring_buffer_opts
+#pragma warning restore IDE1006 // Naming Styles
+        {
+            internal nuint sz;        // size_t - native unsigned integer
+            internal UInt64 flags;    // uint64_t
+        }
+
+        private const UInt64 EBPF_RINGBUF_FLAG_AUTO_CALLBACK = 1;
+
         internal static void Subscribe(ProcessMonitor pm, ILogger logger)
         {
             lock (_lock)
@@ -113,14 +124,21 @@ namespace process_monitor.Library
 
                 // Attach to ring buffer
                 (_, var process_ringbuf_map_fd) = LoadMapByName("process_ringbuf", logger);
-                process_ringbuf = PInvokes.ring_buffer__new(process_ringbuf_map_fd, &ProcessMonitor_history_callback, IntPtr.Zero, IntPtr.Zero);
+
+                var ring_opts = new ebpf_ring_buffer_opts
+                {
+                    sz = (nuint)Marshal.SizeOf<ebpf_ring_buffer_opts>(),
+                    flags = EBPF_RINGBUF_FLAG_AUTO_CALLBACK
+                };
+
+                process_ringbuf = PInvokes.ebpf_ring_buffer__new(process_ringbuf_map_fd, &ProcessMonitor_history_callback, IntPtr.Zero, ref ring_opts);
                 if (process_ringbuf == IntPtr.Zero)
                 {
-                    throw new InvalidOperationException("ring_buffer__new(process_ringbuf) failed!");
+                    throw new InvalidOperationException("ebpf_ring_buffer__new(process_ringbuf) failed!");
                 }
                 else
                 {
-                    logger.LogDebug("SUCCESS: ring_buffer__new(process_ringbuf) succeeded!");
+                    logger.LogDebug("SUCCESS: ebpf_ring_buffer__new(process_ringbuf) succeeded!");
                 }
             }
         }
