@@ -160,9 +160,12 @@ TEST_CASE("process exit codes", "[ntosebpfext]")
     REQUIRE(client_context.process_context.process_id == 1);
     REQUIRE(client_context.process_context.process_exit_code == expectedExitCode);
     REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_DELETE);
-
+#pragma warning(push)
+#pragma warning(disable : 6387) // '_Param_(1)' could be '0':  this does not adhere to the specification for
+                                // the function 'usersime_set_process_exit_status_callback'
     // Clean up callback after test.
     usersime_set_process_exit_status_callback(nullptr);
+#pragma warning(pop)
 }
 
 TEST_CASE("process create and exit times", "[ntosebpfext]")
