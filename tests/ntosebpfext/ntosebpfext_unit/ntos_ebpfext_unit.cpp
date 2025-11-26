@@ -160,6 +160,9 @@ TEST_CASE("process exit codes", "[ntosebpfext]")
     REQUIRE(client_context.process_context.process_id == 1);
     REQUIRE(client_context.process_context.process_exit_code == expectedExitCode);
     REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_DELETE);
+
+    // Clean up callback after test.
+    usersime_set_process_exit_status_callback(nullptr);
 }
 
 TEST_CASE("process create and exit times", "[ntosebpfext]")
