@@ -66,7 +66,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+      uses: step-security/harden-runner@df199fb7be9f65074067a9eb93f12bb4c5547cf2 # v2.13.3
       with:
         egress-policy: audit
 
@@ -85,7 +85,7 @@ jobs:
         powershell.exe "echo 'ASAN_WIN_CONTINUE_ON_INTERCEPTION_FAILURE=true' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
         powershell.exe "echo 'VCINSTALLDIR=%VCINSTALLDIR%' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
 
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       if: steps.skip_check.outputs.should_skip != 'true'
       with:
         repository: ${{github.repository}}
@@ -103,7 +103,7 @@ jobs:
 
     - name: Initialize CodeQL
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/init@fdbfb4d2750291e159f0156def62b853c2798ca2
+      uses: github/codeql-action/init@cf1bb45a277cb3c205638b2cd5c984db1c46a412
       with:
         languages: 'cpp'
 
@@ -246,4 +246,4 @@ jobs:
 
     - name: Perform CodeQL Analysis
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/analyze@fdbfb4d2750291e159f0156def62b853c2798ca2
+      uses: github/codeql-action/analyze@cf1bb45a277cb3c205638b2cd5c984db1c46a412
