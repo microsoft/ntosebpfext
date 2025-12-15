@@ -2,6 +2,7 @@
 <!-- Copyright (c) Microsoft Corporation -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
   <PropertyGroup>
+    <EbpfExtensionsBinPath>$(MSBuildThisFileDirectory)bin</EbpfExtensionsBinPath>
     <EbpfExtensionsIncludePath>$(MSBuildThisFileDirectory)include</EbpfExtensionsIncludePath>
   </PropertyGroup>
 
