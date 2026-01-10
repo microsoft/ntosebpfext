@@ -48,7 +48,7 @@ jobs:
 
     # Set up .NET SDK 8.0.414 which matches the version used in global.json in the repo root.
     - name: Setup .NET SDK 8.0.414
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.414
 
