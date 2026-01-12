@@ -12,7 +12,7 @@ The ntosebpfext extension hooks into the Windows kernel's process notification m
 
 - eBPF for Windows must be installed. Please follow the instructions in the [eBPF for Windows - Getting started](https://github.com/microsoft/ebpf-for-windows/blob/main/docs/GettingStarted.md) guide to install the eBPF for Windows components on a test-enabled Windows machine/VM.
 
-### Building & Testing the Extension
+### Building & Testing the extension
 
 After cloning the repository, make sure to initialize the submodules by running the following command from the root of the repository:
 
@@ -48,7 +48,7 @@ ntosebpfext_unit.exe -d yes
 
 This test will perform the following steps:
 
-1. Export the eBPF program info to the eBPF Store (located in System's registry, under `HKLM\Software\eBPF`).
+1. Export the eBPF program info to the eBPF store (located in System's registry, under `HKLM\Software\eBPF`).
 1. Load & start the `ntosebpfext.sys` driver.
 1. Load and attach the `process_monitor.sys` eBPF program.
 1. Simulate process creation and deletion events.
@@ -74,7 +74,7 @@ cd x64\Debug
 
 The `process_monitor.exe` application will display process creation and deletion events in real-time. Press Ctrl-C to stop.
 
-## Installing the Extension
+## Installing the extension
 
 Once the artifacts are generated, to deploy the extension you need to:
 
