@@ -4,8 +4,8 @@ This repository contains source code libraries for accelerating the development 
 
 The following eBPF extensions are included in this repository:
 
-- `ntosebpfext`: An eBPF extension  that permits developers to leverage existing public
-hooks in the Windows kernel to gather data and influence policy of the OS.
+- [`ntosebpfext`](./docs/ntosebpfext.md): An eBPF extension that permits developers to leverage existing public
+hooks in the Windows kernel to gather data and influence policy of the OS. Currently supports monitoring and controlling process creation and deletion events.
 
 - [`neteventebpfext`](./docs/neteventebpfext.md): An eBPF extension that attaches to network events sourced by [NMR Provider Modules](https://learn.microsoft.com/en-us/windows-hardware/drivers/network/initializing-and-registering-a-provider-module) that implement the `neteventebpfext`'s Network Provider Interface (NPI).
 
