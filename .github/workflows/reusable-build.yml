@@ -85,7 +85,7 @@ jobs:
         powershell.exe "echo 'ASAN_WIN_CONTINUE_ON_INTERCEPTION_FAILURE=true' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
         powershell.exe "echo 'VCINSTALLDIR=%VCINSTALLDIR%' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
 
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       if: steps.skip_check.outputs.should_skip != 'true'
       with:
         repository: ${{github.repository}}
@@ -103,7 +103,7 @@ jobs:
 
     - name: Initialize CodeQL
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/init@cdefb33c0f6224e58673d9004f47f7cb3e328b89
+      uses: github/codeql-action/init@19b2f06db2b6f5108140aeb04014ef02b648f789
       with:
         languages: 'cpp'
 
@@ -246,4 +246,4 @@ jobs:
 
     - name: Perform CodeQL Analysis
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/analyze@cdefb33c0f6224e58673d9004f47f7cb3e328b89
+      uses: github/codeql-action/analyze@19b2f06db2b6f5108140aeb04014ef02b648f789
