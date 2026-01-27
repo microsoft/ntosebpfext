@@ -166,6 +166,7 @@ public class ProcessMonitorTests
         // Create process_notify_context_t with the process_md_t embedded
         process_monitor.PInvokes.process_notify_context_t ctxIn = new process_monitor.PInvokes.process_notify_context_t
         {
+            context_header = new UInt64[8], // EBPF_CONTEXT_HEADER - initialize to zeros
             process_md = processMd,
             process = IntPtr.Zero,
             create_info = IntPtr.Zero,
@@ -185,7 +186,10 @@ public class ProcessMonitorTests
 
         // Prepare bpf_test_run_opts structure
         process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
-        process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t();
+        process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t
+        {
+            context_header = new UInt64[8] // Initialize output context_header array
+        };
         
         opts.repeat = 1;
         opts.ctx_in = &ctxIn;
@@ -277,7 +281,10 @@ public class ProcessMonitorTests
 
                 // Negative test case: null context should fail
                 process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
-                process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t();
+                process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t
+                {
+                    context_header = new UInt64[8]
+                };
                 
                 opts.ctx_in = null;
                 opts.ctx_size_in = 0;

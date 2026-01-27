@@ -114,11 +114,13 @@ namespace process_monitor
 
         // Structure for process_notify_context_t
         // This must match the native definition in ntos_ebpf_ext_process.c
-        // Note: EBPF_CONTEXT_HEADER is an empty macro, so it adds no fields
+        // EBPF_CONTEXT_HEADER is defined as: uint64_t context_header[8] (64 bytes)
         [StructLayout(LayoutKind.Sequential)]
         internal struct process_notify_context_t
         {
-            // No field for EBPF_CONTEXT_HEADER as it's empty
+            // EBPF_CONTEXT_HEADER: uint64_t context_header[8]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+            internal UInt64[] context_header;
             internal process_md_t process_md;
             internal IntPtr process;            // PEPROCESS
             internal IntPtr create_info;        // PPS_CREATE_NOTIFY_INFO
