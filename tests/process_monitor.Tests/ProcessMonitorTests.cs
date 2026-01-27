@@ -192,6 +192,7 @@ public class ProcessMonitorTests
                 opts.ctx_size_in = sizeof(process_monitor.PInvokes.process_md_t);
                 opts.ctx_out = &ctxOut;
                 opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_md_t);
+                // data_in contains the command line data that context_create will point to via command_start/command_end
                 opts.data_in = commandLinePtr;
                 opts.data_size_in = commandLineBytes.Length;
                 opts.data_out = null; // We're not expecting data_out for process monitor
