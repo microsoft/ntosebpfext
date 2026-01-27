@@ -74,6 +74,29 @@ namespace process_monitor
             internal int flags;                 // int flags
             internal uint cpu;                  // __u32 cpu
             internal uint batch_size;           // __u32 batch_size
+
+            // Factory method to create a properly initialized instance
+            internal static bpf_test_run_opts Create()
+            {
+                return new bpf_test_run_opts { sz = (nuint)sizeof(bpf_test_run_opts) };
+            }
+        }
+
+        // Structure for process_md_t
+        // This must match the native definition in ebpf_ntos_hooks.h
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct process_md_t
+        {
+            internal IntPtr command_start;      // uint8_t* command_start
+            internal IntPtr command_end;        // uint8_t* command_end
+            internal UInt64 process_id;         // uint64_t process_id
+            internal UInt64 parent_process_id;  // uint64_t parent_process_id
+            internal UInt64 creating_process_id;// uint64_t creating_process_id
+            internal UInt64 creating_thread_id; // uint64_t creating_thread_id
+            internal UInt64 creation_time;      // uint64_t creation_time
+            internal UInt64 exit_time;          // uint64_t exit_time
+            internal UInt32 process_exit_code;  // uint32_t process_exit_code
+            internal byte operation;            // process_operation_t operation : 8
         }
     }
 }

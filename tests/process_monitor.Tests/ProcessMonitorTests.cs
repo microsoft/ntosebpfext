@@ -161,31 +161,14 @@ public class ProcessMonitorTests
             int programFd = process_monitor.PInvokes.bpf_program__fd(processMonitorProgram);
             Assert.AreNotEqual(-1, programFd, "bpf_program__fd failed");
 
-            // Define the process_md_t structure for test input
-            // This must match the native definition in ebpf_ntos_hooks.h
-            [StructLayout(LayoutKind.Sequential)]
-            struct process_md_t
-            {
-                internal IntPtr command_start;      // uint8_t* command_start
-                internal IntPtr command_end;        // uint8_t* command_end
-                internal UInt64 process_id;         // uint64_t process_id
-                internal UInt64 parent_process_id;  // uint64_t parent_process_id
-                internal UInt64 creating_process_id;// uint64_t creating_process_id
-                internal UInt64 creating_thread_id; // uint64_t creating_thread_id
-                internal UInt64 creation_time;      // uint64_t creation_time
-                internal UInt64 exit_time;          // uint64_t exit_time
-                internal UInt32 process_exit_code;  // uint32_t process_exit_code
-                internal byte operation;            // process_operation_t operation : 8
-            }
-
             // Prepare test command line data (UTF-16 string)
             string testCommandLine = "test.exe -arg1 -arg2";
             byte[] commandLineBytes = System.Text.Encoding.Unicode.GetBytes(testCommandLine);
 
             fixed (byte* commandLinePtr = commandLineBytes)
             {
-                // Create input context
-                process_md_t ctxIn = new process_md_t
+                // Create input context using the shared structure from PInvokes
+                process_monitor.PInvokes.process_md_t ctxIn = new process_monitor.PInvokes.process_md_t
                 {
                     command_start = (IntPtr)commandLinePtr,
                     command_end = (IntPtr)(commandLinePtr + commandLineBytes.Length),
@@ -200,16 +183,15 @@ public class ProcessMonitorTests
                 };
 
                 // Create output context
-                process_md_t ctxOut = new process_md_t();
+                process_monitor.PInvokes.process_md_t ctxOut = new process_monitor.PInvokes.process_md_t();
 
-                // Prepare bpf_test_run_opts structure
-                process_monitor.PInvokes.bpf_test_run_opts opts = new process_monitor.PInvokes.bpf_test_run_opts();
-                opts.sz = (nuint)sizeof(process_monitor.PInvokes.bpf_test_run_opts);
+                // Prepare bpf_test_run_opts structure using factory method
+                process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
                 opts.repeat = 1;
                 opts.ctx_in = &ctxIn;
-                opts.ctx_size_in = sizeof(process_md_t);
+                opts.ctx_size_in = sizeof(process_monitor.PInvokes.process_md_t);
                 opts.ctx_out = &ctxOut;
-                opts.ctx_size_out = sizeof(process_md_t);
+                opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_md_t);
                 opts.data_in = commandLinePtr;
                 opts.data_size_in = commandLineBytes.Length;
                 opts.data_out = null; // We're not expecting data_out for process monitor
@@ -220,7 +202,7 @@ public class ProcessMonitorTests
                 Assert.AreEqual(0, result, "bpf_prog_test_run_opts should succeed with valid input");
 
                 // Validate output context size
-                Assert.AreEqual(sizeof(process_md_t), opts.ctx_size_out, "Output context size should match input");
+                Assert.AreEqual(sizeof(process_monitor.PInvokes.process_md_t), opts.ctx_size_out, "Output context size should match input");
 
                 logger.LogDebug("SUCCESS: bpf_prog_test_run_opts with valid input succeeded");
 
