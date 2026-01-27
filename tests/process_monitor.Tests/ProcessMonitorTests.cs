@@ -137,11 +137,11 @@ public class ProcessMonitorTests
     }
 
     /// <summary>
-    /// Verifies that the BPF program correctly updated the command_map and process_map,
-    /// and posted an event to the process_ringbuf after bpf_prog_test_run_opts execution.
+    /// Verifies that the BPF program correctly updated the command_map and process_map
+    /// after bpf_prog_test_run_opts execution.
     /// This is similar to RunProcessAndWaitForEventsAsync but for testing bpf_prog_test_run_opts.
     /// </summary>
-    private static unsafe void VerifyMapsAndRingbufUpdated(
+    private static unsafe void VerifyMapsUpdated(
         IntPtr bpfObject,
         ulong testProcessId,
         string expectedCommandLine,
@@ -286,7 +286,7 @@ public class ProcessMonitorTests
                 logger.LogDebug("SUCCESS: bpf_prog_test_run_opts with valid input succeeded");
 
                 // Verify that the maps were updated by the BPF program
-                VerifyMapsAndRingbufUpdated(bpfObject, ctxIn.process_id, testCommandLine, logger);
+                VerifyMapsUpdated(bpfObject, ctxIn.process_id, testCommandLine, logger);
 
                 // Negative test case: null context should fail
                 opts.ctx_in = null;
