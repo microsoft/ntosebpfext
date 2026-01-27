@@ -261,8 +261,8 @@ _ebpf_process_context_create(
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
         EBPF_EXT_TRACELOG_KEYWORD_PROCESS, process_context, "process_context", result);
 
-    // Copy the context from the caller.
-    memcpy(process_context, context_in, sizeof(process_md_t));
+    // Copy the process_md_t context from the caller into the process_md field.
+    memcpy(&process_context->process_md, context_in, sizeof(process_md_t));
 
     // Replace the process_id_start and process_id_end with pointers to data_in.
     process_context->process_md.command_start = (uint8_t*)data_in;
