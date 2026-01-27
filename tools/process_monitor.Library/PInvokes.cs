@@ -47,5 +47,33 @@ namespace process_monitor
 
         [DllImport(ebpfApiDll, CharSet = CharSet.Ansi, PreserveSig = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int bpf_map_lookup_elem(int fd, ref byte key, ref byte value);
+
+        [DllImport(ebpfApiDll, CharSet = CharSet.Ansi, PreserveSig = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int bpf_program__fd(IntPtr bpf_program);
+
+        [DllImport(ebpfApiDll, CharSet = CharSet.Ansi, PreserveSig = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern unsafe int bpf_prog_test_run_opts(int prog_fd, bpf_test_run_opts* opts);
+
+        // Structure for bpf_prog_test_run_opts
+        // This must match the native structure in libbpf
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct bpf_test_run_opts
+        {
+            internal nuint sz;                  // size_t sz
+            internal uint retval;               // __u32 retval
+            internal int data_size_in;          // int data_size_in
+            internal int data_size_out;         // int data_size_out
+            internal void* data_in;             // const void *data_in
+            internal void* data_out;            // void *data_out
+            internal int ctx_size_in;           // int ctx_size_in
+            internal int ctx_size_out;          // int ctx_size_out
+            internal void* ctx_in;              // const void *ctx_in
+            internal void* ctx_out;             // void *ctx_out
+            internal int repeat;                // int repeat
+            internal int duration;              // int duration
+            internal int flags;                 // int flags
+            internal uint cpu;                  // __u32 cpu
+            internal uint batch_size;           // __u32 batch_size
+        }
     }
 }

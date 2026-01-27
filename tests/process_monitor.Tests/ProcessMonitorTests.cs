@@ -135,4 +135,122 @@ public class ProcessMonitorTests
 
         return (createdArgs, destroyedArgs);
     }
+
+    [TestMethod]
+    public unsafe void BpfProgTestRunContextCreateDelete()
+    {
+        // This test validates that the context_create and context_delete functions are working properly
+        // by using bpf_prog_test_run_opts to invoke the program directly with test data.
+
+        var logger = LoggerFactory.CreateLogger<ProcessMonitorTests>();
+
+        // Open and load the BPF program
+        IntPtr bpfObject = process_monitor.PInvokes.bpf_object__open("process_monitor.sys");
+        Assert.AreNotEqual(IntPtr.Zero, bpfObject, "bpf_object__open failed");
+
+        try
+        {
+            int loadResult = process_monitor.PInvokes.bpf_object__load(bpfObject);
+            Assert.AreEqual(0, loadResult, $"bpf_object__load failed with error code: {loadResult}");
+
+            // Find the ProcessMonitor program
+            IntPtr processMonitorProgram = process_monitor.PInvokes.bpf_object__find_program_by_name(bpfObject, "ProcessMonitor");
+            Assert.AreNotEqual(IntPtr.Zero, processMonitorProgram, "bpf_object__find_program_by_name failed");
+
+            // Get the program file descriptor
+            int programFd = process_monitor.PInvokes.bpf_program__fd(processMonitorProgram);
+            Assert.AreNotEqual(-1, programFd, "bpf_program__fd failed");
+
+            // Define the process_md_t structure for test input
+            // This must match the native definition in ebpf_ntos_hooks.h
+            [StructLayout(LayoutKind.Sequential)]
+            struct process_md_t
+            {
+                internal IntPtr command_start;      // uint8_t* command_start
+                internal IntPtr command_end;        // uint8_t* command_end
+                internal UInt64 process_id;         // uint64_t process_id
+                internal UInt64 parent_process_id;  // uint64_t parent_process_id
+                internal UInt64 creating_process_id;// uint64_t creating_process_id
+                internal UInt64 creating_thread_id; // uint64_t creating_thread_id
+                internal UInt64 creation_time;      // uint64_t creation_time
+                internal UInt64 exit_time;          // uint64_t exit_time
+                internal UInt32 process_exit_code;  // uint32_t process_exit_code
+                internal byte operation;            // process_operation_t operation : 8
+            }
+
+            // Prepare test command line data (UTF-16 string)
+            string testCommandLine = "test.exe -arg1 -arg2";
+            byte[] commandLineBytes = System.Text.Encoding.Unicode.GetBytes(testCommandLine);
+
+            fixed (byte* commandLinePtr = commandLineBytes)
+            {
+                // Create input context
+                process_md_t ctxIn = new process_md_t
+                {
+                    command_start = (IntPtr)commandLinePtr,
+                    command_end = (IntPtr)(commandLinePtr + commandLineBytes.Length),
+                    process_id = 1234,
+                    parent_process_id = 5678,
+                    creating_process_id = 5678,
+                    creating_thread_id = 9999,
+                    creation_time = 0x01D0000000000000, // Some FILETIME value
+                    exit_time = 0,
+                    process_exit_code = 0,
+                    operation = 0 // PROCESS_OPERATION_CREATE
+                };
+
+                // Create output context
+                process_md_t ctxOut = new process_md_t();
+
+                // Prepare bpf_test_run_opts structure
+                process_monitor.PInvokes.bpf_test_run_opts opts = new process_monitor.PInvokes.bpf_test_run_opts();
+                opts.sz = (nuint)sizeof(process_monitor.PInvokes.bpf_test_run_opts);
+                opts.repeat = 1;
+                opts.ctx_in = &ctxIn;
+                opts.ctx_size_in = sizeof(process_md_t);
+                opts.ctx_out = &ctxOut;
+                opts.ctx_size_out = sizeof(process_md_t);
+                opts.data_in = commandLinePtr;
+                opts.data_size_in = commandLineBytes.Length;
+                opts.data_out = null; // We're not expecting data_out for process monitor
+                opts.data_size_out = 0;
+
+                // Execute the program - expect success for valid input
+                int result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+                Assert.AreEqual(0, result, "bpf_prog_test_run_opts should succeed with valid input");
+
+                // Validate output context size
+                Assert.AreEqual(sizeof(process_md_t), opts.ctx_size_out, "Output context size should match input");
+
+                logger.LogDebug("SUCCESS: bpf_prog_test_run_opts with valid input succeeded");
+
+                // Negative test case: null context should fail
+                opts.ctx_in = null;
+                opts.ctx_size_in = 0;
+
+                result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+                Assert.AreNotEqual(0, result, "bpf_prog_test_run_opts should fail with null context");
+
+                logger.LogDebug("SUCCESS: bpf_prog_test_run_opts correctly rejected null context");
+
+                // Negative test case: context size too small should fail
+                byte smallCtx = 0;
+                opts.ctx_in = &smallCtx;
+                opts.ctx_size_in = 1; // Too small
+
+                result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+                Assert.AreNotEqual(0, result, "bpf_prog_test_run_opts should fail with undersized context");
+
+                logger.LogDebug("SUCCESS: bpf_prog_test_run_opts correctly rejected undersized context");
+            }
+        }
+        finally
+        {
+            // Clean up
+            if (bpfObject != IntPtr.Zero)
+            {
+                process_monitor.PInvokes.bpf_object__close(bpfObject);
+            }
+        }
+    }
 }
