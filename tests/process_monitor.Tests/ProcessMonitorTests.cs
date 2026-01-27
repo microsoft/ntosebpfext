@@ -143,7 +143,7 @@ public class ProcessMonitorTests
     /// </summary>
     private static unsafe ProcessCreatedEventArgs RunBpfProgTestAndWaitForEvent(
         int programFd,
-        process_monitor.PInvokes.process_md_t ctxIn,
+        process_monitor.PInvokes.process_md_t processMd,
         byte* commandLinePtr,
         int commandLineLength,
         ILogger logger)
@@ -156,22 +156,36 @@ public class ProcessMonitorTests
         pm.ProcessCreated += (sender, e) =>
         {
             // Check if this is our test process by matching the process ID
-            if (e.ProcessId == ctxIn.process_id)
+            if (e.ProcessId == processMd.process_id)
             {
                 createdArgs = e;
                 processCreatedHappened.Set();
             }
         };
 
+        // Create process_notify_context_t with the process_md_t embedded
+        process_monitor.PInvokes.process_notify_context_t ctxIn = new process_monitor.PInvokes.process_notify_context_t
+        {
+            process_md = processMd,
+            process = IntPtr.Zero,
+            create_info = IntPtr.Zero,
+            command_line_buffer = IntPtr.Zero,
+            command_line_length = 0,
+            command_line_max_length = 0,
+            image_file_name_buffer = IntPtr.Zero,
+            image_file_name_length = 0,
+            image_file_name_max_length = 0
+        };
+
         // Prepare bpf_test_run_opts structure
         process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
-        process_monitor.PInvokes.process_md_t ctxOut = new process_monitor.PInvokes.process_md_t();
+        process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t();
         
         opts.repeat = 1;
         opts.ctx_in = &ctxIn;
-        opts.ctx_size_in = sizeof(process_monitor.PInvokes.process_md_t);
+        opts.ctx_size_in = sizeof(process_monitor.PInvokes.process_notify_context_t);
         opts.ctx_out = &ctxOut;
-        opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_md_t);
+        opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_notify_context_t);
         opts.data_in = commandLinePtr;
         opts.data_size_in = commandLineLength;
         opts.data_out = null;
@@ -257,12 +271,12 @@ public class ProcessMonitorTests
 
                 // Negative test case: null context should fail
                 process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
-                process_monitor.PInvokes.process_md_t ctxOut = new process_monitor.PInvokes.process_md_t();
+                process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t();
                 
                 opts.ctx_in = null;
                 opts.ctx_size_in = 0;
                 opts.ctx_out = &ctxOut;
-                opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_md_t);
+                opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_notify_context_t);
 
                 int result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
                 Assert.AreNotEqual(0, result, "bpf_prog_test_run_opts should fail with null context");

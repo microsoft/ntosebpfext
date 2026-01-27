@@ -250,7 +250,7 @@ _ebpf_process_context_create(
 
     *context = NULL;
 
-    if (context_in == NULL || context_size_in < sizeof(process_md_t)) {
+    if (context_in == NULL || context_size_in < sizeof(process_notify_context_t)) {
         EBPF_EXT_LOG_MESSAGE(EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PROCESS, "Context is required");
         result = EBPF_INVALID_ARGUMENT;
         goto Exit;
@@ -261,14 +261,15 @@ _ebpf_process_context_create(
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
         EBPF_EXT_TRACELOG_KEYWORD_PROCESS, process_context, "process_context", result);
 
-    // Copy the process_md_t context from the caller into the process_md field.
-    memcpy(&process_context->process_md, context_in, sizeof(process_md_t));
+    // Copy the full process_notify_context_t from the caller.
+    memcpy(process_context, context_in, sizeof(process_notify_context_t));
 
-    // Replace the process_id_start and process_id_end with pointers to data_in.
+    // Replace the command_start and command_end with pointers to data_in.
     process_context->process_md.command_start = (uint8_t*)data_in;
     process_context->process_md.command_end = (uint8_t*)data_in + data_size_in;
 
-    *context = process_context;
+    // Return pointer to the process_md field as the output context.
+    *context = &process_context->process_md;
     process_context = NULL;
     result = EBPF_SUCCESS;
 
@@ -290,21 +291,25 @@ _ebpf_process_context_destroy(
 {
     EBPF_EXT_LOG_ENTRY();
 
-    process_notify_context_t* process_context = (process_notify_context_t*)context;
-    process_md_t* process_context_out = (process_md_t*)context_out;
+    process_md_t* process_md = (process_md_t*)context;
+    process_notify_context_t* process_context = NULL;
+    process_notify_context_t* process_context_out = (process_notify_context_t*)context_out;
 
-    if (!process_context) {
+    if (!process_md) {
         goto Exit;
     }
 
-    if (context_out != NULL && *context_size_out >= sizeof(process_md_t)) {
-        // Copy the context to the caller.
-        memcpy(process_context_out, &process_context->process_md, sizeof(process_md_t));
+    // Get the containing process_notify_context_t structure from the process_md pointer.
+    process_context = CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
 
-        // Zero out the command_start and command_end.
-        process_context_out->command_start = 0;
-        process_context_out->command_end = 0;
-        *context_size_out = sizeof(process_md_t);
+    if (context_out != NULL && *context_size_out >= sizeof(process_notify_context_t)) {
+        // Copy the full context to the caller.
+        memcpy(process_context_out, process_context, sizeof(process_notify_context_t));
+
+        // Zero out the command_start and command_end in the output.
+        process_context_out->process_md.command_start = 0;
+        process_context_out->process_md.command_end = 0;
+        *context_size_out = sizeof(process_notify_context_t);
     } else {
         *context_size_out = 0;
     }
