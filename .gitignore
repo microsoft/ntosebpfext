@@ -66,4 +66,4 @@ artifacts/
 **/.vscode/**/*
 
 # MSBuild Binary Logs
-*.binlog
+*.binlog_codeql_detected_source_root
