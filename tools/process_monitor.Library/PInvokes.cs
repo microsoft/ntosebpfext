@@ -80,21 +80,8 @@ namespace process_monitor
             {
                 return new bpf_test_run_opts
                 {
-                    sz = (nuint)sizeof(bpf_test_run_opts),
-                    retval = 0,
-                    data_size_in = 0,
-                    data_size_out = 0,
-                    data_in = null,
-                    data_out = null,
-                    ctx_size_in = 0,
-                    ctx_size_out = 0,
-                    ctx_in = null,
-                    ctx_out = null,
-                    repeat = 0,
-                    duration = 0,
-                    flags = 0,
-                    cpu = 0,
-                    batch_size = 0
+                    sz = (nuint)sizeof(bpf_test_run_opts)
+                    // All other fields are initialized to their default values (0/null)
                 };
             }
         }

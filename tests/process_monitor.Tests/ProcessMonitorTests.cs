@@ -176,7 +176,7 @@ public class ProcessMonitorTests
                     parent_process_id = 5678,
                     creating_process_id = 5678,
                     creating_thread_id = 9999,
-                    creation_time = 0x01D0000000000000, // Some FILETIME value
+                    creation_time = (ulong)DateTime.UtcNow.ToFileTimeUtc(),
                     exit_time = 0,
                     process_exit_code = 0,
                     operation = 0 // PROCESS_OPERATION_CREATE
