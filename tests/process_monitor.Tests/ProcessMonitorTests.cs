@@ -165,13 +165,19 @@ public class ProcessMonitorTests
             string testCommandLine = "test.exe -arg1 -arg2";
             byte[] commandLineBytes = System.Text.Encoding.Unicode.GetBytes(testCommandLine);
 
+            // Ensure we have valid data
+            Assert.IsTrue(commandLineBytes.Length > 0, "Command line bytes should not be empty");
+
             fixed (byte* commandLinePtr = commandLineBytes)
             {
+                // Calculate end pointer safely within bounds
+                byte* commandLineEndPtr = commandLinePtr + commandLineBytes.Length;
+                
                 // Create input context using the shared structure from PInvokes
                 process_monitor.PInvokes.process_md_t ctxIn = new process_monitor.PInvokes.process_md_t
                 {
                     command_start = (IntPtr)commandLinePtr,
-                    command_end = (IntPtr)(commandLinePtr + commandLineBytes.Length),
+                    command_end = (IntPtr)commandLineEndPtr,
                     process_id = 1234,
                     parent_process_id = 5678,
                     creating_process_id = 5678,
