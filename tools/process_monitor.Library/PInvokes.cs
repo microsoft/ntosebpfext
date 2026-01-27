@@ -76,12 +76,12 @@ namespace process_monitor
             internal uint batch_size;           // __u32 batch_size
 
             // Factory method to create a properly initialized instance
+            // All fields except sz are initialized to their default values (0/null)
             internal static bpf_test_run_opts Create()
             {
                 return new bpf_test_run_opts
                 {
                     sz = (nuint)sizeof(bpf_test_run_opts)
-                    // All other fields are initialized to their default values (0/null)
                 };
             }
         }
