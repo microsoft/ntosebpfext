@@ -137,75 +137,57 @@ public class ProcessMonitorTests
     }
 
     /// <summary>
-    /// Verifies that the BPF program correctly updated the command_map and process_map
-    /// after bpf_prog_test_run_opts execution.
-    /// This is similar to RunProcessAndWaitForEventsAsync but for testing bpf_prog_test_run_opts.
+    /// Runs bpf_prog_test_run_opts and waits for the ProcessCreated event to fire.
+    /// This is similar to RunProcessAndWaitForEventsAsync but instead of calling Process.Start,
+    /// it triggers the BPF program via bpf_prog_test_run_opts.
     /// </summary>
-    private static unsafe void VerifyMapsUpdated(
-        IntPtr bpfObject,
-        ulong testProcessId,
-        string expectedCommandLine,
+    private static unsafe ProcessCreatedEventArgs RunBpfProgTestAndWaitForEvent(
+        int programFd,
+        process_monitor.PInvokes.process_md_t ctxIn,
+        byte* commandLinePtr,
+        int commandLineLength,
         ILogger logger)
     {
-        // Find the command_map
-        IntPtr commandMap = process_monitor.PInvokes.bpf_object__find_map_by_name(bpfObject, "command_map");
-        Assert.AreNotEqual(IntPtr.Zero, commandMap, "Failed to find command_map");
-        int commandMapFd = process_monitor.PInvokes.bpf_map__fd(commandMap);
-        Assert.AreNotEqual(-1, commandMapFd, "Failed to get command_map fd");
+        using var pm = new ProcessMonitor(LoggerFactory.CreateLogger<ProcessMonitor>());
 
-        // Find the process_map
-        IntPtr processMap = process_monitor.PInvokes.bpf_object__find_map_by_name(bpfObject, "process_map");
-        Assert.AreNotEqual(IntPtr.Zero, processMap, "Failed to find process_map");
-        int processMapFd = process_monitor.PInvokes.bpf_map__fd(processMap);
-        Assert.AreNotEqual(-1, processMapFd, "Failed to get process_map fd");
+        var processCreatedHappened = new ManualResetEvent(false);
+        ProcessCreatedEventArgs createdArgs = default;
 
-        // Verify command_map has the entry for our test process ID
-        uint processIdKey = (uint)testProcessId;
-        byte[] commandLineBuffer = new byte[64 * 1024];
-        
-        fixed (byte* keyPtr = BitConverter.GetBytes(processIdKey))
-        fixed (byte* valuePtr = commandLineBuffer)
+        pm.ProcessCreated += (sender, e) =>
         {
-            int lookupResult = process_monitor.PInvokes.bpf_map_lookup_elem(
-                commandMapFd,
-                ref *keyPtr,
-                ref *valuePtr);
-            
-            Assert.AreEqual(0, lookupResult, "Failed to find entry in command_map for test process ID");
-            
-            // Convert the buffer to a string and verify it matches
-            string retrievedCommandLine = System.Text.Encoding.Unicode.GetString(commandLineBuffer).TrimEnd('\0');
-            Assert.IsTrue(retrievedCommandLine.Contains(expectedCommandLine), 
-                $"Command line mismatch. Expected to contain '{expectedCommandLine}', got '{retrievedCommandLine}'");
-            
-            logger.LogDebug($"SUCCESS: command_map contains correct entry for process {testProcessId}");
-        }
+            // Check if this is our test process by matching the process ID
+            if (e.ProcessId == ctxIn.process_id)
+            {
+                createdArgs = e;
+                processCreatedHappened.Set();
+            }
+        };
 
-        // Verify process_map has an entry (image path may be empty/default for test run)
-        byte[] imagePathBuffer = new byte[1024];
+        // Prepare bpf_test_run_opts structure
+        process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
+        process_monitor.PInvokes.process_md_t ctxOut = new process_monitor.PInvokes.process_md_t();
         
-        fixed (byte* keyPtr = BitConverter.GetBytes(processIdKey))
-        fixed (byte* valuePtr = imagePathBuffer)
-        {
-            int lookupResult = process_monitor.PInvokes.bpf_map_lookup_elem(
-                processMapFd,
-                ref *keyPtr,
-                ref *valuePtr);
-            
-            // The lookup might fail if the image path helper wasn't invoked, which is OK for this test
-            // We just log whether it succeeded or not
-            if (lookupResult == 0)
-            {
-                string imagePath = System.Text.Encoding.Unicode.GetString(imagePathBuffer).TrimEnd('\0');
-                logger.LogDebug($"SUCCESS: process_map contains entry for process {testProcessId}: {imagePath}");
-            }
-            else
-            {
-                logger.LogDebug($"INFO: process_map does not contain entry for process {testProcessId} (expected for test run)");
-            }
-        }
+        opts.repeat = 1;
+        opts.ctx_in = &ctxIn;
+        opts.ctx_size_in = sizeof(process_monitor.PInvokes.process_md_t);
+        opts.ctx_out = &ctxOut;
+        opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_md_t);
+        opts.data_in = commandLinePtr;
+        opts.data_size_in = commandLineLength;
+        opts.data_out = null;
+        opts.data_size_out = 0;
 
-        logger.LogDebug("SUCCESS: Map verification completed");
+        // Execute the program - this should trigger the ProcessCreated event
+        int result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+        Assert.AreEqual(0, result, "bpf_prog_test_run_opts should succeed");
+
+        // Wait for the event to be received
+        Assert.IsTrue(processCreatedHappened.WaitOne(TimeSpan.FromSeconds(10)), 
+            "Test never received the ProcessCreated event");
+
+        logger.LogDebug($"SUCCESS: Received ProcessCreated event for PID {createdArgs.ProcessId}");
+
+        return createdArgs;
     }
 
     [TestMethod]
@@ -260,39 +242,29 @@ public class ProcessMonitorTests
                     operation = 0 // PROCESS_OPERATION_CREATE
                 };
 
-                // Create output context
-                process_monitor.PInvokes.process_md_t ctxOut = new process_monitor.PInvokes.process_md_t();
+                // Run the BPF program via bpf_prog_test_run_opts and wait for the ProcessCreated event
+                var createdArgs = RunBpfProgTestAndWaitForEvent(programFd, ctxIn, commandLinePtr, commandLineBytes.Length, logger);
 
-                // Prepare bpf_test_run_opts structure using factory method
-                process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
-                opts.repeat = 1;
-                opts.ctx_in = &ctxIn;
-                opts.ctx_size_in = sizeof(process_monitor.PInvokes.process_md_t);
-                opts.ctx_out = &ctxOut;
-                opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_md_t);
-                // data_in contains the command line data that context_create will point to via command_start/command_end
-                opts.data_in = commandLinePtr;
-                opts.data_size_in = commandLineBytes.Length;
-                opts.data_out = null; // We're not expecting data_out for process monitor
-                opts.data_size_out = 0;
+                // Verify the event data matches what we passed in
+                Assert.AreEqual((uint)ctxIn.process_id, createdArgs.ProcessId, "Process ID should match");
+                Assert.AreEqual((uint)ctxIn.parent_process_id, createdArgs.ParentProcessId, "Parent process ID should match");
+                Assert.AreEqual((uint)ctxIn.creating_process_id, createdArgs.CreatingProcessId, "Creating process ID should match");
+                Assert.AreEqual((uint)ctxIn.creating_thread_id, createdArgs.CreatingThreadId, "Creating thread ID should match");
+                Assert.IsTrue(createdArgs.CommandLine.Contains(testCommandLine), 
+                    $"Command line should contain '{testCommandLine}', got '{createdArgs.CommandLine}'");
 
-                // Execute the program - expect success for valid input
-                int result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
-                Assert.AreEqual(0, result, "bpf_prog_test_run_opts should succeed with valid input");
-
-                // Validate output context size
-                Assert.AreEqual(sizeof(process_monitor.PInvokes.process_md_t), opts.ctx_size_out, "Output context size should match input");
-
-                logger.LogDebug("SUCCESS: bpf_prog_test_run_opts with valid input succeeded");
-
-                // Verify that the maps were updated by the BPF program
-                VerifyMapsUpdated(bpfObject, ctxIn.process_id, testCommandLine, logger);
+                logger.LogDebug("SUCCESS: Event data verification completed");
 
                 // Negative test case: null context should fail
+                process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
+                process_monitor.PInvokes.process_md_t ctxOut = new process_monitor.PInvokes.process_md_t();
+                
                 opts.ctx_in = null;
                 opts.ctx_size_in = 0;
+                opts.ctx_out = &ctxOut;
+                opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_md_t);
 
-                result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+                int result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
                 Assert.AreNotEqual(0, result, "bpf_prog_test_run_opts should fail with null context");
 
                 logger.LogDebug("SUCCESS: bpf_prog_test_run_opts correctly rejected null context");
