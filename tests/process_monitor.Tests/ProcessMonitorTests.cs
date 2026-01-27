@@ -135,4 +135,191 @@ public class ProcessMonitorTests
 
         return (createdArgs, destroyedArgs);
     }
+
+    /// <summary>
+    /// Runs bpf_prog_test_run_opts and waits for the ProcessCreated event to fire.
+    /// This is similar to RunProcessAndWaitForEventsAsync but instead of calling Process.Start,
+    /// it triggers the BPF program via bpf_prog_test_run_opts.
+    /// </summary>
+    private static unsafe ProcessCreatedEventArgs RunBpfProgTestAndWaitForEvent(
+        int programFd,
+        process_monitor.PInvokes.process_notify_context_t notifyContext,
+        byte* commandLinePtr,
+        int commandLineLength,
+        ILogger logger)
+    {
+        using var pm = new ProcessMonitor(LoggerFactory.CreateLogger<ProcessMonitor>());
+
+        var processCreatedHappened = new ManualResetEvent(false);
+        ProcessCreatedEventArgs createdArgs = default;
+
+        pm.ProcessCreated += (sender, e) =>
+        {
+            // Check if this is our test process by matching the process ID
+            if (e.ProcessId == notifyContext.process_md.process_id)
+            {
+                createdArgs = e;
+                processCreatedHappened.Set();
+            }
+        };
+
+        // Use the provided notify context directly
+        process_monitor.PInvokes.process_notify_context_t ctxIn = notifyContext;
+
+        // Prepare bpf_test_run_opts structure
+        process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
+        process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t
+        {
+            context_header = new UInt64[8] // Initialize output context_header array
+        };
+        
+        opts.repeat = 1;
+        opts.ctx_in = &ctxIn;
+        opts.ctx_size_in = sizeof(process_monitor.PInvokes.process_notify_context_t);
+        opts.ctx_out = &ctxOut;
+        opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_notify_context_t);
+        opts.data_in = commandLinePtr;
+        opts.data_size_in = commandLineLength;
+        opts.data_out = null;
+        opts.data_size_out = 0;
+
+        // Execute the program - this should trigger the ProcessCreated event
+        int result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+        Assert.AreEqual(0, result, "bpf_prog_test_run_opts should succeed");
+
+        // Wait for the event to be received
+        Assert.IsTrue(processCreatedHappened.WaitOne(TimeSpan.FromSeconds(10)), 
+            "Test never received the ProcessCreated event");
+
+        logger.LogDebug($"SUCCESS: Received ProcessCreated event for PID {createdArgs.ProcessId}");
+
+        return createdArgs;
+    }
+
+    [TestMethod]
+    public unsafe void BpfProgTestRunContextCreateDelete()
+    {
+        // This test validates that the context_create and context_delete functions are working properly
+        // by using bpf_prog_test_run_opts to invoke the program directly with test data.
+
+        var logger = LoggerFactory.CreateLogger<ProcessMonitorTests>();
+
+        // Open and load the BPF program
+        IntPtr bpfObject = process_monitor.PInvokes.bpf_object__open("process_monitor.sys");
+        Assert.AreNotEqual(IntPtr.Zero, bpfObject, "bpf_object__open failed");
+
+        try
+        {
+            int loadResult = process_monitor.PInvokes.bpf_object__load(bpfObject);
+            Assert.AreEqual(0, loadResult, $"bpf_object__load failed with error code: {loadResult}");
+
+            // Find the ProcessMonitor program
+            IntPtr processMonitorProgram = process_monitor.PInvokes.bpf_object__find_program_by_name(bpfObject, "ProcessMonitor");
+            Assert.AreNotEqual(IntPtr.Zero, processMonitorProgram, "bpf_object__find_program_by_name failed");
+
+            // Get the program file descriptor
+            int programFd = process_monitor.PInvokes.bpf_program__fd(processMonitorProgram);
+            Assert.AreNotEqual(-1, programFd, "bpf_program__fd failed");
+
+            // Prepare test command line data (UTF-16 string)
+            string testCommandLine = "test.exe -arg1 -arg2";
+            byte[] commandLineBytes = System.Text.Encoding.Unicode.GetBytes(testCommandLine);
+
+            // Prepare test image file name data (UTF-16 string)
+            string testImageFileName = @"C:\Windows\System32\test.exe";
+            byte[] imageFileNameBytes = System.Text.Encoding.Unicode.GetBytes(testImageFileName);
+
+            // Ensure we have valid data
+            Assert.IsTrue(commandLineBytes.Length > 0, "Command line bytes should not be empty");
+            Assert.IsTrue(imageFileNameBytes.Length > 0, "Image file name bytes should not be empty");
+
+            fixed (byte* commandLinePtr = commandLineBytes)
+            fixed (byte* imageFileNamePtr = imageFileNameBytes)
+            {
+                // Calculate end pointer safely within bounds
+                byte* commandLineEndPtr = commandLinePtr + commandLineBytes.Length;
+                
+                // Create process_notify_context_t with all valid values
+                process_monitor.PInvokes.process_notify_context_t notifyContext = new process_monitor.PInvokes.process_notify_context_t
+                {
+                    context_header = new UInt64[8], // EBPF_CONTEXT_HEADER - initialize to zeros
+                    process_md = new process_monitor.PInvokes.process_md_t
+                    {
+                        command_start = (IntPtr)commandLinePtr,
+                        command_end = (IntPtr)commandLineEndPtr,
+                        process_id = 1234,
+                        parent_process_id = 5678,
+                        creating_process_id = 5678,
+                        creating_thread_id = 9999,
+                        creation_time = (ulong)DateTime.UtcNow.ToFileTimeUtc(),
+                        exit_time = 0,
+                        process_exit_code = 0,
+                        operation = 0 // PROCESS_OPERATION_CREATE
+                    },
+                    process = IntPtr.Zero,
+                    create_info = IntPtr.Zero,
+                    command_line = new process_monitor.PInvokes.UNICODE_STRING
+                    {
+                        Length = (ushort)commandLineBytes.Length,
+                        MaximumLength = (ushort)commandLineBytes.Length,
+                        Buffer = (IntPtr)commandLinePtr
+                    },
+                    image_file_name = new process_monitor.PInvokes.UNICODE_STRING
+                    {
+                        Length = (ushort)imageFileNameBytes.Length,
+                        MaximumLength = (ushort)imageFileNameBytes.Length,
+                        Buffer = (IntPtr)imageFileNamePtr
+                    }
+                };
+
+                // Run the BPF program via bpf_prog_test_run_opts and wait for the ProcessCreated event
+                var createdArgs = RunBpfProgTestAndWaitForEvent(programFd, notifyContext, commandLinePtr, commandLineBytes.Length, logger);
+
+                // Verify the event data matches what we passed in
+                Assert.AreEqual((uint)notifyContext.process_md.process_id, createdArgs.ProcessId, "Process ID should match");
+                Assert.AreEqual((uint)notifyContext.process_md.parent_process_id, createdArgs.ParentProcessId, "Parent process ID should match");
+                Assert.AreEqual((uint)notifyContext.process_md.creating_process_id, createdArgs.CreatingProcessId, "Creating process ID should match");
+                Assert.AreEqual((uint)notifyContext.process_md.creating_thread_id, createdArgs.CreatingThreadId, "Creating thread ID should match");
+                Assert.IsTrue(createdArgs.CommandLine.Contains(testCommandLine), 
+                    $"Command line should contain '{testCommandLine}', got '{createdArgs.CommandLine}'");
+
+                logger.LogDebug("SUCCESS: Event data verification completed");
+
+                // Negative test case: null context should fail
+                process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
+                process_monitor.PInvokes.process_notify_context_t ctxOut = new process_monitor.PInvokes.process_notify_context_t
+                {
+                    context_header = new UInt64[8]
+                };
+                
+                opts.ctx_in = null;
+                opts.ctx_size_in = 0;
+                opts.ctx_out = &ctxOut;
+                opts.ctx_size_out = sizeof(process_monitor.PInvokes.process_notify_context_t);
+
+                int result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+                Assert.AreNotEqual(0, result, "bpf_prog_test_run_opts should fail with null context");
+
+                logger.LogDebug("SUCCESS: bpf_prog_test_run_opts correctly rejected null context");
+
+                // Negative test case: context size too small should fail
+                byte smallCtx = 0;
+                opts.ctx_in = &smallCtx;
+                opts.ctx_size_in = 1; // Too small
+
+                result = process_monitor.PInvokes.bpf_prog_test_run_opts(programFd, &opts);
+                Assert.AreNotEqual(0, result, "bpf_prog_test_run_opts should fail with undersized context");
+
+                logger.LogDebug("SUCCESS: bpf_prog_test_run_opts correctly rejected undersized context");
+            }
+        }
+        finally
+        {
+            // Clean up
+            if (bpfObject != IntPtr.Zero)
+            {
+                process_monitor.PInvokes.bpf_object__close(bpfObject);
+            }
+        }
+    }
 }
