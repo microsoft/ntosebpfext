@@ -143,7 +143,7 @@ public class ProcessMonitorTests
     /// </summary>
     private static unsafe ProcessCreatedEventArgs RunBpfProgTestAndWaitForEvent(
         int programFd,
-        process_monitor.PInvokes.process_md_t processMd,
+        process_monitor.PInvokes.process_notify_context_t notifyContext,
         byte* commandLinePtr,
         int commandLineLength,
         ILogger logger)
@@ -156,33 +156,15 @@ public class ProcessMonitorTests
         pm.ProcessCreated += (sender, e) =>
         {
             // Check if this is our test process by matching the process ID
-            if (e.ProcessId == processMd.process_id)
+            if (e.ProcessId == notifyContext.process_md.process_id)
             {
                 createdArgs = e;
                 processCreatedHappened.Set();
             }
         };
 
-        // Create process_notify_context_t with the process_md_t embedded
-        process_monitor.PInvokes.process_notify_context_t ctxIn = new process_monitor.PInvokes.process_notify_context_t
-        {
-            context_header = new UInt64[8], // EBPF_CONTEXT_HEADER - initialize to zeros
-            process_md = processMd,
-            process = IntPtr.Zero,
-            create_info = IntPtr.Zero,
-            command_line = new process_monitor.PInvokes.UNICODE_STRING
-            {
-                Length = 0,
-                MaximumLength = 0,
-                Buffer = IntPtr.Zero
-            },
-            image_file_name = new process_monitor.PInvokes.UNICODE_STRING
-            {
-                Length = 0,
-                MaximumLength = 0,
-                Buffer = IntPtr.Zero
-            }
-        };
+        // Use the provided notify context directly
+        process_monitor.PInvokes.process_notify_context_t ctxIn = notifyContext;
 
         // Prepare bpf_test_run_opts structure
         process_monitor.PInvokes.bpf_test_run_opts opts = process_monitor.PInvokes.bpf_test_run_opts.Create();
@@ -243,37 +225,61 @@ public class ProcessMonitorTests
             string testCommandLine = "test.exe -arg1 -arg2";
             byte[] commandLineBytes = System.Text.Encoding.Unicode.GetBytes(testCommandLine);
 
+            // Prepare test image file name data (UTF-16 string)
+            string testImageFileName = @"C:\Windows\System32\test.exe";
+            byte[] imageFileNameBytes = System.Text.Encoding.Unicode.GetBytes(testImageFileName);
+
             // Ensure we have valid data
             Assert.IsTrue(commandLineBytes.Length > 0, "Command line bytes should not be empty");
+            Assert.IsTrue(imageFileNameBytes.Length > 0, "Image file name bytes should not be empty");
 
             fixed (byte* commandLinePtr = commandLineBytes)
+            fixed (byte* imageFileNamePtr = imageFileNameBytes)
             {
                 // Calculate end pointer safely within bounds
                 byte* commandLineEndPtr = commandLinePtr + commandLineBytes.Length;
                 
-                // Create input context using the shared structure from PInvokes
-                process_monitor.PInvokes.process_md_t ctxIn = new process_monitor.PInvokes.process_md_t
+                // Create process_notify_context_t with all valid values
+                process_monitor.PInvokes.process_notify_context_t notifyContext = new process_monitor.PInvokes.process_notify_context_t
                 {
-                    command_start = (IntPtr)commandLinePtr,
-                    command_end = (IntPtr)commandLineEndPtr,
-                    process_id = 1234,
-                    parent_process_id = 5678,
-                    creating_process_id = 5678,
-                    creating_thread_id = 9999,
-                    creation_time = (ulong)DateTime.UtcNow.ToFileTimeUtc(),
-                    exit_time = 0,
-                    process_exit_code = 0,
-                    operation = 0 // PROCESS_OPERATION_CREATE
+                    context_header = new UInt64[8], // EBPF_CONTEXT_HEADER - initialize to zeros
+                    process_md = new process_monitor.PInvokes.process_md_t
+                    {
+                        command_start = (IntPtr)commandLinePtr,
+                        command_end = (IntPtr)commandLineEndPtr,
+                        process_id = 1234,
+                        parent_process_id = 5678,
+                        creating_process_id = 5678,
+                        creating_thread_id = 9999,
+                        creation_time = (ulong)DateTime.UtcNow.ToFileTimeUtc(),
+                        exit_time = 0,
+                        process_exit_code = 0,
+                        operation = 0 // PROCESS_OPERATION_CREATE
+                    },
+                    process = IntPtr.Zero,
+                    create_info = IntPtr.Zero,
+                    command_line = new process_monitor.PInvokes.UNICODE_STRING
+                    {
+                        Length = (ushort)commandLineBytes.Length,
+                        MaximumLength = (ushort)commandLineBytes.Length,
+                        Buffer = (IntPtr)commandLinePtr
+                    },
+                    image_file_name = new process_monitor.PInvokes.UNICODE_STRING
+                    {
+                        Length = (ushort)imageFileNameBytes.Length,
+                        MaximumLength = (ushort)imageFileNameBytes.Length,
+                        Buffer = (IntPtr)imageFileNamePtr
+                    }
                 };
 
                 // Run the BPF program via bpf_prog_test_run_opts and wait for the ProcessCreated event
-                var createdArgs = RunBpfProgTestAndWaitForEvent(programFd, ctxIn, commandLinePtr, commandLineBytes.Length, logger);
+                var createdArgs = RunBpfProgTestAndWaitForEvent(programFd, notifyContext, commandLinePtr, commandLineBytes.Length, logger);
 
                 // Verify the event data matches what we passed in
-                Assert.AreEqual((uint)ctxIn.process_id, createdArgs.ProcessId, "Process ID should match");
-                Assert.AreEqual((uint)ctxIn.parent_process_id, createdArgs.ParentProcessId, "Parent process ID should match");
-                Assert.AreEqual((uint)ctxIn.creating_process_id, createdArgs.CreatingProcessId, "Creating process ID should match");
-                Assert.AreEqual((uint)ctxIn.creating_thread_id, createdArgs.CreatingThreadId, "Creating thread ID should match");
+                Assert.AreEqual((uint)notifyContext.process_md.process_id, createdArgs.ProcessId, "Process ID should match");
+                Assert.AreEqual((uint)notifyContext.process_md.parent_process_id, createdArgs.ParentProcessId, "Parent process ID should match");
+                Assert.AreEqual((uint)notifyContext.process_md.creating_process_id, createdArgs.CreatingProcessId, "Creating process ID should match");
+                Assert.AreEqual((uint)notifyContext.process_md.creating_thread_id, createdArgs.CreatingThreadId, "Creating thread ID should match");
                 Assert.IsTrue(createdArgs.CommandLine.Contains(testCommandLine), 
                     $"Command line should contain '{testCommandLine}', got '{createdArgs.CommandLine}'");
 
