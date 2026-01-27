@@ -103,22 +103,27 @@ namespace process_monitor
             internal byte operation;            // process_operation_t operation : 8
         }
 
+        // UNICODE_STRING structure matching Windows definition
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct UNICODE_STRING
+        {
+            internal UInt16 Length;
+            internal UInt16 MaximumLength;
+            internal IntPtr Buffer;
+        }
+
         // Structure for process_notify_context_t
         // This must match the native definition in ntos_ebpf_ext_process.c
-        // Note: EBPF_CONTEXT_HEADER is empty/marker, so we just include process_md_t and padding
+        // Note: EBPF_CONTEXT_HEADER is an empty macro, so it adds no fields
         [StructLayout(LayoutKind.Sequential)]
         internal struct process_notify_context_t
         {
-            // EBPF_CONTEXT_HEADER (empty marker)
+            // No field for EBPF_CONTEXT_HEADER as it's empty
             internal process_md_t process_md;
             internal IntPtr process;            // PEPROCESS
             internal IntPtr create_info;        // PPS_CREATE_NOTIFY_INFO
-            internal IntPtr command_line_buffer;   // UNICODE_STRING.Buffer
-            internal UInt16 command_line_length;   // UNICODE_STRING.Length
-            internal UInt16 command_line_max_length; // UNICODE_STRING.MaximumLength
-            internal IntPtr image_file_name_buffer;   // UNICODE_STRING.Buffer
-            internal UInt16 image_file_name_length;   // UNICODE_STRING.Length
-            internal UInt16 image_file_name_max_length; // UNICODE_STRING.MaximumLength
+            internal UNICODE_STRING command_line;
+            internal UNICODE_STRING image_file_name;
         }
     }
 }

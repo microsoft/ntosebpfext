@@ -169,12 +169,18 @@ public class ProcessMonitorTests
             process_md = processMd,
             process = IntPtr.Zero,
             create_info = IntPtr.Zero,
-            command_line_buffer = IntPtr.Zero,
-            command_line_length = 0,
-            command_line_max_length = 0,
-            image_file_name_buffer = IntPtr.Zero,
-            image_file_name_length = 0,
-            image_file_name_max_length = 0
+            command_line = new process_monitor.PInvokes.UNICODE_STRING
+            {
+                Length = 0,
+                MaximumLength = 0,
+                Buffer = IntPtr.Zero
+            },
+            image_file_name = new process_monitor.PInvokes.UNICODE_STRING
+            {
+                Length = 0,
+                MaximumLength = 0,
+                Buffer = IntPtr.Zero
+            }
         };
 
         // Prepare bpf_test_run_opts structure
