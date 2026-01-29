@@ -96,7 +96,7 @@ jobs:
         paths_ignore: '["**.md", "**/docs/**"]'
 
     # Checking out the branch is needed to gather correct code coverage data.
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       # Only check out source code if code coverage is being gathered.
       if: (inputs.code_coverage == true) && (steps.skip_check.outputs.should_skip != 'true')
       with:
