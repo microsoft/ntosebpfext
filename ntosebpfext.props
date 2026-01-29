@@ -7,10 +7,15 @@
     <!-- eBPF -->
     <!-- Use NuGet global cache location for packages -->
     <!-- Prefer NUGET_PACKAGES if set, otherwise default to USERPROFILE\.nuget\packages -->
-    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' And '$(NUGET_PACKAGES)' != ''">$(NUGET_PACKAGES)</NuGetPackageRoot>
+    <!-- Normalize NUGET_PACKAGES to ensure trailing backslash -->
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' And '$(NUGET_PACKAGES)' != ''">$([System.IO.Path]::GetFullPath('$(NUGET_PACKAGES)\'))</NuGetPackageRoot>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(USERPROFILE)\.nuget\packages\</NuGetPackageRoot>
+    <!-- eBPF for Windows version - used for fallback path construction -->
+    <eBPFForWindowsVersion>1.0.0-rc1</eBPFForWindowsVersion>
     <!-- Use NuGet-generated package path property for eBPF-for-Windows -->
     <!-- Note: NuGet replaces dashes with underscores in property names -->
     <eBPFForWindowsPackagePath Condition="'$(PkgeBPF_for_Windows_x64)' != ''">$(PkgeBPF_for_Windows_x64)</eBPFForWindowsPackagePath>
+    <!-- Fallback: compute package path from NuGetPackageRoot when NuGet-generated property is not available -->
+    <eBPFForWindowsPackagePath Condition="'$(eBPFForWindowsPackagePath)' == '' And '$(eBPFForWindowsVersion)' != ''">$(NuGetPackageRoot)ebpf-for-windows.x64\$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
   </PropertyGroup>
 </Project>
