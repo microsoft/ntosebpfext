@@ -149,7 +149,7 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <PackageReference Include="eBPF-for-Windows.x64" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\resource\ebpf_ext_resource.rc">

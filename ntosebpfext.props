@@ -6,6 +6,8 @@
   <PropertyGroup>
     <!-- eBPF -->
     <eBPFForWindowsVersion>1.0.0-rc1</eBPFForWindowsVersion>
-    <eBPFForWindowsPackagePath>$(SolutionDir)packages\eBPF-for-Windows.x64.$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
+    <!-- Use NuGet global cache location for packages -->
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(USERPROFILE)\.nuget\packages\</NuGetPackageRoot>
+    <eBPFForWindowsPackagePath>$(NuGetPackageRoot)ebpf-for-windows.x64\$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
   </PropertyGroup>
 </Project>

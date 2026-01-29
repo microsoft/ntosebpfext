@@ -169,7 +169,7 @@ $(Outdir)netevent_ebpf_ext_export_program_info.exe</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <PackageReference Include="eBPF-for-Windows.x64" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ebpf_extensions\neteventebpfext\sys\neteventebpfext.vcxproj">

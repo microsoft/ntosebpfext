@@ -4,7 +4,7 @@
 -->
 <Project>
   <PropertyGroup>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
     <!-- Try to keep these in alphabetical order -->
@@ -14,6 +14,13 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP" Version="10.0.26100.4204" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP.arm64" Version="10.0.26100.4204" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP.x64" Version="10.0.26100.4204" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP.x86" Version="10.0.26100.4204" />
+    <PackageVersion Include="Microsoft.Windows.WDK.ARM64" Version="10.0.26100.4204" />
+    <PackageVersion Include="Microsoft.Windows.WDK.x64" Version="10.0.26100.4204" />
+    <PackageVersion Include="Microsoft.Windows.WDK.x86" Version="10.0.26100.4204" />
     <PackageVersion Include="MSTest.TestAdapter" Version="3.6.4" />
     <PackageVersion Include="MSTest.TestFramework" Version="3.6.4" />
   </ItemGroup>
