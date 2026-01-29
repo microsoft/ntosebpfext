@@ -8,11 +8,12 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Set-Location $scriptPath\..
 
 # Define the commands to run
+$ebpfToolPath = Join-Path $env:USERPROFILE ".nuget\packages\ebpf-for-windows.x64\1.0.0-rc1\build\native\bin\export_program_info.exe"
 $commands = @(
     "git submodule update --init --recursive",
     "cmake -G 'Visual Studio 17 2022' -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF",
     "dotnet restore ntosebpfext.sln",
-    "$env:USERPROFILE\.nuget\packages\ebpf-for-windows.x64\1.0.0-rc1\build\native\bin\export_program_info.exe"
+    "`"$ebpfToolPath`""
 )
 
 # Loop through each command and run them sequentially without opening a new window
