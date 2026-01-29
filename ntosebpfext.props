@@ -11,6 +11,7 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' And '$(NUGET_PACKAGES)' != ''">$([System.IO.Path]::GetFullPath('$(NUGET_PACKAGES)\'))</NuGetPackageRoot>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(USERPROFILE)\.nuget\packages\</NuGetPackageRoot>
     <!-- eBPF for Windows version - used for fallback path construction -->
+    <!-- IMPORTANT: Keep this in sync with eBPF-for-Windows.x64 version in Directory.Packages.props -->
     <eBPFForWindowsVersion>1.0.0-rc1</eBPFForWindowsVersion>
     <!-- Use NuGet-generated package path property for eBPF-for-Windows -->
     <!-- Note: NuGet replaces dashes with underscores in property names -->

@@ -24,22 +24,34 @@ $ebpfPackageNode = $packagesPropsXml.Project.ItemGroup.PackageVersion | Where-Ob
 $ebpfVersion = $ebpfPackageNode.Version
 
 $ebpfToolPath = Join-Path $nugetPackagesPath "ebpf-for-windows.x64\$ebpfVersion\build\native\bin\export_program_info.exe"
-$commands = @(
-    "git submodule update --init --recursive",
-    "cmake -G 'Visual Studio 17 2022' -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF",
-    "dotnet restore ntosebpfext.sln",
-    "`"$ebpfToolPath`""
-)
 
-# Loop through each command and run them sequentially without opening a new window
-foreach ($command in $commands) {
-    Write-Host ">> Running command: $command"
-    Invoke-Expression -Command $command
-
-    # Check the exit code
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Command failed. Exit code: $LASTEXITCODE"
-        Exit  $LASTEXITCODE
-    }
+# Execute commands sequentially
+Write-Host ">> Running command: git submodule update --init --recursive"
+git submodule update --init --recursive
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Command failed. Exit code: $LASTEXITCODE"
+    Exit $LASTEXITCODE
 }
+
+Write-Host ">> Running command: cmake -G 'Visual Studio 17 2022' -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF"
+cmake -G 'Visual Studio 17 2022' -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Command failed. Exit code: $LASTEXITCODE"
+    Exit $LASTEXITCODE
+}
+
+Write-Host ">> Running command: dotnet restore ntosebpfext.sln"
+dotnet restore ntosebpfext.sln
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Command failed. Exit code: $LASTEXITCODE"
+    Exit $LASTEXITCODE
+}
+
+Write-Host ">> Running command: $ebpfToolPath"
+& $ebpfToolPath
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Command failed. Exit code: $LASTEXITCODE"
+    Exit $LASTEXITCODE
+}
+
 Write-Host "All commands succeeded."

@@ -17,9 +17,9 @@
     <NuGetPlatform Condition="'$(Platform)' != 'Win32'">$(Platform)</NuGetPlatform>
     <!-- Use NuGet-generated package path properties for SDK/WDK -->
     <SDKCppPackagePath Condition="'$(PkgMicrosoft_Windows_SDK_CPP)' != ''">$(PkgMicrosoft_Windows_SDK_CPP)</SDKCppPackagePath>
-    <!-- Fallback to manual path construction if property not available -->
-    <!-- Set version unconditionally for fallback imports to work properly -->
-    <WDKVersion>10.0.26100.4204</WDKVersion>
+    <!-- Fallback version - only set if not already defined -->
+    <!-- This should match the version in Directory.Packages.props -->
+    <WDKVersion Condition="'$(WDKVersion)' == ''">10.0.26100.4204</WDKVersion>
   </PropertyGroup>
 
   <Import Project="$(SDKCppPackagePath)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="'$(SDKCppPackagePath)' != '' And Exists('$(SDKCppPackagePath)\build\native\Microsoft.Windows.SDK.cpp.props')" />
