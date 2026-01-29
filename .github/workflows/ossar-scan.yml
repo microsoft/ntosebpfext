@@ -46,18 +46,19 @@ jobs:
         cancel_others: 'false'
         paths_ignore: '["**.md", "**/docs/**"]'
 
-    # Set up .NET SDK 8.0.414 which matches the version used in global.json in the repo root.
-    - name: Setup .NET SDK 8.0.414
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.414
-
     # Checking out the branch is needed to correctly log security alerts.
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       if: steps.skip_check.outputs.should_skip != 'true'
       with:
         # Only check out main repo, not submodules.
         ref: ${{ github.event.workflow_run.head_branch }}
+
+    # Set up .NET SDK using the version specified in global.json.
+    - name: Setup .NET SDK
+      if: steps.skip_check.outputs.should_skip != 'true'
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: global.json
 
     - name: Download build artifact
       if: (steps.skip_check.outputs.should_skip != 'true') && success()
