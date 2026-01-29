@@ -31,8 +31,13 @@ For this extension, the following artifacts will be generated in the `x64\Debug`
 - `ntos_ebpf_ext_export_program_info.exe` - A user-mode cmdlet that exports the eBPF program information to the eBPF store.
 - `ntosebpfext.sys` - The driver that loads the eBPF program and attaches it to the process lifecycle events.
 - `process_monitor.sys` - The native eBPF program that will be invoked by the `ntosebpfext` extension upon process events, which stores them in ring buffer and LRU hash maps.
-- `process_monitor.exe` - A user-mode application that reads process events from the ring buffer and displays them.
 - `ntosebpfext_unit.exe` - An end-to-end unit test that validates the extension functionality.
+
+To build the `process_monitor.exe` user-mode application (which reads process events from the ring buffer and displays them), run:
+
+```cmd
+dotnet build tools\process_monitor
+```
 
 #### Testing
 
@@ -67,8 +72,9 @@ cd x64\Debug\bin\process_monitor.Tests\win-x64
 cd tests\process_monitor.Tests
 dotnet test
 
-# Or run the process monitor interactively
-cd x64\Debug
+# Or build and run the process monitor interactively
+dotnet build tools\process_monitor
+cd x64\Debug\bin\process_monitor\win-x64
 .\process_monitor.exe
 ```
 
