@@ -29,6 +29,7 @@
     <CopyFileToFolders Include="..\Run-Test.ps1">
       <FileType>Document</FileType>
     </CopyFileToFolders>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="eBPF-for-Windows.x64" />
     <PackageReference Include="Microsoft.Windows.SDK.CPP" />
@@ -38,7 +39,6 @@
     <PackageReference Include="Microsoft.Windows.WDK.ARM64" />
     <PackageReference Include="Microsoft.Windows.WDK.x64" />
     <PackageReference Include="Microsoft.Windows.WDK.x86" />
-  </ItemGroup>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\ntos-ebpf-ext.guid">
