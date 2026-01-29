@@ -33,12 +33,6 @@ For this extension, the following artifacts will be generated in the `x64\Debug`
 - `process_monitor.sys` - The native eBPF program that will be invoked by the `ntosebpfext` extension upon process events, which stores them in ring buffer and LRU hash maps.
 - `ntosebpfext_unit.exe` - An end-to-end unit test that validates the extension functionality.
 
-To build the `process_monitor.exe` user-mode application (which reads process events from the ring buffer and displays them), run:
-
-```cmd
-dotnet build tools\process_monitor
-```
-
 #### Testing
 
 To run the end-to-end unit test, you can use the `ntosebpfext_unit.exe` application as follows:
@@ -60,25 +54,7 @@ This test will perform the following steps:
 1. Verify that the eBPF program receives the correct context information.
 1. Stop and unload all the drivers.
 
-For full end-to-end testing with the user-mode application:
-
-```powershell
-# Install eBPF for Windows (one-time setup)
-cd x64\Debug\bin\process_monitor.Tests\win-x64
-.\Install-eBpfForWindows.ps1 1.0.0-rc1
-.\Setup-ProcessMonitorTests.ps1
-
-# Run the .NET tests
-cd tests\process_monitor.Tests
-dotnet test
-
-# Or build and run the process monitor interactively
-dotnet build tools\process_monitor
-cd x64\Debug\bin\process_monitor\win-x64
-.\process_monitor.exe
-```
-
-The `process_monitor.exe` application will display process creation and deletion events in real-time. Press Ctrl-C to stop.
+For full end-to-end testing with the user-mode application, see the [process_monitor.Tests](../tests/process_monitor.Tests) project which validates the extension functionality using MSTest.
 
 ## Installing the extension
 
