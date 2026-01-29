@@ -8,6 +8,8 @@
     <HostPlatform>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</HostPlatform>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
     <!-- Use NuGet global cache location for packages -->
+    <!-- Prefer NUGET_PACKAGES if set, otherwise default to USERPROFILE\.nuget\packages -->
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' And '$(NUGET_PACKAGES)' != ''">$(NUGET_PACKAGES)</NuGetPackageRoot>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(USERPROFILE)\.nuget\packages\</NuGetPackageRoot>
     <!-- Map Win32 to x86 for NuGet package names -->
     <NuGetPlatform Condition="'$(Platform)' == 'Win32'">x86</NuGetPlatform>
@@ -23,7 +25,7 @@
   <Import Project="$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="'$(SDKCppPackagePath)' == '' And Exists('$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
   
   <!-- Platform-specific WDK imports using mapped NuGetPlatform -->
-  <!-- Note: NuGet uses lowercase for arm64 but uppercase for other platforms in package names -->
+  <!-- Note: Package IDs use different casing (e.g., Microsoft.Windows.SDK.CPP.arm64 vs Microsoft.Windows.WDK.ARM64) -->
   <PropertyGroup>
     <WDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'x86' And '$(PkgMicrosoft_Windows_WDK_x86)' != ''">$(PkgMicrosoft_Windows_WDK_x86)</WDKPlatformPackagePath>
     <WDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'x64' And '$(PkgMicrosoft_Windows_WDK_x64)' != ''">$(PkgMicrosoft_Windows_WDK_x64)</WDKPlatformPackagePath>
