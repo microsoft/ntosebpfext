@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.4" />
-    <PackageReference Include="DotNet.ReproducibleBuilds.Isolated" Version="1.2.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"  Version="9.0.0"/>
+    <PackageReference Include="DotNet.ReproducibleBuilds" />
+    <PackageReference Include="DotNet.ReproducibleBuilds.Isolated" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

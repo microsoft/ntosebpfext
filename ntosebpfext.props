@@ -5,9 +5,11 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <!-- eBPF -->
-    <eBPFForWindowsVersion>1.0.0-rc1</eBPFForWindowsVersion>
     <!-- Use NuGet global cache location for packages -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(USERPROFILE)\.nuget\packages\</NuGetPackageRoot>
-    <eBPFForWindowsPackagePath>$(NuGetPackageRoot)ebpf-for-windows.x64\$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
+    <!-- Use NuGet-generated package path property for eBPF-for-Windows -->
+    <eBPFForWindowsPackagePath Condition="'$(PkgeBPF-for-Windows_x64)' != ''">$(PkgeBPF-for-Windows_x64)</eBPFForWindowsPackagePath>
+    <!-- Fallback to manual path construction if property not available -->
+    <eBPFForWindowsPackagePath Condition="'$(eBPFForWindowsPackagePath)' == ''">$(NuGetPackageRoot)ebpf-for-windows.x64\1.0.0-rc1</eBPFForWindowsPackagePath>
   </PropertyGroup>
 </Project>

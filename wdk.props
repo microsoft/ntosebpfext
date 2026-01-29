@@ -7,15 +7,38 @@
   <PropertyGroup>
     <HostPlatform>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</HostPlatform>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
-    <WDKVersion>10.0.26100.4204</WDKVersion>
     <!-- Use NuGet global cache location for packages -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(USERPROFILE)\.nuget\packages\</NuGetPackageRoot>
+    <!-- Map Win32 to x86 for NuGet package names -->
+    <NuGetPlatform Condition="'$(Platform)' == 'Win32'">x86</NuGetPlatform>
+    <NuGetPlatform Condition="'$(Platform)' != 'Win32'">$(Platform)</NuGetPlatform>
+    <!-- Use NuGet-generated package path properties for SDK/WDK -->
+    <WDKPackagePath Condition="'$(PkgMicrosoft_Windows_SDK_CPP)' != ''">$(PkgMicrosoft_Windows_SDK_CPP)</WDKPackagePath>
+    <!-- Fallback to manual path construction if property not available -->
+    <WDKVersion Condition="'$(WDKPackagePath)' == ''">10.0.26100.4204</WDKVersion>
   </PropertyGroup>
 
-  <Import Project="$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
-  <Import Project="$(NuGetPackageRoot)microsoft.windows.wdk.$(Platform)\$(WDKVersion)\build\native\Microsoft.Windows.WDK.$(Platform).props" Condition="Exists('$(NuGetPackageRoot)microsoft.windows.wdk.$(Platform)\$(WDKVersion)\build\native\Microsoft.Windows.WDK.$(Platform).props')" />
-  <Import Project="$(NuGetPackageRoot)microsoft.windows.sdk.cpp.$(Platform)\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.$(Platform).props" Condition="Exists('$(NuGetPackageRoot)microsoft.windows.sdk.cpp.$(Platform)\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.$(Platform).props')" />
+  <Import Project="$(PkgMicrosoft_Windows_SDK_CPP)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="'$(PkgMicrosoft_Windows_SDK_CPP)' != '' And Exists('$(PkgMicrosoft_Windows_SDK_CPP)\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <Import Project="$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="'$(WDKVersion)' != '' And Exists('$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  
+  <!-- Platform-specific WDK imports using mapped NuGetPlatform -->
+  <PropertyGroup>
+    <WDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'x86' And '$(PkgMicrosoft_Windows_WDK_x86)' != ''">$(PkgMicrosoft_Windows_WDK_x86)</WDKPlatformPackagePath>
+    <WDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'x64' And '$(PkgMicrosoft_Windows_WDK_x64)' != ''">$(PkgMicrosoft_Windows_WDK_x64)</WDKPlatformPackagePath>
+    <WDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'ARM64' And '$(PkgMicrosoft_Windows_WDK_ARM64)' != ''">$(PkgMicrosoft_Windows_WDK_ARM64)</WDKPlatformPackagePath>
+    <SDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'x86' And '$(PkgMicrosoft_Windows_SDK_CPP_x86)' != ''">$(PkgMicrosoft_Windows_SDK_CPP_x86)</SDKPlatformPackagePath>
+    <SDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'x64' And '$(PkgMicrosoft_Windows_SDK_CPP_x64)' != ''">$(PkgMicrosoft_Windows_SDK_CPP_x64)</SDKPlatformPackagePath>
+    <SDKPlatformPackagePath Condition="'$(NuGetPlatform)' == 'ARM64' And '$(PkgMicrosoft_Windows_SDK_CPP_arm64)' != ''">$(PkgMicrosoft_Windows_SDK_CPP_arm64)</SDKPlatformPackagePath>
+  </PropertyGroup>
+  
+  <Import Project="$(WDKPlatformPackagePath)\build\native\Microsoft.Windows.WDK.$(NuGetPlatform).props" Condition="'$(WDKPlatformPackagePath)' != '' And Exists('$(WDKPlatformPackagePath)\build\native\Microsoft.Windows.WDK.$(NuGetPlatform).props')" />
+  <Import Project="$(NuGetPackageRoot)microsoft.windows.wdk.$(NuGetPlatform)\$(WDKVersion)\build\native\Microsoft.Windows.WDK.$(NuGetPlatform).props" Condition="'$(WDKVersion)' != '' And Exists('$(NuGetPackageRoot)microsoft.windows.wdk.$(NuGetPlatform)\$(WDKVersion)\build\native\Microsoft.Windows.WDK.$(NuGetPlatform).props')" />
+  
+  <Import Project="$(SDKPlatformPackagePath)\build\native\Microsoft.Windows.SDK.cpp.$(NuGetPlatform).props" Condition="'$(SDKPlatformPackagePath)' != '' And Exists('$(SDKPlatformPackagePath)\build\native\Microsoft.Windows.SDK.cpp.$(NuGetPlatform).props')" />
+  <Import Project="$(NuGetPackageRoot)microsoft.windows.sdk.cpp.$(NuGetPlatform)\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.$(NuGetPlatform).props" Condition="'$(WDKVersion)' != '' And Exists('$(NuGetPackageRoot)microsoft.windows.sdk.cpp.$(NuGetPlatform)\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.$(NuGetPlatform).props')" />
+  
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.targets')" />
+    <Import Project="$(PkgMicrosoft_Windows_SDK_CPP)\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="'$(PkgMicrosoft_Windows_SDK_CPP)' != '' And Exists('$(PkgMicrosoft_Windows_SDK_CPP)\build\native\Microsoft.Windows.SDK.cpp.targets')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="'$(WDKVersion)' != '' And Exists('$(NuGetPackageRoot)microsoft.windows.sdk.cpp\$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.targets')" />
   </ImportGroup>
 </Project>
