@@ -17,13 +17,13 @@ guide to install the eBPF for Windows components on a test-enabled Windows machi
 
 After cloning the repository, make sure to initialize the submodules by running the following command from the root of the repository:
 
-```bash
+```powershell
 .\scripts\initialize_repo.ps1
 ```
 
 Then, build the `ntosebpfext.sln` solution from the root of the repository, by running the following command:
 
-```bash
+```cmd
 msbuild ntosebpfext.sln /p:Configuration=Debug /p:Platform=x64
 ```
 
@@ -42,11 +42,11 @@ The test will generate network events using the `netevent_sim` driver, which wil
 
 To run the end-to-end unit test, you can use the `neteventebpfext_unit.exe` application as follows:
 
-```bash
-# Required only if the eBPF program information is not exported yet
+```cmd
+REM Required only if the eBPF program information is not exported yet
 netevent_ebpf_ext_export_program_info.exe
 
-# Run the test with debugging enabled
+REM Run the test with debugging enabled
 neteventebpfext_unit.exe -d yes
 ```
 
@@ -66,15 +66,16 @@ Once generated the artifacts, to deploy the extension you need to:
 
 - Export the eBPF program to the system's eBPF store using the `netevent_ebpf_ext_export_program_info.exe` application:
 
-    ```bash
-    netevent_ebpf_ext_export_program_info.exe --clear # Mainly, to clear-out any previous eBPF program information related to this program type.
+    ```cmd
+    REM Mainly, to clear-out any previous eBPF program information related to this program type.
+    netevent_ebpf_ext_export_program_info.exe --clear
     netevent_ebpf_ext_export_program_info.exe
     ```
 
 - Load and start the `neteventebpfext.sys` eBPF extension driver which will enable loading eBPF programs of type `netevent_monitor`
 and attaching the to the network event source:
 
-    ```bash
+    ```cmd
     sc create neteventebpfext type=kernel start=demand binPath=neteventebpfext.sys
     sc start neteventebpfext
     ```
