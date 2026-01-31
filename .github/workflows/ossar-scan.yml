@@ -46,11 +46,11 @@ jobs:
         cancel_others: 'false'
         paths_ignore: '["**.md", "**/docs/**"]'
 
-    # Set up .NET SDK 8.0.414 which matches the version used in global.json in the repo root.
-    - name: Setup .NET SDK 8.0.414
+    # Set up .NET SDK 8.0.121 which matches the version used in global.json in the repo root.
+    - name: Setup .NET SDK 8.0.121
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.414
+        dotnet-version: 8.0.121
 
     # Checking out the branch is needed to correctly log security alerts.
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
