@@ -371,6 +371,7 @@ _ebpf_process_context_destroy(
     process_md_t* process_md = (process_md_t*)context;
     process_notify_context_t* process_context = NULL;
     process_notify_context_t* process_context_out = (process_notify_context_t*)context_out;
+    size_t total_data_size = 0;
 
     if (!process_md) {
         goto Exit;
@@ -383,7 +384,9 @@ _ebpf_process_context_destroy(
         // Copy the context to the caller.
         memcpy(process_context_out, process_context, sizeof(process_notify_context_t));
 
-        // Zero out the command_start and command_end.
+        // Zero out buffers.
+        process_context_out->command_line.Buffer = 0;
+        process_context_out->image_file_name.Buffer = 0;
         process_context_out->process_md.command_start = 0;
         process_context_out->process_md.command_end = 0;
         *context_size_out = sizeof(process_notify_context_t);
@@ -391,14 +394,24 @@ _ebpf_process_context_destroy(
         *context_size_out = 0;
     }
 
-    // Copy the command to the data_out.
-    if (data_out != NULL && *data_size_out >= (size_t)(process_context->process_md.command_end -
-                                                       process_context->process_md.command_start)) {
-        memcpy(
-            data_out,
-            process_context->process_md.command_start,
-            process_context->process_md.command_end - process_context->process_md.command_start);
-        *data_size_out = process_context->process_md.command_end - process_context->process_md.command_start;
+    // Pack command_line and image_file_name into data_out, mirroring data_in structure
+    total_data_size = (size_t)process_context->command_line.Length + (size_t)process_context->image_file_name.Length;
+    if (data_out != NULL && *data_size_out >= total_data_size) {
+        uint8_t* data_ptr = data_out;
+
+        // Copy command_line buffer
+        if (process_context->command_line.Length > 0 && process_context->command_line.Buffer != NULL) {
+            memcpy(data_ptr, process_context->command_line.Buffer, process_context->command_line.Length);
+            data_ptr += process_context->command_line.Length;
+        }
+
+        // Copy image_file_name buffer
+        if (process_context->image_file_name.Length > 0 && process_context->image_file_name.Buffer != NULL) {
+            memcpy(data_ptr, process_context->image_file_name.Buffer, process_context->image_file_name.Length);
+            data_ptr += process_context->image_file_name.Length;
+        }
+
+        *data_size_out = total_data_size;
     } else {
         *data_size_out = 0;
     }

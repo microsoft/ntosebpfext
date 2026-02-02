@@ -386,6 +386,8 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     REQUIRE(process_ring_buffer != nullptr);
 
     uint32_t event_count_before = process_event_count;
+    // Prepare buffer for data_out
+    std::vector<uint8_t> data_out_buffer(total_data_size);
 
     // Prepare bpf_opts
     bpf_opts.repeat = 1;
@@ -395,12 +397,15 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     bpf_opts.ctx_size_out = sizeof(process_ctx_out);
     bpf_opts.data_in = packed_data.data();
     bpf_opts.data_size_in = static_cast<uint32_t>(total_data_size);
+    bpf_opts.data_out = data_out_buffer.data();
+    bpf_opts.data_size_out = static_cast<uint32_t>(total_data_size);
 
     // Execute the program - expect success
     REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
 
-    // Validate the output context
+    // Validate the output context and data
     REQUIRE(bpf_opts.ctx_size_out == sizeof(process_ctx_out));
+    REQUIRE(bpf_opts.data_size_out == bpf_opts.data_size_in);
     REQUIRE(process_ctx_out.process_md.process_id == process_ctx_in.process_md.process_id);
     REQUIRE(process_ctx_out.process_md.parent_process_id == process_ctx_in.process_md.parent_process_id);
     REQUIRE(process_ctx_out.process_md.operation == process_ctx_in.process_md.operation);
