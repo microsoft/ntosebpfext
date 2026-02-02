@@ -364,7 +364,8 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     process_ctx_in.process_md.command_end = NULL;
 
     // Pack both command_line and image_file_name data into a single buffer for data_in
-    size_t total_data_size = process_ctx_in.command_line.Length + process_ctx_in.image_file_name.Length;
+    size_t total_data_size = static_cast<size_t>(process_ctx_in.command_line.Length) +
+                             static_cast<size_t>(process_ctx_in.image_file_name.Length);
     std::vector<uint8_t> packed_data(total_data_size);
 
     memcpy(packed_data.data(), command_line.c_str(), process_ctx_in.command_line.Length);
@@ -423,16 +424,16 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
 
     // Lookup the process_id in process_map to verify image path was stored
     uint32_t lookup_key = (uint32_t)process_ctx_in.process_md.process_id;
-    wchar_t image_path_from_map[1024] = {0};
-    int result_process = bpf_map_lookup_elem(process_map_fd, &lookup_key, image_path_from_map);
+    std::vector<wchar_t> image_path_from_map(1024 / sizeof(wchar_t));
+    int result_process = bpf_map_lookup_elem(process_map_fd, &lookup_key, image_path_from_map.data());
     REQUIRE(result_process == 0);
-    REQUIRE(wcscmp(image_path_from_map, image_path.c_str()) == 0);
+    REQUIRE(wcscmp(image_path_from_map.data(), image_path.c_str()) == 0);
 
     // Lookup the process_id in command_map to verify command line was stored
-    wchar_t command_line_from_map[64 * 1024 / sizeof(wchar_t)] = {0};
-    int result_command = bpf_map_lookup_elem(command_map_fd, &lookup_key, command_line_from_map);
+    std::vector<wchar_t> command_line_from_map(64 * 1024 / sizeof(wchar_t));
+    int result_command = bpf_map_lookup_elem(command_map_fd, &lookup_key, command_line_from_map.data());
     REQUIRE(result_command == 0);
-    REQUIRE(wcscmp(command_line_from_map, command_line.c_str()) == 0);
+    REQUIRE(wcscmp(command_line_from_map.data(), command_line.c_str()) == 0);
 
     // Clean up ring buffer
     ring_buffer__free(process_ring_buffer);
