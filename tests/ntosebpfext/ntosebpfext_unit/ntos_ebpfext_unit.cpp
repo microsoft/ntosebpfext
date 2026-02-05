@@ -21,6 +21,7 @@
 
 #define MAX_IMAGE_PATH_SIZE (1024)
 #define MAX_COMMAND_LINE_SIZE ((64 * 1024))
+#define TEST_PROCESS_ID 1234
 
 struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
 
@@ -57,17 +58,19 @@ process_ringbuf_event_callback(void* ctx, void* data, size_t size)
 
     process_info_t* info = (process_info_t*)data;
 
-    std::cout << "Ring buffer event received:" << std::endl;
-    std::cout << "  Process ID: " << info->process_id << std::endl;
-    std::cout << "  Parent Process ID: " << info->parent_process_id << std::endl;
-    std::cout << "  Creating Process ID: " << info->creating_process_id << std::endl;
-    std::cout << "  Creating Thread ID: " << info->creating_thread_id << std::endl;
-    std::cout << "  Creation Time: " << info->creation_time << std::endl;
-    std::cout << "  Exit Time: " << info->exit_time << std::endl;
-    std::cout << "  Exit Code: " << info->process_exit_code << std::endl;
-    std::cout << "  Operation: " << (info->operation == 0 ? "CREATE" : "DELETE") << std::endl;
+    if (info->process_id == TEST_PROCESS_ID) {
+        std::cout << "Ring buffer event received:" << std::endl;
+        std::cout << "  Process ID: " << info->process_id << std::endl;
+        std::cout << "  Parent Process ID: " << info->parent_process_id << std::endl;
+        std::cout << "  Creating Process ID: " << info->creating_process_id << std::endl;
+        std::cout << "  Creating Thread ID: " << info->creating_thread_id << std::endl;
+        std::cout << "  Creation Time: " << info->creation_time << std::endl;
+        std::cout << "  Exit Time: " << info->exit_time << std::endl;
+        std::cout << "  Exit Code: " << info->process_exit_code << std::endl;
+        std::cout << "  Operation: " << (info->operation == 0 ? "CREATE" : "DELETE") << std::endl;
+        process_event_count++;
+    }
 
-    process_event_count++;
     return 0;
 }
 
@@ -362,7 +365,7 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     std::wstring command_line = L"notepad.exe test.txt";
     std::wstring image_path = L"C:\\Windows\\System32\\notepad.exe";
 
-    process_ctx_in.process_md.process_id = 1234;
+    process_ctx_in.process_md.process_id = TEST_PROCESS_ID;
     process_ctx_in.process_md.parent_process_id = 4567;
     process_ctx_in.process_md.creating_process_id = 8910;
     process_ctx_in.process_md.creating_thread_id = 1112;
@@ -437,11 +440,15 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     REQUIRE(process_ctx_out.process_md.parent_process_id == process_ctx_in.process_md.parent_process_id);
     REQUIRE(process_ctx_out.process_md.operation == process_ctx_in.process_md.operation);
 
-    // Sleep to allow auto-callback to process events
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-
     // Validate that one event was written to the ring buffer
-    REQUIRE(process_event_count > event_count_before);
+    // Wait for auto-callback to process events (up to 5 seconds)
+    for (int i = 0; i < 5; i++) {
+        if (process_event_count == event_count_before + 1) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    REQUIRE(process_event_count == event_count_before + 1);
 
     // Validate LRU_HASH maps: process_map and command_map
     bpf_map* process_map = bpf_object__find_map_by_name(object, "process_map");
@@ -470,7 +477,7 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     // Test negative cases
 
     // Context smaller than process_notify_context_t must be rejected
-    unsigned char smaller_ctx[sizeof(process_ctx_in) - 1];
+    unsigned char smaller_ctx[sizeof(process_ctx_in) - 1] = {0};
     bpf_opts.ctx_in = &smaller_ctx;
     bpf_opts.ctx_size_in = sizeof(smaller_ctx);
     REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) != 0);

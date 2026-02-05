@@ -249,7 +249,6 @@ _ebpf_process_context_create(
     process_notify_context_t* process_context = NULL;
     process_notify_context_t* input_context = NULL;
     const uint8_t* data_ptr = data_in;
-    size_t remaining_data_size = data_size_in;
 
     *context = NULL;
     input_context = (process_notify_context_t*)context_in;
@@ -261,7 +260,7 @@ _ebpf_process_context_create(
     }
 
     if (data_in == NULL ||
-        data_size_in < (input_context->command_line.Length + input_context->image_file_name.Length)) {
+        data_size_in < ((size_t)input_context->command_line.Length + (size_t)input_context->image_file_name.Length)) {
         EBPF_EXT_LOG_MESSAGE(
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
             EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
@@ -298,7 +297,6 @@ _ebpf_process_context_create(
         process_context->command_line.MaximumLength = input_context->command_line.MaximumLength;
 
         data_ptr += input_context->command_line.Length;
-        remaining_data_size -= input_context->command_line.Length;
     } else {
         process_context->command_line.Buffer = NULL;
         process_context->command_line.Length = 0;
@@ -322,7 +320,6 @@ _ebpf_process_context_create(
         process_context->image_file_name.MaximumLength = input_context->image_file_name.MaximumLength;
 
         data_ptr += input_context->image_file_name.Length;
-        remaining_data_size -= input_context->image_file_name.Length;
     } else {
         process_context->image_file_name.Buffer = NULL;
         process_context->image_file_name.Length = 0;
