@@ -260,6 +260,16 @@ _ebpf_process_context_create(
         goto Exit;
     }
 
+    if (data_in == NULL ||
+        data_size_in < (input_context->command_line.Length + input_context->image_file_name.Length)) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "Insufficient data for command_line and image_file_name");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
+    }
+
     process_context = (process_notify_context_t*)ExAllocatePoolUninitialized(
         NonPagedPoolNx, sizeof(process_notify_context_t), EBPF_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
@@ -273,13 +283,6 @@ _ebpf_process_context_create(
 
     // Deep copy command_line buffer from data_in if present
     if (input_context->command_line.Length > 0) {
-        if (data_in == NULL || remaining_data_size < input_context->command_line.Length) {
-            EBPF_EXT_LOG_MESSAGE(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PROCESS, "Insufficient data for command_line");
-            result = EBPF_INVALID_ARGUMENT;
-            goto Exit;
-        }
-
         process_context->command_line.Buffer = (PWSTR)ExAllocatePoolUninitialized(
             NonPagedPoolNx, input_context->command_line.Length, EBPF_EXTENSION_POOL_TAG);
         if (process_context->command_line.Buffer == NULL) {
@@ -292,7 +295,7 @@ _ebpf_process_context_create(
         }
         memcpy(process_context->command_line.Buffer, data_ptr, input_context->command_line.Length);
         process_context->command_line.Length = input_context->command_line.Length;
-        process_context->command_line.MaximumLength = input_context->command_line.Length;
+        process_context->command_line.MaximumLength = input_context->command_line.MaximumLength;
 
         data_ptr += input_context->command_line.Length;
         remaining_data_size -= input_context->command_line.Length;
@@ -304,15 +307,6 @@ _ebpf_process_context_create(
 
     // Deep copy image_file_name buffer from data_in if present
     if (input_context->image_file_name.Length > 0) {
-        if (data_in == NULL || remaining_data_size < input_context->image_file_name.Length) {
-            EBPF_EXT_LOG_MESSAGE(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-                "Insufficient data for image_file_name");
-            result = EBPF_INVALID_ARGUMENT;
-            goto Exit;
-        }
-
         process_context->image_file_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
             NonPagedPoolNx, input_context->image_file_name.Length, EBPF_EXTENSION_POOL_TAG);
         if (process_context->image_file_name.Buffer == NULL) {
@@ -325,7 +319,7 @@ _ebpf_process_context_create(
         }
         memcpy(process_context->image_file_name.Buffer, data_ptr, input_context->image_file_name.Length);
         process_context->image_file_name.Length = input_context->image_file_name.Length;
-        process_context->image_file_name.MaximumLength = input_context->image_file_name.Length;
+        process_context->image_file_name.MaximumLength = input_context->image_file_name.MaximumLength;
 
         data_ptr += input_context->image_file_name.Length;
         remaining_data_size -= input_context->image_file_name.Length;

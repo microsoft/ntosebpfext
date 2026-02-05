@@ -17,6 +17,10 @@
 #include <map>
 #include <stop_token>
 #include <thread>
+#include <wil/resource.h>
+
+#define MAX_IMAGE_PATH_SIZE (1024)
+#define MAX_COMMAND_LINE_SIZE ((64 * 1024))
 
 struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
 
@@ -310,10 +314,19 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     REQUIRE(
         ntosebpfext_driver.create(L"ntosebpfext", driver_service::get_driver_path("ntosebpfext.sys").c_str()) == true);
     REQUIRE(ntosebpfext_driver.start() == true);
+    auto cleanup_driver = wil::scope_exit([&]() {
+        ntosebpfext_driver.stop();
+        ntosebpfext_driver.unload();
+    });
 
     // Load the process monitor BPF program.
     struct bpf_object* object = bpf_object__open("process_monitor.sys");
     REQUIRE(object != nullptr);
+    auto cleanup_object = wil::scope_exit([&]() {
+        if (object != nullptr) {
+            bpf_object__close(object);
+        }
+    });
 
     int res = bpf_object__load(object);
     REQUIRE(res == 0);
@@ -327,6 +340,15 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     result = ebpf_program_attach(process_monitor, &EBPF_ATTACH_TYPE_PROCESS, nullptr, 0, &process_monitor_link);
     REQUIRE(result == EBPF_SUCCESS);
     REQUIRE(process_monitor_link != nullptr);
+    auto cleanup_link = wil::scope_exit([&]() {
+        if (process_monitor_link != nullptr) {
+            int link_fd = bpf_link__fd(process_monitor_link);
+            if (link_fd != ebpf_fd_invalid) {
+                bpf_link_detach(link_fd);
+            }
+            bpf_link__destroy(process_monitor_link);
+        }
+    });
 
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
@@ -384,6 +406,11 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     ring_buffer* process_ring_buffer =
         ebpf_ring_buffer__new(process_ringbuf_fd, process_ringbuf_event_callback, nullptr, &ring_opts);
     REQUIRE(process_ring_buffer != nullptr);
+    auto cleanup_ring_buffer = wil::scope_exit([&]() {
+        if (process_ring_buffer != nullptr) {
+            ring_buffer__free(process_ring_buffer);
+        }
+    });
 
     uint32_t event_count_before = process_event_count;
     // Prepare buffer for data_out
@@ -429,19 +456,16 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
 
     // Lookup the process_id in process_map to verify image path was stored
     uint32_t lookup_key = (uint32_t)process_ctx_in.process_md.process_id;
-    std::vector<wchar_t> image_path_from_map(1024 / sizeof(wchar_t));
+    std::vector<wchar_t> image_path_from_map(MAX_IMAGE_PATH_SIZE / sizeof(wchar_t));
     int result_process = bpf_map_lookup_elem(process_map_fd, &lookup_key, image_path_from_map.data());
     REQUIRE(result_process == 0);
     REQUIRE(wcscmp(image_path_from_map.data(), image_path.c_str()) == 0);
 
     // Lookup the process_id in command_map to verify command line was stored
-    std::vector<wchar_t> command_line_from_map(64 * 1024 / sizeof(wchar_t));
+    std::vector<wchar_t> command_line_from_map(MAX_COMMAND_LINE_SIZE / sizeof(wchar_t));
     int result_command = bpf_map_lookup_elem(command_map_fd, &lookup_key, command_line_from_map.data());
     REQUIRE(result_command == 0);
     REQUIRE(wcscmp(command_line_from_map.data(), command_line.c_str()) == 0);
-
-    // Clean up ring buffer
-    ring_buffer__free(process_ring_buffer);
 
     // Test negative cases
 
@@ -455,19 +479,6 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     bpf_opts.ctx_in = nullptr;
     bpf_opts.ctx_size_in = 0;
     REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) != 0);
-
-    // Detach the program (link) from the attach point
-    int link_fd = bpf_link__fd(process_monitor_link);
-    REQUIRE(link_fd != ebpf_fd_invalid);
-    REQUIRE(bpf_link_detach(link_fd) == 0);
-    REQUIRE(bpf_link__destroy(process_monitor_link) == 0);
-
-    // Free the BPF object
-    bpf_object__close(object);
-
-    // Stop and unload the ntosebpfext extension driver
-    REQUIRE(ntosebpfext_driver.stop() == true);
-    REQUIRE(ntosebpfext_driver.unload() == true);
 }
 
 #pragma endregion process
