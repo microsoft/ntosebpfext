@@ -17,7 +17,11 @@
 #include <map>
 #include <stop_token>
 #include <thread>
+#pragma warning(push)
+#pragma warning(disable : 28182) // Dereferencing NULL pointer. 'Temp_value_#12076' contains the same NULL
+                                 //  value as 'new(1*144, nothrow)' did.
 #include <wil/resource.h>
+#pragma warning(pop)
 
 #define MAX_IMAGE_PATH_SIZE (1024)
 #define MAX_COMMAND_LINE_SIZE ((64 * 1024))
