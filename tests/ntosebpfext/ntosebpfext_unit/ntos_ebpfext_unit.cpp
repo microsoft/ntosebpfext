@@ -490,6 +490,19 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     bpf_opts.ctx_in = nullptr;
     bpf_opts.ctx_size_in = 0;
     REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) != 0);
+
+    // NULL data_in with valid context should be rejected
+    bpf_opts.ctx_in = &process_ctx_in;
+    bpf_opts.ctx_size_in = sizeof(process_ctx_in);
+    bpf_opts.data_in = nullptr;
+    bpf_opts.data_size_in = 0;
+    REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) != 0);
+
+    // Insufficient data_size_in should be rejected
+    // Set data_size_in to 1 byte less than required (command_line.Length + image_file_name.Length)
+    bpf_opts.data_in = packed_data.data();
+    bpf_opts.data_size_in = static_cast<uint32_t>(total_data_size - 1);
+    REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) != 0);
 }
 
 #pragma endregion process
