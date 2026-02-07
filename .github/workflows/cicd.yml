@@ -72,6 +72,7 @@ jobs:
     uses: ./.github/workflows/reusable-test.yml
     with:
       name: ntosebpfext_units
+      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.0.0-rc1
       test_command: .\ntosebpfext_unit.exe -d yes
       build_artifact: Build-x64
       environment: windows-2022
