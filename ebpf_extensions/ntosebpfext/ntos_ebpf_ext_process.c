@@ -277,6 +277,11 @@ _ebpf_process_context_create(
     // Copy the context from the caller.
     memcpy(process_context, context_in, sizeof(process_notify_context_t));
 
+    // Sanitize pointer fields that should not come from bpf_prog_test_run input.
+    // These are kernel pointers that must be NULL when creating context from user mode.
+    process_context->process = NULL;
+    process_context->create_info = NULL;
+
     // Parse data_in buffer: [command_line data][image_file_name data]
     // The lengths are specified in the UNICODE_STRING structures from the context
 

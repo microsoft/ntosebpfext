@@ -34,7 +34,7 @@ CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 
 #pragma region process
 
-static volatile uint32_t process_event_count = 0;
+static std::atomic<uint32_t> process_event_count = 0;
 
 // Define process_info_t to match the structure in process_monitor.c
 typedef struct
