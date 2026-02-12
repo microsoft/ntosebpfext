@@ -247,11 +247,24 @@ _ebpf_process_context_create(
     EBPF_EXT_LOG_ENTRY();
     ebpf_result_t result;
     process_notify_context_t* process_context = NULL;
+    process_notify_context_t* input_context = NULL;
+    const uint8_t* data_ptr = data_in;
 
     *context = NULL;
+    input_context = (process_notify_context_t*)context_in;
 
-    if (context_in == NULL || context_size_in < sizeof(process_md_t)) {
+    if (context_in == NULL || context_size_in < sizeof(process_notify_context_t)) {
         EBPF_EXT_LOG_MESSAGE(EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PROCESS, "Context is required");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
+    }
+
+    if (data_in == NULL ||
+        data_size_in < ((size_t)input_context->command_line.Length + (size_t)input_context->image_file_name.Length)) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "Insufficient data for command_line and image_file_name");
         result = EBPF_INVALID_ARGUMENT;
         goto Exit;
     }
@@ -262,18 +275,79 @@ _ebpf_process_context_create(
         EBPF_EXT_TRACELOG_KEYWORD_PROCESS, process_context, "process_context", result);
 
     // Copy the context from the caller.
-    memcpy(process_context, context_in, sizeof(process_md_t));
+    memcpy(process_context, context_in, sizeof(process_notify_context_t));
 
-    // Replace the process_id_start and process_id_end with pointers to data_in.
-    process_context->process_md.command_start = (uint8_t*)data_in;
-    process_context->process_md.command_end = (uint8_t*)data_in + data_size_in;
+    // Sanitize pointer fields that should not come from bpf_prog_test_run input.
+    // These are kernel pointers that must be NULL when creating context from user mode.
+    process_context->process = NULL;
+    process_context->create_info = NULL;
 
-    *context = process_context;
+    // Parse data_in buffer: [command_line data][image_file_name data]
+    // The lengths are specified in the UNICODE_STRING structures from the context
+
+    // Deep copy command_line buffer from data_in if present
+    if (input_context->command_line.Length > 0) {
+        process_context->command_line.Buffer = (PWSTR)ExAllocatePoolUninitialized(
+            NonPagedPoolNx, input_context->command_line.Length, EBPF_EXTENSION_POOL_TAG);
+        if (process_context->command_line.Buffer == NULL) {
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+                "Failed to allocate command_line buffer");
+            result = EBPF_NO_MEMORY;
+            goto Exit;
+        }
+        memcpy(process_context->command_line.Buffer, data_ptr, input_context->command_line.Length);
+        process_context->command_line.Length = input_context->command_line.Length;
+        process_context->command_line.MaximumLength = input_context->command_line.MaximumLength;
+
+        data_ptr += input_context->command_line.Length;
+    } else {
+        process_context->command_line.Buffer = NULL;
+        process_context->command_line.Length = 0;
+        process_context->command_line.MaximumLength = 0;
+    }
+
+    // Deep copy image_file_name buffer from data_in if present
+    if (input_context->image_file_name.Length > 0) {
+        process_context->image_file_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
+            NonPagedPoolNx, input_context->image_file_name.Length, EBPF_EXTENSION_POOL_TAG);
+        if (process_context->image_file_name.Buffer == NULL) {
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+                "Failed to allocate image_file_name buffer");
+            result = EBPF_NO_MEMORY;
+            goto Exit;
+        }
+        memcpy(process_context->image_file_name.Buffer, data_ptr, input_context->image_file_name.Length);
+        process_context->image_file_name.Length = input_context->image_file_name.Length;
+        process_context->image_file_name.MaximumLength = input_context->image_file_name.MaximumLength;
+
+        data_ptr += input_context->image_file_name.Length;
+    } else {
+        process_context->image_file_name.Buffer = NULL;
+        process_context->image_file_name.Length = 0;
+        process_context->image_file_name.MaximumLength = 0;
+    }
+
+    // Set command_start and command_end to point to the copied command_line buffer
+    process_context->process_md.command_start = (uint8_t*)process_context->command_line.Buffer;
+    process_context->process_md.command_end =
+        (uint8_t*)process_context->command_line.Buffer + process_context->command_line.Length;
+
+    *context = &process_context->process_md;
     process_context = NULL;
     result = EBPF_SUCCESS;
 
 Exit:
     if (process_context) {
+        if (process_context->command_line.Buffer != NULL) {
+            ExFreePool(process_context->command_line.Buffer);
+        }
+        if (process_context->image_file_name.Buffer != NULL) {
+            ExFreePool(process_context->image_file_name.Buffer);
+        }
         ExFreePool(process_context);
         process_context = NULL;
     }
@@ -290,36 +364,60 @@ _ebpf_process_context_destroy(
 {
     EBPF_EXT_LOG_ENTRY();
 
-    process_notify_context_t* process_context = (process_notify_context_t*)context;
-    process_md_t* process_context_out = (process_md_t*)context_out;
+    process_md_t* process_md = (process_md_t*)context;
+    process_notify_context_t* process_context = NULL;
+    process_notify_context_t* process_context_out = (process_notify_context_t*)context_out;
+    size_t total_data_size = 0;
 
-    if (!process_context) {
+    if (!process_md) {
         goto Exit;
     }
 
-    if (context_out != NULL && *context_size_out >= sizeof(process_md_t)) {
-        // Copy the context to the caller.
-        memcpy(process_context_out, &process_context->process_md, sizeof(process_md_t));
+    // Get the containing process_notify_context_t structure from the process_md pointer.
+    process_context = CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
 
-        // Zero out the command_start and command_end.
-        process_context_out->command_start = 0;
-        process_context_out->command_end = 0;
-        *context_size_out = sizeof(process_md_t);
+    if (context_out != NULL && *context_size_out >= sizeof(process_notify_context_t)) {
+        // Copy the context to the caller.
+        memcpy(process_context_out, process_context, sizeof(process_notify_context_t));
+
+        // Zero out buffers.
+        process_context_out->command_line.Buffer = 0;
+        process_context_out->image_file_name.Buffer = 0;
+        process_context_out->process_md.command_start = 0;
+        process_context_out->process_md.command_end = 0;
+        *context_size_out = sizeof(process_notify_context_t);
     } else {
         *context_size_out = 0;
     }
 
-    // Copy the command to the data_out.
-    if (data_out != NULL &&
-        *data_size_out >=
-            (size_t)(process_context->process_md.command_end - process_context->process_md.command_start)) {
-        memcpy(
-            data_out,
-            process_context->process_md.command_start,
-            process_context->process_md.command_end - process_context->process_md.command_start);
-        *data_size_out = process_context->process_md.command_end - process_context->process_md.command_start;
+    // Pack command_line and image_file_name into data_out, mirroring data_in structure
+    total_data_size = (size_t)process_context->command_line.Length + (size_t)process_context->image_file_name.Length;
+    if (data_out != NULL && *data_size_out >= total_data_size) {
+        uint8_t* data_ptr = data_out;
+
+        // Copy command_line buffer
+        if (process_context->command_line.Length > 0 && process_context->command_line.Buffer != NULL) {
+            memcpy(data_ptr, process_context->command_line.Buffer, process_context->command_line.Length);
+            data_ptr += process_context->command_line.Length;
+        }
+
+        // Copy image_file_name buffer
+        if (process_context->image_file_name.Length > 0 && process_context->image_file_name.Buffer != NULL) {
+            memcpy(data_ptr, process_context->image_file_name.Buffer, process_context->image_file_name.Length);
+            data_ptr += process_context->image_file_name.Length;
+        }
+
+        *data_size_out = total_data_size;
     } else {
         *data_size_out = 0;
+    }
+
+    // Free the deep-copied buffers
+    if (process_context->command_line.Buffer != NULL) {
+        ExFreePool(process_context->command_line.Buffer);
+    }
+    if (process_context->image_file_name.Buffer != NULL) {
+        ExFreePool(process_context->image_file_name.Buffer);
     }
 
     ExFreePool(process_context);
