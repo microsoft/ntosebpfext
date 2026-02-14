@@ -64,7 +64,7 @@
     <ClCompile>
       <PreprocessorDefinitions>PROVIDER_NAME=ntos;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext;$(SolutionDir)resource</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext;$(SolutionDir)resource;$(SolutionDir)external\ebpf-extension-common\include</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4505</DisableSpecificWarnings>
@@ -72,7 +72,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>mincore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mincore.lib;ebpf_extension_common_um.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(ConfigurationName)\</AdditionalLibraryDirectories>
@@ -82,7 +82,7 @@
     <ClCompile>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PreprocessorDefinitions>PROVIDER_NAME=ntos;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext;$(SolutionDir)resource</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)ntosebpfext;$(SolutionDir)ntosebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)libs\ebpf_ext;$(SolutionDir)resource;$(SolutionDir)external\ebpf-extension-common\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4505</DisableSpecificWarnings>
@@ -115,6 +115,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)external\ebpf-extension-common\user\ebpf_extension_common_um.vcxproj">
+      <Project>{b2d3e12f-9c7a-4e5b-8f6d-7a8c9b0d1e2f}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

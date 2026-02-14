@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "ebpf_ext.h"
+#include "ebpf_ext_common_test.h"
 #include "ebpf_ext_hook_provider.h"
 #include "ebpf_ext_tracelog.h"
 #include "ebpf_extension_uuids.h"
@@ -150,6 +151,8 @@ _Must_inspect_result_ bool
 ebpf_extension_hook_client_enter_rundown(_Inout_ ebpf_extension_hook_client_t* hook_client)
 {
     ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
+    int test_result = ebpf_ext_common_test_function();
+    UNREFERENCED_PARAMETER(test_result);
     bool status = ExAcquireRundownProtection(&rundown->protection);
     return status;
 }

@@ -145,6 +145,9 @@
     <ProjectReference Include="..\..\..\ebpf_extensions\neteventebpfext\user\neteventebpfext_user.vcxproj">
       <Project>{aaab234b-f0e9-4326-91e8-87b98367acc1}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\.\external\ebpf-extension-common\user\ebpf_extension_common_um.vcxproj">
+      <Project>{b2d3e12f-9c7a-4e5b-8f6d-7a8c9b0d1e2f}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\external\Catch2\build\src\Catch2.vcxproj">
       <Project>{8d538cbe-01bf-4a2e-a98a-6c368fdf13d7}</Project>
     </ProjectReference>
