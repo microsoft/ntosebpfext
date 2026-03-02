@@ -108,7 +108,7 @@
     <ProjectReference Include="..\..\..\ebpf_extensions\ntosebpfext\user\ntosebpfext_user.vcxproj">
       <Project>{630bb78f-6211-41d8-8e3a-096e22e169ef}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\.\external\ebpf-extension-common\user\ebpf_extension_common_um.vcxproj">
+    <ProjectReference Include="..\..\..\external\ebpf-extension-common\user\ebpf_extension_common_um.vcxproj">
       <Project>{b2d3e12f-9c7a-4e5b-8f6d-7a8c9b0d1e2f}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\..\external\Catch2\build\src\Catch2.vcxproj">
