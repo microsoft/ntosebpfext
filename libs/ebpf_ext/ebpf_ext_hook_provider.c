@@ -2,16 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 #include "ebpf_ext.h"
-#include "ebpf_ext_common_test.h"
 #include "ebpf_ext_hook_provider.h"
+#include "ebpf_ext_rundown.h"
 #include "ebpf_ext_tracelog.h"
 #include "ebpf_extension_uuids.h"
-
-typedef struct _ebpf_ext_hook_client_rundown
-{
-    EX_RUNDOWN_REF protection;
-    bool rundown_occurred;
-} ebpf_ext_hook_client_rundown_t;
 
 struct _ebpf_extension_hook_provider;
 
@@ -29,8 +23,8 @@ typedef struct _ebpf_extension_hook_client
     ebpf_program_invoke_function_t invoke_program; ///< Pointer to function to invoke eBPF program.
     void* provider_data; ///< Opaque pointer to hook specific data associated with this client.
     struct _ebpf_extension_hook_provider* provider_context; ///< Pointer to the hook NPI provider context.
-    PIO_WORKITEM detach_work_item;          ///< Pointer to IO work item that is invoked to detach the client.
-    ebpf_ext_hook_client_rundown_t rundown; ///< Pointer to rundown object used to synchronize detach operation.
+    PIO_WORKITEM detach_work_item;   ///< Pointer to IO work item that is invoked to detach the client.
+    ebpf_ext_hook_rundown_t rundown; ///< Pointer to rundown object used to synchronize detach operation.
 } ebpf_extension_hook_client_t;
 
 typedef struct _ebpf_extension_hook_clients_list
@@ -65,7 +59,6 @@ static NTSTATUS
 _ebpf_ext_attach_init_rundown(ebpf_extension_hook_client_t* hook_client)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
 
     EBPF_EXT_LOG_ENTRY();
 
@@ -79,29 +72,11 @@ _ebpf_ext_attach_init_rundown(ebpf_extension_hook_client_t* hook_client)
         goto Exit;
     }
 
-    // Initialize the rundown and disable new references.
-    ExInitializeRundownProtection(&rundown->protection);
-    rundown->rundown_occurred = FALSE;
+    // Initialize the rundown using shared API.
+    ebpf_ext_init_rundown(&hook_client->rundown);
 
 Exit:
     EBPF_EXT_RETURN_NTSTATUS(status);
-}
-
-/**
- * @brief Block execution of the thread until all invocations are completed.
- *
- * @param[in, out] rundown Rundown object to wait for.
- *
- */
-static void
-_ebpf_ext_attach_wait_for_rundown(_Inout_ ebpf_ext_hook_client_rundown_t* rundown)
-{
-    EBPF_EXT_LOG_ENTRY();
-
-    ExWaitForRundownProtectionRelease(&rundown->protection);
-    rundown->rundown_occurred = TRUE;
-
-    EBPF_EXT_LOG_EXIT();
 }
 
 IO_WORKITEM_ROUTINE _ebpf_extension_detach_client_completion;
@@ -137,7 +112,7 @@ _ebpf_extension_detach_client_completion(_In_ DEVICE_OBJECT* device_object, _In_
     // Issue: https://github.com/microsoft/ebpf-for-windows/issues/1854
 
     // Wait for any in progress callbacks to complete.
-    _ebpf_ext_attach_wait_for_rundown(&hook_client->rundown);
+    ebpf_ext_wait_for_rundown(&hook_client->rundown);
 
     IoFreeWorkItem(work_item);
 
@@ -150,18 +125,13 @@ _ebpf_extension_detach_client_completion(_In_ DEVICE_OBJECT* device_object, _In_
 _Must_inspect_result_ bool
 ebpf_extension_hook_client_enter_rundown(_Inout_ ebpf_extension_hook_client_t* hook_client)
 {
-    ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
-    int test_result = ebpf_ext_common_test_function();
-    UNREFERENCED_PARAMETER(test_result);
-    bool status = ExAcquireRundownProtection(&rundown->protection);
-    return status;
+    return ebpf_ext_enter_rundown(&hook_client->rundown);
 }
 
 void
 ebpf_extension_hook_client_leave_rundown(_Inout_ ebpf_extension_hook_client_t* hook_client)
 {
-    ebpf_ext_hook_client_rundown_t* rundown = &hook_client->rundown;
-    ExReleaseRundownProtection(&rundown->protection);
+    ebpf_ext_leave_rundown(&hook_client->rundown);
 }
 
 const ebpf_extension_data_t*
