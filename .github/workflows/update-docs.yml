@@ -1,0 +1,55 @@
+# Copyright (c) Microsoft Corporation
+# SPDX-License-Identifier: MIT
+
+# This action will run doxygen to update the documentation at https://microsoft.github.io/ntosebpfext/
+# which is a view of the gh-pages branch. This action is done whenever the main branch is updated.
+# For docs on gh-pages see https://pages.github.com/
+---
+name: Doxygen Action
+
+# Controls when the action will run. Triggers the workflow on push
+# events but only for the main branch
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    permissions:
+      contents: write  # for Git to git push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            azure.archive.ubuntu.com:80
+            github.com:443
+
+      - name: Install doxygen
+        run: |
+          sudo apt install doxygen
+
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Clone docs
+        run: |
+          git config --global user.email 'ntosebpfext@users.noreply.github.com'
+          git config --global user.name 'GitHub Action'
+          git clone --branch gh-pages https://github.com/microsoft/ntosebpfext.git docs/html
+
+      - name: Update docs
+        run: |
+          doxygen
+          cd docs/html
+          git add .
+          if [ -n "$(git status --porcelain)" ]; then
+          git commit -s -m "Updated documentation"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/microsoft/ntosebpfext.git
+          git push
+          fi
