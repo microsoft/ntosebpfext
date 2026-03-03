@@ -29,7 +29,11 @@ jobs:
           egress-policy: block
           allowed-endpoints: >
             azure.archive.ubuntu.com:80
+            security.ubuntu.com:80
             github.com:443
+            api.github.com:443
+            codeload.github.com:443
+            raw.githubusercontent.com:443
 
       - name: Install doxygen
         run: |
