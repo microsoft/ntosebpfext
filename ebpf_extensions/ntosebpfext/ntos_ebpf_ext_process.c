@@ -453,6 +453,26 @@ _ebpf_process_create_process_notify_routine_ex(
         process_notify_context.process_md.command_start = (uint8_t*)process_notify_context.command_line.Buffer;
         process_notify_context.process_md.command_end =
             (uint8_t*)process_notify_context.command_line.Buffer + process_notify_context.command_line.Length;
+
+        // Get the primary token SID for the new process.
+        {
+            PACCESS_TOKEN token = PsReferencePrimaryToken(process);
+            if (token != NULL) {
+                PTOKEN_USER token_user = NULL;
+                NTSTATUS sid_status = SeQueryInformationToken(token, TokenUser, (PVOID*)&token_user);
+                if (NT_SUCCESS(sid_status) && token_user != NULL) {
+                    if (RtlValidSid(token_user->User.Sid)) {
+                        ULONG sid_length = RtlLengthSid(token_user->User.Sid);
+                        if (sid_length <= TOKEN_SID_MAX_SIZE) {
+                            process_notify_context.process_md.token_sid_size = sid_length;
+                            memcpy(process_notify_context.process_md.token_sid, token_user->User.Sid, sid_length);
+                        }
+                    }
+                    ExFreePool(token_user);
+                }
+                PsDereferencePrimaryToken(token);
+            }
+        }
     } else {
         process_notify_context.process_md.operation = PROCESS_OPERATION_DELETE;
         process_notify_context.process_md.exit_time = PsGetProcessExitTime().QuadPart;

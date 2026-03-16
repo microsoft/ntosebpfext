@@ -102,6 +102,8 @@ typedef struct _process_md
     uint64_t exit_time;                ///< Process exit time (as a FILETIME). Set only for PROCESS_OPERATION_DELETE.
     uint32_t process_exit_code;        ///< Process exit status. Set only for PROCESS_OPERATION_DELETE.
     process_operation_t operation : 8; ///< Operation to do.
+    uint32_t token_sid_size;           ///< Size of the token SID in bytes. Set only for PROCESS_OPERATION_CREATE.
+    uint8_t token_sid[TOKEN_SID_MAX_SIZE]; ///< Primary token SID. Set only for PROCESS_OPERATION_CREATE.
 } process_md_t;
 ```
 
@@ -203,6 +205,10 @@ The `process_md_t` structure provides comprehensive information about process ev
 
 - **Exit Information:**
   - `process_exit_code` - The process exit code (only valid for `PROCESS_OPERATION_DELETE`)
+
+- **Token Information:**
+  - `token_sid_size` - Size of the primary token SID in bytes (only valid for `PROCESS_OPERATION_CREATE`)
+  - `token_sid` - The raw SID bytes of the new process's primary token (only valid for `PROCESS_OPERATION_CREATE`). Maximum size is `TOKEN_SID_MAX_SIZE` (68 bytes).
 
 - **Operation Type:**
   - `operation` - Either `PROCESS_OPERATION_CREATE` or `PROCESS_OPERATION_DELETE`

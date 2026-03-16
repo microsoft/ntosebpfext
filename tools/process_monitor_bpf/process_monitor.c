@@ -44,6 +44,8 @@ typedef struct
     uint64_t exit_time;     ///< Process exit time.
     uint32_t process_exit_code;
     uint8_t operation;
+    uint32_t token_sid_size;               ///< Size of the token SID in bytes.
+    uint8_t token_sid[TOKEN_SID_MAX_SIZE]; ///< Primary token SID.
 } process_info_t;
 
 // LRU hash for storing the image path of a process.
@@ -121,6 +123,12 @@ ProcessMonitor(process_md_t* ctx)
     process_info.exit_time = ctx->exit_time;
     process_info.process_exit_code = ctx->process_exit_code;
     process_info.operation = ctx->operation;
+    process_info.token_sid_size = ctx->token_sid_size;
+    if (ctx->token_sid_size > 0 && ctx->token_sid_size <= TOKEN_SID_MAX_SIZE) {
+        // Use __builtin_memcpy with a compile-time constant size to avoid the BPF verifier
+        // rejecting ctx->token_sid (a context pointer) as source for the bpf_memcpy_s helper.
+        __builtin_memcpy(process_info.token_sid, ctx->token_sid, TOKEN_SID_MAX_SIZE);
+    }
 
     if (process_info.operation == PROCESS_OPERATION_CREATE) {
         void* buffer = get_scratch_space();

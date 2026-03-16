@@ -52,6 +52,7 @@ public class ProcessMonitorTests
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.ParentProcessId);
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
+        Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
 
         Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
         Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);
@@ -69,6 +70,7 @@ public class ProcessMonitorTests
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.ParentProcessId);
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
+        Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
 
         Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
         Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);
@@ -91,6 +93,7 @@ public class ProcessMonitorTests
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
         Assert.AreEqual($"\"cmd.exe\" /c echo {longArgs}", createdArgs.CommandLine);
+        Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
 
         Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
         Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);

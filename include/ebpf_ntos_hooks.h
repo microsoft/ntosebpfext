@@ -6,6 +6,8 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by ntosebpfext.sys for use by eBPF programs.
 
+#define TOKEN_SID_MAX_SIZE 68 ///< Maximum size of a SID (SECURITY_MAX_SID_SIZE).
+
 typedef enum _process_operation
 {
     PROCESS_OPERATION_CREATE, ///< Process creation.
@@ -24,6 +26,8 @@ typedef struct _process_md
     uint64_t exit_time;                ///< Process exit time (as a FILETIME).  Set only for PROCESS_OPERATION_DELETE.
     uint32_t process_exit_code;        ///< Process exit status.  Set only for PROCESS_OPERATION_DELETE.
     process_operation_t operation : 8; ///< Operation to do.
+    uint32_t token_sid_size;           ///< Size of the token SID in bytes. Set only for PROCESS_OPERATION_CREATE.
+    uint8_t token_sid[TOKEN_SID_MAX_SIZE]; ///< Primary token SID. Set only for PROCESS_OPERATION_CREATE.
 } process_md_t;
 
 /*

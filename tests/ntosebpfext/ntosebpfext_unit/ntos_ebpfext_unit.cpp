@@ -47,6 +47,8 @@ typedef struct
     uint64_t exit_time;
     uint32_t process_exit_code;
     uint8_t operation;
+    uint32_t token_sid_size;
+    uint8_t token_sid[TOKEN_SID_MAX_SIZE];
 } process_info_t;
 
 static int
@@ -72,6 +74,7 @@ process_ringbuf_event_callback(void* ctx, void* data, size_t size)
         std::cout << "  Exit Time: " << info->exit_time << std::endl;
         std::cout << "  Exit Code: " << info->process_exit_code << std::endl;
         std::cout << "  Operation: " << (info->operation == 0 ? "CREATE" : "DELETE") << std::endl;
+        std::cout << "  Token SID Size: " << info->token_sid_size << std::endl;
         process_event_count++;
     }
 
@@ -154,6 +157,8 @@ TEST_CASE("process_invoke", "[ntosebpfext]")
     REQUIRE(client_context.process_context.process_exit_code == 0); // Should be 0 for creation events
     REQUIRE(create_info.CreationStatus == STATUS_ACCESS_DENIED);
     REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_CREATE);
+    REQUIRE(client_context.process_context.token_sid_size > 0);
+    REQUIRE(client_context.process_context.token_sid_size <= TOKEN_SID_MAX_SIZE);
 
     // Test process termination.
     // Just verify that it doesn't crash.
@@ -164,6 +169,7 @@ TEST_CASE("process_invoke", "[ntosebpfext]")
     // process exit codes test below for that).
     REQUIRE(client_context.process_context.process_exit_code == -1);
     REQUIRE((int)client_context.process_context.operation == PROCESS_OPERATION_DELETE);
+    REQUIRE(client_context.process_context.token_sid_size == 0); // SID not set for delete events
 }
 
 TEST_CASE("process exit codes", "[ntosebpfext]")
@@ -378,6 +384,24 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     process_ctx_in.process_md.creation_time = 123456789;
     process_ctx_in.process_md.exit_time = 0;
 
+    // Set up a test SID (well-known Local System SID: S-1-5-18).
+    uint8_t test_sid[] = {
+        0x01, // Revision
+        0x01, // SubAuthorityCount
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x05, // IdentifierAuthority (NT Authority)
+        0x12,
+        0x00,
+        0x00,
+        0x00 // SubAuthority[0] = 18 (SECURITY_LOCAL_SYSTEM_RID)
+    };
+    process_ctx_in.process_md.token_sid_size = sizeof(test_sid);
+    memcpy(process_ctx_in.process_md.token_sid, test_sid, sizeof(test_sid));
+
     // Set up UNICODE_STRING structures with only Length fields (Buffer will be NULL)
     // The actual data will be passed in data_in buffer
     process_ctx_in.command_line.Length = static_cast<USHORT>(command_line.length() * sizeof(wchar_t));
@@ -443,6 +467,12 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     REQUIRE(process_ctx_out.process_md.process_id == process_ctx_in.process_md.process_id);
     REQUIRE(process_ctx_out.process_md.parent_process_id == process_ctx_in.process_md.parent_process_id);
     REQUIRE(process_ctx_out.process_md.operation == process_ctx_in.process_md.operation);
+    REQUIRE(process_ctx_out.process_md.token_sid_size == process_ctx_in.process_md.token_sid_size);
+    REQUIRE(
+        memcmp(
+            process_ctx_out.process_md.token_sid,
+            process_ctx_in.process_md.token_sid,
+            process_ctx_in.process_md.token_sid_size) == 0);
 
     // Validate that one event was written to the ring buffer
     // Wait for auto-callback to process events (up to 5 seconds)
