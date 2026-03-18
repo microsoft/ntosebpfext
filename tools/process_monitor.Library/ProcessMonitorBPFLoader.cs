@@ -18,6 +18,10 @@ namespace process_monitor.Library
         private static int process_map_fd = 0;
         private static IntPtr command_map = IntPtr.Zero;
         private static int command_map_fd = 0;
+        private static IntPtr account_name_map = IntPtr.Zero;
+        private static int account_name_map_fd = 0;
+        private static IntPtr account_domain_map = IntPtr.Zero;
+        private static int account_domain_map_fd = 0;
         private static bool _isShutdown;
         private static readonly object _lock = new();
         private static readonly List<ProcessMonitor> _processMonitors = [];
@@ -106,6 +110,8 @@ namespace process_monitor.Library
                 }
                 (process_map, process_map_fd) = LoadMapByName("process_map", logger);
                 (command_map, command_map_fd) = LoadMapByName("command_map", logger);
+                (account_name_map, account_name_map_fd) = LoadMapByName("account_name_map", logger);
+                (account_domain_map, account_domain_map_fd) = LoadMapByName("account_domain_map", logger);
 
                 var process_monitor = PInvokes.bpf_object__find_program_by_name(process_monitor_bpfObject, "ProcessMonitor");
                 if (process_monitor == IntPtr.Zero)
@@ -194,6 +200,8 @@ namespace process_monitor.Library
 
             var file_name_str = GetUnicodeStringFromBpfMapFD(process_map_fd, evt);
             var command_line_str = GetUnicodeStringFromBpfMapFD(command_map_fd, evt);
+            var account_name_str = GetUnicodeStringFromBpfMapFD(account_name_map_fd, evt);
+            var account_domain_str = GetUnicodeStringFromBpfMapFD(account_domain_map_fd, evt);
 
             if (evt->operation == 0 /* 0 == PROCESS_OPERATION_COMPLETE */)
             {
@@ -219,7 +227,9 @@ namespace process_monitor.Library
                     CreatingProcessId = evt->creating_process_id,
                     CreatingThreadId = evt->creating_thread_id,
                     CreateTime = DateTime.FromFileTime((long)evt->creation_time),
-                    TokenSid = tokenSidStr
+                    TokenSid = tokenSidStr,
+                    AccountName = account_name_str,
+                    AccountDomain = account_domain_str
                 };
 
                 lock (_lock)

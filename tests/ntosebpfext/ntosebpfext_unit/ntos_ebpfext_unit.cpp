@@ -25,6 +25,8 @@
 
 #define MAX_IMAGE_PATH_SIZE (1024)
 #define MAX_COMMAND_LINE_SIZE ((64 * 1024))
+#define ACCOUNT_NAME_SIZE (64)
+#define ACCOUNT_DOMAIN_SIZE (512)
 #define TEST_PROCESS_ID 1234
 
 struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
@@ -95,6 +97,8 @@ typedef struct test_process_notify_context
     void* create_info;
     UNICODE_STRING command_line;
     UNICODE_STRING image_file_name;
+    UNICODE_STRING account_name;
+    UNICODE_STRING account_domain;
 } test_process_notify_context_t;
 
 _Must_inspect_result_ ebpf_result_t
@@ -374,6 +378,8 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     // Prepare test process data
     std::wstring command_line = L"notepad.exe test.txt";
     std::wstring image_path = L"C:\\Windows\\System32\\notepad.exe";
+    std::wstring account_name = L"SYSTEM";
+    std::wstring account_domain = L"NT AUTHORITY";
 
     process_ctx_in.process_md.process_id = TEST_PROCESS_ID;
     process_ctx_in.process_md.parent_process_id = 4567;
@@ -412,20 +418,33 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     process_ctx_in.image_file_name.MaximumLength = process_ctx_in.image_file_name.Length;
     process_ctx_in.image_file_name.Buffer = NULL;
 
+    process_ctx_in.account_name.Length = static_cast<USHORT>(account_name.length() * sizeof(wchar_t));
+    process_ctx_in.account_name.MaximumLength = process_ctx_in.account_name.Length;
+    process_ctx_in.account_name.Buffer = NULL;
+
+    process_ctx_in.account_domain.Length = static_cast<USHORT>(account_domain.length() * sizeof(wchar_t));
+    process_ctx_in.account_domain.MaximumLength = process_ctx_in.account_domain.Length;
+    process_ctx_in.account_domain.Buffer = NULL;
+
     // Manually set command_start and command_end pointers to NULL (will be set by context_create)
     process_ctx_in.process_md.command_start = NULL;
     process_ctx_in.process_md.command_end = NULL;
 
-    // Pack both command_line and image_file_name data into a single buffer for data_in
+    // Pack command_line, image_file_name, account_name, and account_domain data into a single buffer for data_in
     size_t total_data_size = static_cast<size_t>(process_ctx_in.command_line.Length) +
-                             static_cast<size_t>(process_ctx_in.image_file_name.Length);
+                             static_cast<size_t>(process_ctx_in.image_file_name.Length) +
+                             static_cast<size_t>(process_ctx_in.account_name.Length) +
+                             static_cast<size_t>(process_ctx_in.account_domain.Length);
     std::vector<uint8_t> packed_data(total_data_size);
 
-    memcpy(packed_data.data(), command_line.c_str(), process_ctx_in.command_line.Length);
-    memcpy(
-        packed_data.data() + process_ctx_in.command_line.Length,
-        image_path.c_str(),
-        process_ctx_in.image_file_name.Length);
+    size_t offset = 0;
+    memcpy(packed_data.data() + offset, command_line.c_str(), process_ctx_in.command_line.Length);
+    offset += process_ctx_in.command_line.Length;
+    memcpy(packed_data.data() + offset, image_path.c_str(), process_ctx_in.image_file_name.Length);
+    offset += process_ctx_in.image_file_name.Length;
+    memcpy(packed_data.data() + offset, account_name.c_str(), process_ctx_in.account_name.Length);
+    offset += process_ctx_in.account_name.Length;
+    memcpy(packed_data.data() + offset, account_domain.c_str(), process_ctx_in.account_domain.Length);
 
     // Set up ring buffer consumer with auto-callback before running the test
     bpf_map* process_ringbuf_map = bpf_object__find_map_by_name(object, "process_ringbuf");
@@ -507,6 +526,29 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     int result_command = bpf_map_lookup_elem(command_map_fd, &lookup_key, command_line_from_map.data());
     REQUIRE(result_command == 0);
     REQUIRE(wcscmp(command_line_from_map.data(), command_line.c_str()) == 0);
+
+    // Validate LRU_HASH maps: account_name_map and account_domain_map
+    bpf_map* account_name_map = bpf_object__find_map_by_name(object, "account_name_map");
+    REQUIRE(account_name_map != nullptr);
+    int account_name_map_fd = bpf_map__fd(account_name_map);
+    REQUIRE(account_name_map_fd != ebpf_fd_invalid);
+
+    bpf_map* account_domain_map = bpf_object__find_map_by_name(object, "account_domain_map");
+    REQUIRE(account_domain_map != nullptr);
+    int account_domain_map_fd = bpf_map__fd(account_domain_map);
+    REQUIRE(account_domain_map_fd != ebpf_fd_invalid);
+
+    // Lookup the process_id in account_name_map to verify account name was stored
+    std::vector<wchar_t> account_name_from_map(ACCOUNT_NAME_SIZE / sizeof(wchar_t));
+    int result_account_name = bpf_map_lookup_elem(account_name_map_fd, &lookup_key, account_name_from_map.data());
+    REQUIRE(result_account_name == 0);
+    REQUIRE(wcscmp(account_name_from_map.data(), account_name.c_str()) == 0);
+
+    // Lookup the process_id in account_domain_map to verify account domain was stored
+    std::vector<wchar_t> account_domain_from_map(ACCOUNT_DOMAIN_SIZE / sizeof(wchar_t));
+    int result_account_domain = bpf_map_lookup_elem(account_domain_map_fd, &lookup_key, account_domain_from_map.data());
+    REQUIRE(result_account_domain == 0);
+    REQUIRE(wcscmp(account_domain_from_map.data(), account_domain.c_str()) == 0);
 
     // Test negative cases
 

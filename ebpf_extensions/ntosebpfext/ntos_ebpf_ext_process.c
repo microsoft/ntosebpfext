@@ -38,7 +38,17 @@ _ebpf_process_create_process_notify_routine_ex(
 _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
     _In_ process_md_t* process_md, _Out_writes_bytes_(path_length) uint8_t* path, uint32_t path_length);
 
-static const void* _ebpf_process_helper_functions[] = {(void*)&_ebpf_process_get_image_path};
+_Success_(return >= 0) static int32_t _ebpf_process_get_account_name(
+    _In_ process_md_t* process_md, _Out_writes_bytes_(name_length) uint8_t* name, uint32_t name_length);
+
+_Success_(return >= 0) static int32_t _ebpf_process_get_account_domain(
+    _In_ process_md_t* process_md, _Out_writes_bytes_(domain_length) uint8_t* domain, uint32_t domain_length);
+
+static const void* _ebpf_process_helper_functions[] = {
+    (void*)&_ebpf_process_get_image_path,
+    (void*)&_ebpf_process_get_account_name,
+    (void*)&_ebpf_process_get_account_domain,
+};
 
 static ebpf_helper_function_addresses_t _ebpf_process_helper_function_address_table = {
     .header = {EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION, EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
@@ -234,6 +244,8 @@ typedef struct _process_notify_context
     PPS_CREATE_NOTIFY_INFO create_info;
     UNICODE_STRING command_line;
     UNICODE_STRING image_file_name;
+    UNICODE_STRING account_name;
+    UNICODE_STRING account_domain;
 } process_notify_context_t;
 
 static ebpf_result_t
@@ -260,11 +272,12 @@ _ebpf_process_context_create(
     }
 
     if (data_in == NULL ||
-        data_size_in < ((size_t)input_context->command_line.Length + (size_t)input_context->image_file_name.Length)) {
+        data_size_in < ((size_t)input_context->command_line.Length + (size_t)input_context->image_file_name.Length +
+                        (size_t)input_context->account_name.Length + (size_t)input_context->account_domain.Length)) {
         EBPF_EXT_LOG_MESSAGE(
             EBPF_EXT_TRACELOG_LEVEL_ERROR,
             EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-            "Insufficient data for command_line and image_file_name");
+            "Insufficient data for variable-length fields");
         result = EBPF_INVALID_ARGUMENT;
         goto Exit;
     }
@@ -331,7 +344,53 @@ _ebpf_process_context_create(
         process_context->image_file_name.MaximumLength = 0;
     }
 
-    // Set command_start and command_end to point to the copied command_line buffer
+    // Deep copy account_name buffer from data_in if present
+    if (input_context->account_name.Length > 0) {
+        process_context->account_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
+            NonPagedPoolNx, input_context->account_name.Length, EBPF_EXTENSION_POOL_TAG);
+        if (process_context->account_name.Buffer == NULL) {
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+                "Failed to allocate account_name buffer");
+            result = EBPF_NO_MEMORY;
+            goto Exit;
+        }
+        memcpy(process_context->account_name.Buffer, data_ptr, input_context->account_name.Length);
+        process_context->account_name.Length = input_context->account_name.Length;
+        process_context->account_name.MaximumLength = input_context->account_name.MaximumLength;
+
+        data_ptr += input_context->account_name.Length;
+    } else {
+        process_context->account_name.Buffer = NULL;
+        process_context->account_name.Length = 0;
+        process_context->account_name.MaximumLength = 0;
+    }
+
+    // Deep copy account_domain buffer from data_in if present
+    if (input_context->account_domain.Length > 0) {
+        process_context->account_domain.Buffer = (PWSTR)ExAllocatePoolUninitialized(
+            NonPagedPoolNx, input_context->account_domain.Length, EBPF_EXTENSION_POOL_TAG);
+        if (process_context->account_domain.Buffer == NULL) {
+            EBPF_EXT_LOG_MESSAGE(
+                EBPF_EXT_TRACELOG_LEVEL_ERROR,
+                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+                "Failed to allocate account_domain buffer");
+            result = EBPF_NO_MEMORY;
+            goto Exit;
+        }
+        memcpy(process_context->account_domain.Buffer, data_ptr, input_context->account_domain.Length);
+        process_context->account_domain.Length = input_context->account_domain.Length;
+        process_context->account_domain.MaximumLength = input_context->account_domain.MaximumLength;
+
+        data_ptr += input_context->account_domain.Length;
+    } else {
+        process_context->account_domain.Buffer = NULL;
+        process_context->account_domain.Length = 0;
+        process_context->account_domain.MaximumLength = 0;
+    }
+
+    // Set command_startand command_end to point to the copied command_line buffer
     process_context->process_md.command_start = (uint8_t*)process_context->command_line.Buffer;
     process_context->process_md.command_end =
         (uint8_t*)process_context->command_line.Buffer + process_context->command_line.Length;
@@ -347,6 +406,12 @@ Exit:
         }
         if (process_context->image_file_name.Buffer != NULL) {
             ExFreePool(process_context->image_file_name.Buffer);
+        }
+        if (process_context->account_name.Buffer != NULL) {
+            ExFreePool(process_context->account_name.Buffer);
+        }
+        if (process_context->account_domain.Buffer != NULL) {
+            ExFreePool(process_context->account_domain.Buffer);
         }
         ExFreePool(process_context);
         process_context = NULL;
@@ -383,6 +448,8 @@ _ebpf_process_context_destroy(
         // Zero out buffers.
         process_context_out->command_line.Buffer = 0;
         process_context_out->image_file_name.Buffer = 0;
+        process_context_out->account_name.Buffer = 0;
+        process_context_out->account_domain.Buffer = 0;
         process_context_out->process_md.command_start = 0;
         process_context_out->process_md.command_end = 0;
         *context_size_out = sizeof(process_notify_context_t);
@@ -390,8 +457,9 @@ _ebpf_process_context_destroy(
         *context_size_out = 0;
     }
 
-    // Pack command_line and image_file_name into data_out, mirroring data_in structure
-    total_data_size = (size_t)process_context->command_line.Length + (size_t)process_context->image_file_name.Length;
+    // Pack variable-length fields into data_out, mirroring data_in structure
+    total_data_size = (size_t)process_context->command_line.Length + (size_t)process_context->image_file_name.Length +
+                      (size_t)process_context->account_name.Length + (size_t)process_context->account_domain.Length;
     if (data_out != NULL && *data_size_out >= total_data_size) {
         uint8_t* data_ptr = data_out;
 
@@ -407,6 +475,18 @@ _ebpf_process_context_destroy(
             data_ptr += process_context->image_file_name.Length;
         }
 
+        // Copy account_name buffer
+        if (process_context->account_name.Length > 0 && process_context->account_name.Buffer != NULL) {
+            memcpy(data_ptr, process_context->account_name.Buffer, process_context->account_name.Length);
+            data_ptr += process_context->account_name.Length;
+        }
+
+        // Copy account_domain buffer
+        if (process_context->account_domain.Length > 0 && process_context->account_domain.Buffer != NULL) {
+            memcpy(data_ptr, process_context->account_domain.Buffer, process_context->account_domain.Length);
+            data_ptr += process_context->account_domain.Length;
+        }
+
         *data_size_out = total_data_size;
     } else {
         *data_size_out = 0;
@@ -419,7 +499,12 @@ _ebpf_process_context_destroy(
     if (process_context->image_file_name.Buffer != NULL) {
         ExFreePool(process_context->image_file_name.Buffer);
     }
-
+    if (process_context->account_name.Buffer != NULL) {
+        ExFreePool(process_context->account_name.Buffer);
+    }
+    if (process_context->account_domain.Buffer != NULL) {
+        ExFreePool(process_context->account_domain.Buffer);
+    }
     ExFreePool(process_context);
 
 Exit:
@@ -431,7 +516,13 @@ _ebpf_process_create_process_notify_routine_ex(
     _Inout_ PEPROCESS process, _In_ HANDLE process_id, _Inout_opt_ PPS_CREATE_NOTIFY_INFO create_info)
 {
     process_notify_context_t process_notify_context = {
-        .process_md = {0}, .process = process, .create_info = create_info, .command_line = {0}, .image_file_name = {0}};
+        .process_md = {0},
+        .process = process,
+        .create_info = create_info,
+        .command_line = {0},
+        .image_file_name = {0},
+        .account_name = {0},
+        .account_domain = {0}};
 
     EBPF_EXT_LOG_ENTRY();
     ebpf_extension_hook_client_t* client_context;
@@ -467,12 +558,67 @@ _ebpf_process_create_process_notify_routine_ex(
                             process_notify_context.process_md.token_sid_size = sid_length;
                             memcpy(process_notify_context.process_md.token_sid, token_user->User.Sid, sid_length);
                         }
+
+                        // Resolve SID to account name and domain.
+                        {
+                            ULONG name_size = 0;
+                            ULONG domain_size = 0;
+                            SID_NAME_USE name_use;
+
+                            // First call with NULL buffers to get required sizes.
+#pragma warning(disable : 6387) // NameBuffer can be NULL for the sizing call per API contract.
+                            NTSTATUS lookup_status = SecLookupAccountSid(
+                                token_user->User.Sid, &name_size, NULL, &domain_size, NULL, &name_use);
+                            if (lookup_status == STATUS_BUFFER_TOO_SMALL) {
+                                if (name_size > 0) {
+                                    process_notify_context.account_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
+                                        NonPagedPoolNx, name_size, EBPF_EXTENSION_POOL_TAG);
+                                    if (process_notify_context.account_name.Buffer != NULL) {
+                                        process_notify_context.account_name.MaximumLength = (USHORT)name_size;
+                                    }
+                                }
+                                if (domain_size > 0) {
+                                    process_notify_context.account_domain.Buffer = (PWSTR)ExAllocatePoolUninitialized(
+                                        NonPagedPoolNx, domain_size, EBPF_EXTENSION_POOL_TAG);
+                                    if (process_notify_context.account_domain.Buffer != NULL) {
+                                        process_notify_context.account_domain.MaximumLength = (USHORT)domain_size;
+                                    }
+                                }
+
+                                if ((name_size == 0 || process_notify_context.account_name.Buffer != NULL) &&
+                                    (domain_size == 0 || process_notify_context.account_domain.Buffer != NULL)) {
+                                    lookup_status = SecLookupAccountSid(
+                                        token_user->User.Sid,
+                                        &name_size,
+                                        name_size > 0 ? &process_notify_context.account_name : NULL,
+                                        &domain_size,
+                                        domain_size > 0 ? &process_notify_context.account_domain : NULL,
+                                        &name_use);
+                                    if (NT_SUCCESS(lookup_status)) {
+                                        process_notify_context.account_name.Length = (USHORT)name_size;
+                                        process_notify_context.account_domain.Length = (USHORT)domain_size;
+                                    } else {
+                                        // Lookup failed; free buffers.
+                                        if (process_notify_context.account_name.Buffer != NULL) {
+                                            ExFreePool(process_notify_context.account_name.Buffer);
+                                            process_notify_context.account_name.Buffer = NULL;
+                                        }
+                                        if (process_notify_context.account_domain.Buffer != NULL) {
+                                            ExFreePool(process_notify_context.account_domain.Buffer);
+                                            process_notify_context.account_domain.Buffer = NULL;
+                                        }
+                                    }
+                                }
+                            }
+#pragma warning(pop)
+                        }
                     }
                     ExFreePool(token_user);
                 }
                 PsDereferencePrimaryToken(token);
             }
         }
+
     } else {
         process_notify_context.process_md.operation = PROCESS_OPERATION_DELETE;
         process_notify_context.process_md.exit_time = PsGetProcessExitTime().QuadPart;
@@ -510,6 +656,12 @@ _ebpf_process_create_process_notify_routine_ex(
             ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, client_context);
     }
 
+    if (process_notify_context.account_name.Buffer != NULL) {
+        ExFreePool(process_notify_context.account_name.Buffer);
+    }
+    if (process_notify_context.account_domain.Buffer != NULL) {
+        ExFreePool(process_notify_context.account_domain.Buffer);
+    }
     EBPF_EXT_LOG_EXIT();
 }
 
@@ -527,6 +679,43 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
             memcpy(
                 path, process_notify_context->image_file_name.Buffer, process_notify_context->image_file_name.Length);
             result = process_notify_context->image_file_name.Length;
+        }
+    }
+    return result;
+}
+
+_Success_(return >= 0) static int32_t _ebpf_process_get_account_name(
+    _In_ process_md_t* process_md, _Out_writes_bytes_(name_length) uint8_t* name, uint32_t name_length)
+{
+    process_notify_context_t* process_notify_context =
+        CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
+    int32_t result = 0;
+    if (process_notify_context->account_name.Length > name_length) {
+        return -EINVAL;
+    }
+    if (process_notify_context->account_name.Buffer != NULL) {
+        if (name_length >= process_notify_context->account_name.Length) {
+            memcpy(name, process_notify_context->account_name.Buffer, process_notify_context->account_name.Length);
+            result = process_notify_context->account_name.Length;
+        }
+    }
+    return result;
+}
+
+_Success_(return >= 0) static int32_t _ebpf_process_get_account_domain(
+    _In_ process_md_t* process_md, _Out_writes_bytes_(domain_length) uint8_t* domain, uint32_t domain_length)
+{
+    process_notify_context_t* process_notify_context =
+        CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
+    int32_t result = 0;
+    if (process_notify_context->account_domain.Length > domain_length) {
+        return -EINVAL;
+    }
+    if (process_notify_context->account_domain.Buffer != NULL) {
+        if (domain_length >= process_notify_context->account_domain.Length) {
+            memcpy(
+                domain, process_notify_context->account_domain.Buffer, process_notify_context->account_domain.Length);
+            result = process_notify_context->account_domain.Length;
         }
     }
     return result;

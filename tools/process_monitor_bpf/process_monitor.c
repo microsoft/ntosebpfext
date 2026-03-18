@@ -10,6 +10,14 @@
 
 #define IMAGE_PATH_SIZE (1024)
 
+// Account names are limited to 20 characters (20 * 2 = 40 bytes in UTF-16).
+// Rounding up to 64 bytes.
+#define MAX_ACCOUNT_NAME_SIZE (64)
+
+// NetBIOS domain names are limited to 15 characters, but DNS domain names can be
+// up to 255 characters (255 * 2 = 510 bytes in UTF-16). Using 512 to cover DNS domains.
+#define MAX_ACCOUNT_DOMAIN_SIZE (512)
+
 // 64k bytes is the max byte count that fits in a UNICODE_STRING (because Length is a USHORT).  Exactly 64k seems
 // to be a little too high for eBPF, so we subtract a few bytes and the likelihood this actually truncates anything
 // important is pretty low.
@@ -65,6 +73,24 @@ struct
     __type(value, char[COMMAND_SCRATCH_SIZE]);
     __uint(max_entries, 1024);
 } command_map SEC(".maps");
+
+// LRU hash for storing the account name of a process.
+struct
+{
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __type(key, uint32_t); // key is the process id.
+    __type(value, char[MAX_ACCOUNT_NAME_SIZE]);
+    __uint(max_entries, 1024);
+} account_name_map SEC(".maps");
+
+// LRU hash for storing the account domain of a process.
+struct
+{
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __type(key, uint32_t); // key is the process id.
+    __type(value, char[MAX_ACCOUNT_DOMAIN_SIZE]);
+    __uint(max_entries, 1024);
+} account_domain_map SEC(".maps");
 
 // Ring-buffer for process_info_t.
 struct
@@ -154,6 +180,16 @@ ProcessMonitor(process_md_t* ctx)
         // Copy image path into the LRU hash.  Note we use IMAGE_PATH_SIZE - 1 to leave a guaranteed null terminator
         bpf_process_get_image_path(ctx, buffer, IMAGE_PATH_SIZE - 1);
         bpf_map_update_elem(&process_map, &process_info.process_id, buffer, BPF_ANY);
+
+        // Copy account name into the LRU hash.
+        memset(buffer, 0, MAX_ACCOUNT_NAME_SIZE);
+        bpf_process_get_account_name(ctx, buffer, MAX_ACCOUNT_NAME_SIZE - 1);
+        bpf_map_update_elem(&account_name_map, &process_info.process_id, buffer, BPF_ANY);
+
+        // Copy account domain into the LRU hash.
+        memset(buffer, 0, MAX_ACCOUNT_DOMAIN_SIZE);
+        bpf_process_get_account_domain(ctx, buffer, MAX_ACCOUNT_DOMAIN_SIZE - 1);
+        bpf_map_update_elem(&account_domain_map, &process_info.process_id, buffer, BPF_ANY);
     }
     bpf_ringbuf_output(&process_ringbuf, &process_info, sizeof(process_info), 0);
     return 0;
