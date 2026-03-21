@@ -390,7 +390,7 @@ _ebpf_process_context_create(
         process_context->account_domain.MaximumLength = 0;
     }
 
-    // Set command_startand command_end to point to the copied command_line buffer
+    // Set command_start and command_end to point to the copied command_line buffer
     process_context->process_md.command_start = (uint8_t*)process_context->command_line.Buffer;
     process_context->process_md.command_end =
         (uint8_t*)process_context->command_line.Buffer + process_context->command_line.Length;
@@ -594,19 +594,20 @@ _ebpf_process_create_process_notify_routine_ex(
                                         &domain_size,
                                         domain_size > 0 ? &process_notify_context.account_domain : NULL,
                                         &name_use);
-                                    if (NT_SUCCESS(lookup_status)) {
-                                        process_notify_context.account_name.Length = (USHORT)name_size;
-                                        process_notify_context.account_domain.Length = (USHORT)domain_size;
-                                    } else {
-                                        // Lookup failed; free buffers.
+                                    if (!NT_SUCCESS(lookup_status)) {
+                                        // Lookup failed; free buffers and reset lengths.
                                         if (process_notify_context.account_name.Buffer != NULL) {
                                             ExFreePool(process_notify_context.account_name.Buffer);
                                             process_notify_context.account_name.Buffer = NULL;
                                         }
+                                        process_notify_context.account_name.Length = 0;
+                                        process_notify_context.account_name.MaximumLength = 0;
                                         if (process_notify_context.account_domain.Buffer != NULL) {
                                             ExFreePool(process_notify_context.account_domain.Buffer);
                                             process_notify_context.account_domain.Buffer = NULL;
                                         }
+                                        process_notify_context.account_domain.Length = 0;
+                                        process_notify_context.account_domain.MaximumLength = 0;
                                     }
                                 }
                             }
