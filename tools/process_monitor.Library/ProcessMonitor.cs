@@ -21,8 +21,8 @@ namespace process_monitor.Library
 
         internal void RaiseProcessCreated(in ProcessCreatedEventArgs e)
         {
-            _logger.LogDebug("Process created: PID:{pid}, Image:{imageFileName}, CommandLine:{commandLine}, ParentPID:{parentPid}, Create Time:{createTime}",
-                e.ProcessId, e.ImageFileName, e.CommandLine, e.ParentProcessId, e.CreateTime);
+            _logger.LogDebug("Process created: PID:{pid}, Image:{imageFileName}, CommandLine:{commandLine}, ParentPID:{parentPid}, Create Time:{createTime}, TokenSID:{tokenSid}, Account:{accountDomain}\\{accountName}",
+                e.ProcessId, e.ImageFileName, e.CommandLine, e.ParentProcessId, e.CreateTime, e.TokenSid, e.AccountDomain, e.AccountName);
 
             try
             {

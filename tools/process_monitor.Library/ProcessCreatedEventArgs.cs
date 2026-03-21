@@ -10,4 +10,7 @@ public readonly record struct ProcessCreatedEventArgs(
     uint ParentProcessId,
     uint CreatingProcessId,
     uint CreatingThreadId,
-    DateTime CreateTime);
+    DateTime CreateTime,
+    string TokenSid,
+    string AccountName,
+    string AccountDomain);

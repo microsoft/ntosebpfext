@@ -102,6 +102,8 @@ typedef struct _process_md
     uint64_t exit_time;                ///< Process exit time (as a FILETIME). Set only for PROCESS_OPERATION_DELETE.
     uint32_t process_exit_code;        ///< Process exit status. Set only for PROCESS_OPERATION_DELETE.
     process_operation_t operation : 8; ///< Operation to do.
+    uint32_t token_sid_size;           ///< Size of the token SID in bytes. Set only for PROCESS_OPERATION_CREATE.
+    uint8_t token_sid[TOKEN_SID_MAX_SIZE]; ///< Primary token SID. Set only for PROCESS_OPERATION_CREATE.
 } process_md_t;
 ```
 
@@ -145,7 +147,7 @@ The extension supports attaching multiple eBPF programs, to which process events
 
 ### Helper Functions
 
-The `ntosebpfext` extension provides a custom helper function:
+The `ntosebpfext` extension provides custom helper functions:
 
 #### `bpf_process_get_image_path`
 
@@ -184,6 +186,40 @@ ProcessHandler(process_md_t* ctx)
 }
 ```
 
+#### `bpf_process_get_account_name`
+
+```c
+int bpf_process_get_account_name(process_md_t* ctx, uint8_t* name, uint32_t name_length);
+```
+
+**Description:** Retrieves the account name associated with the process's primary token.
+
+**Parameters:**
+- `ctx` - Process metadata context
+- `name` - Buffer to store the account name (UTF-16 encoded)
+- `name_length` - Length of the buffer in bytes
+
+**Returns:**
+- `>= 0` - The length of the account name in bytes
+- `< 0` - A failure occurred
+
+#### `bpf_process_get_account_domain`
+
+```c
+int bpf_process_get_account_domain(process_md_t* ctx, uint8_t* domain, uint32_t domain_length);
+```
+
+**Description:** Retrieves the account domain associated with the process's primary token.
+
+**Parameters:**
+- `ctx` - Process metadata context
+- `domain` - Buffer to store the account domain (UTF-16 encoded)
+- `domain_length` - Length of the buffer in bytes
+
+**Returns:**
+- `>= 0` - The length of the account domain in bytes
+- `< 0` - A failure occurred
+
 ### Process Context Information
 
 The `process_md_t` structure provides comprehensive information about process events:
@@ -203,6 +239,10 @@ The `process_md_t` structure provides comprehensive information about process ev
 
 - **Exit Information:**
   - `process_exit_code` - The process exit code (only valid for `PROCESS_OPERATION_DELETE`)
+
+- **Token Information:**
+  - `token_sid_size` - Size of the primary token SID in bytes (only valid for `PROCESS_OPERATION_CREATE`)
+  - `token_sid` - The raw SID bytes of the new process's primary token (only valid for `PROCESS_OPERATION_CREATE`). Maximum size is `TOKEN_SID_MAX_SIZE` (68 bytes).
 
 - **Operation Type:**
   - `operation` - Either `PROCESS_OPERATION_CREATE` or `PROCESS_OPERATION_DELETE`
@@ -244,7 +284,7 @@ The ntosebpfext extension uses the Windows kernel's `PsSetCreateProcessNotifyRou
 - **Program Info Provider** - Registers the `process` program type with eBPF for Windows
 - **Hook Provider** - Manages the attachment of eBPF programs to process events
 - **Context Creation/Destruction** - Handles the lifecycle of the `process_md_t` context
-- **Helper Functions** - Provides the `bpf_process_get_image_path` helper
+- **Helper Functions** - Provides the `bpf_process_get_image_path`, `bpf_process_get_account_name`, and `bpf_process_get_account_domain` helpers
 
 ## Use Cases
 
