@@ -149,11 +149,14 @@ ProcessMonitor(process_md_t* ctx)
     process_info.exit_time = ctx->exit_time;
     process_info.process_exit_code = ctx->process_exit_code;
     process_info.operation = ctx->operation;
-    process_info.token_sid_size = ctx->token_sid_size;
     if (ctx->token_sid_size > 0 && ctx->token_sid_size <= TOKEN_SID_MAX_SIZE) {
+        process_info.token_sid_size = ctx->token_sid_size;
         // Use __builtin_memcpy with a compile-time constant size to avoid the BPF verifier
         // rejecting ctx->token_sid (a context pointer) as source for the bpf_memcpy_s helper.
         __builtin_memcpy(process_info.token_sid, ctx->token_sid, TOKEN_SID_MAX_SIZE);
+    } else {
+        process_info.token_sid_size = 0;
+        memset(process_info.token_sid, 0, TOKEN_SID_MAX_SIZE);
     }
 
     if (process_info.operation == PROCESS_OPERATION_CREATE) {
@@ -181,14 +184,14 @@ ProcessMonitor(process_md_t* ctx)
         bpf_process_get_image_path(ctx, buffer, IMAGE_PATH_SIZE - 1);
         bpf_map_update_elem(&process_map, &process_info.process_id, buffer, BPF_ANY);
 
-        // Copy account name into the LRU hash.
+        // Copy account name into the LRU hash. Subtract 2 to leave room for a UTF-16 null terminator.
         memset(buffer, 0, MAX_ACCOUNT_NAME_SIZE);
-        bpf_process_get_account_name(ctx, buffer, MAX_ACCOUNT_NAME_SIZE - 1);
+        bpf_process_get_account_name(ctx, buffer, MAX_ACCOUNT_NAME_SIZE - 2);
         bpf_map_update_elem(&account_name_map, &process_info.process_id, buffer, BPF_ANY);
 
-        // Copy account domain into the LRU hash.
+        // Copy account domain into the LRU hash. Subtract 2 to leave room for a UTF-16 null terminator.
         memset(buffer, 0, MAX_ACCOUNT_DOMAIN_SIZE);
-        bpf_process_get_account_domain(ctx, buffer, MAX_ACCOUNT_DOMAIN_SIZE - 1);
+        bpf_process_get_account_domain(ctx, buffer, MAX_ACCOUNT_DOMAIN_SIZE - 2);
         bpf_map_update_elem(&account_domain_map, &process_info.process_id, buffer, BPF_ANY);
     }
     bpf_ringbuf_output(&process_ringbuf, &process_info, sizeof(process_info), 0);

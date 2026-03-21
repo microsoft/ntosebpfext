@@ -211,11 +211,13 @@ namespace process_monitor.Library
                     try
                     {
                         var sidBytes = new byte[evt->token_sid_size];
-                        Marshal.Copy((IntPtr)evt->token_sid, sidBytes, 0, (int)evt->token_sid_size);
+                        byte* tokenSidPtr = &evt->token_sid[0];
+                        Marshal.Copy((IntPtr)tokenSidPtr, sidBytes, 0, (int)evt->token_sid_size);
                         var sid = new SecurityIdentifier(sidBytes, 0);
                         tokenSidStr = sid.Value;
                     }
-                    catch { /* SID conversion failure is non-fatal */ }
+                    catch (ArgumentException) { /* SID conversion failure is non-fatal */ }
+                    catch (SystemException) { /* SID marshalling failure is non-fatal */ }
                 }
 
                 var createdArgs = new ProcessCreatedEventArgs()

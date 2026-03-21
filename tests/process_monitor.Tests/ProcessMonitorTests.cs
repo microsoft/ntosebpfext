@@ -53,6 +53,8 @@ public class ProcessMonitorTests
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
+        Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountName), "AccountName should be non-empty for process creation events");
+        Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountDomain), "AccountDomain should be non-empty for process creation events");
 
         Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
         Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);
@@ -71,6 +73,8 @@ public class ProcessMonitorTests
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
+        Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountName), "AccountName should be non-empty for process creation events");
+        Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountDomain), "AccountDomain should be non-empty for process creation events");
 
         Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
         Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);
