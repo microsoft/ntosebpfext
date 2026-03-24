@@ -200,11 +200,11 @@ namespace process_monitor.Library
 
             var file_name_str = GetUnicodeStringFromBpfMapFD(process_map_fd, evt);
             var command_line_str = GetUnicodeStringFromBpfMapFD(command_map_fd, evt);
-            var account_name_str = GetUnicodeStringFromBpfMapFD(account_name_map_fd, evt);
-            var account_domain_str = GetUnicodeStringFromBpfMapFD(account_domain_map_fd, evt);
 
             if (evt->operation == 0 /* 0 == PROCESS_OPERATION_COMPLETE */)
             {
+                var account_name_str = GetUnicodeStringFromBpfMapFD(account_name_map_fd, evt);
+                var account_domain_str = GetUnicodeStringFromBpfMapFD(account_domain_map_fd, evt);
                 string tokenSidStr = string.Empty;
                 if (evt->token_sid_size > 0 && evt->token_sid_size <= process_info_t.TOKEN_SID_MAX_SIZE)
                 {

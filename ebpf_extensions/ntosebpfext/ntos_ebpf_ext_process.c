@@ -304,7 +304,7 @@ _ebpf_process_context_create(
     // Deep copy command_line buffer from data_in if present
     if (input_context->command_line.Length > 0) {
         process_context->command_line.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->command_line.Length, EBPF_EXTENSION_POOL_TAG);
+            NonPagedPoolNx, input_context->command_line.MaximumLength, EBPF_EXTENSION_POOL_TAG);
         if (process_context->command_line.Buffer == NULL) {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -327,7 +327,7 @@ _ebpf_process_context_create(
     // Deep copy image_file_name buffer from data_in if present
     if (input_context->image_file_name.Length > 0) {
         process_context->image_file_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->image_file_name.Length, EBPF_EXTENSION_POOL_TAG);
+            NonPagedPoolNx, input_context->image_file_name.MaximumLength, EBPF_EXTENSION_POOL_TAG);
         if (process_context->image_file_name.Buffer == NULL) {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -350,7 +350,7 @@ _ebpf_process_context_create(
     // Deep copy account_name buffer from data_in if present
     if (input_context->account_name.Length > 0) {
         process_context->account_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->account_name.Length, EBPF_EXTENSION_POOL_TAG);
+            NonPagedPoolNx, input_context->account_name.MaximumLength, EBPF_EXTENSION_POOL_TAG);
         if (process_context->account_name.Buffer == NULL) {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
@@ -373,7 +373,7 @@ _ebpf_process_context_create(
     // Deep copy account_domain buffer from data_in if present
     if (input_context->account_domain.Length > 0) {
         process_context->account_domain.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->account_domain.Length, EBPF_EXTENSION_POOL_TAG);
+            NonPagedPoolNx, input_context->account_domain.MaximumLength, EBPF_EXTENSION_POOL_TAG);
         if (process_context->account_domain.Buffer == NULL) {
             EBPF_EXT_LOG_MESSAGE(
                 EBPF_EXT_TRACELOG_LEVEL_ERROR,
