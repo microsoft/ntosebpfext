@@ -12,6 +12,9 @@
 
 #include <errno.h>
 
+// Maximum number of WCHARs for inline account name/domain buffers on the stack.
+#define ACCOUNT_STRING_INLINE_CHARS 80
+
 // Define the pool tag for this extension
 ULONG EBPF_EXTENSION_POOL_TAG = EBPF_NTOS_EXTENSION_POOL_TAG;
 
@@ -515,6 +518,10 @@ void
 _ebpf_process_create_process_notify_routine_ex(
     _Inout_ PEPROCESS process, _In_ HANDLE process_id, _Inout_opt_ PPS_CREATE_NOTIFY_INFO create_info)
 {
+    // Inline buffers for account name/domain to avoid pool allocation in the common case.
+    WCHAR account_name_inline[ACCOUNT_STRING_INLINE_CHARS] = {0};
+    WCHAR account_domain_inline[ACCOUNT_STRING_INLINE_CHARS] = {0};
+
     process_notify_context_t process_notify_context = {
         .process_md = {0},
         .process = process,
@@ -571,42 +578,48 @@ _ebpf_process_create_process_notify_routine_ex(
                             NTSTATUS lookup_status = SecLookupAccountSid(
                                 token_user->User.Sid, &name_size, NULL, &domain_size, NULL, &name_use);
                             if (lookup_status == STATUS_BUFFER_TOO_SMALL) {
-                                if (name_size > 0) {
+                                // Use inline stack buffers if they fit, otherwise pool-allocate.
+                                if (name_size <= sizeof(account_name_inline)) {
+                                    process_notify_context.account_name.Buffer = account_name_inline;
+                                } else {
                                     process_notify_context.account_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
                                         NonPagedPoolNx, name_size, EBPF_EXTENSION_POOL_TAG);
-                                    if (process_notify_context.account_name.Buffer != NULL) {
-                                        process_notify_context.account_name.MaximumLength = (USHORT)name_size;
-                                    }
                                 }
-                                if (domain_size > 0) {
-                                    process_notify_context.account_domain.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-                                        NonPagedPoolNx, domain_size, EBPF_EXTENSION_POOL_TAG);
-                                    if (process_notify_context.account_domain.Buffer != NULL) {
-                                        process_notify_context.account_domain.MaximumLength = (USHORT)domain_size;
-                                    }
+                                if (process_notify_context.account_name.Buffer != NULL) {
+                                    process_notify_context.account_name.MaximumLength = (USHORT)name_size;
                                 }
 
-                                if ((name_size == 0 || process_notify_context.account_name.Buffer != NULL) &&
-                                    (domain_size == 0 || process_notify_context.account_domain.Buffer != NULL)) {
+                                if (domain_size <= sizeof(account_domain_inline)) {
+                                    process_notify_context.account_domain.Buffer = account_domain_inline;
+                                } else {
+                                    process_notify_context.account_domain.Buffer = (PWSTR)ExAllocatePoolUninitialized(
+                                        NonPagedPoolNx, domain_size, EBPF_EXTENSION_POOL_TAG);
+                                }
+                                if (process_notify_context.account_domain.Buffer != NULL) {
+                                    process_notify_context.account_domain.MaximumLength = (USHORT)domain_size;
+                                }
+
+                                if (process_notify_context.account_name.Buffer != NULL &&
+                                    process_notify_context.account_domain.Buffer != NULL) {
                                     lookup_status = SecLookupAccountSid(
                                         token_user->User.Sid,
                                         &name_size,
-                                        name_size > 0 ? &process_notify_context.account_name : NULL,
+                                        &process_notify_context.account_name,
                                         &domain_size,
-                                        domain_size > 0 ? &process_notify_context.account_domain : NULL,
+                                        &process_notify_context.account_domain,
                                         &name_use);
                                     if (!NT_SUCCESS(lookup_status)) {
-                                        // Lookup failed; free buffers and reset lengths.
-                                        if (process_notify_context.account_name.Buffer != NULL) {
+                                        // Lookup failed; free pool-allocated buffers and reset lengths.
+                                        if (process_notify_context.account_name.Buffer != account_name_inline) {
                                             ExFreePool(process_notify_context.account_name.Buffer);
-                                            process_notify_context.account_name.Buffer = NULL;
                                         }
+                                        process_notify_context.account_name.Buffer = NULL;
                                         process_notify_context.account_name.Length = 0;
                                         process_notify_context.account_name.MaximumLength = 0;
-                                        if (process_notify_context.account_domain.Buffer != NULL) {
+                                        if (process_notify_context.account_domain.Buffer != account_domain_inline) {
                                             ExFreePool(process_notify_context.account_domain.Buffer);
-                                            process_notify_context.account_domain.Buffer = NULL;
                                         }
+                                        process_notify_context.account_domain.Buffer = NULL;
                                         process_notify_context.account_domain.Length = 0;
                                         process_notify_context.account_domain.MaximumLength = 0;
                                     }
@@ -658,10 +671,12 @@ _ebpf_process_create_process_notify_routine_ex(
             ebpf_extension_hook_get_next_attached_client(_ebpf_process_hook_provider_context, client_context);
     }
 
-    if (process_notify_context.account_name.Buffer != NULL) {
+    if (process_notify_context.account_name.Buffer != NULL &&
+        process_notify_context.account_name.Buffer != account_name_inline) {
         ExFreePool(process_notify_context.account_name.Buffer);
     }
-    if (process_notify_context.account_domain.Buffer != NULL) {
+    if (process_notify_context.account_domain.Buffer != NULL &&
+        process_notify_context.account_domain.Buffer != account_domain_inline) {
         ExFreePool(process_notify_context.account_domain.Buffer);
     }
     EBPF_EXT_LOG_EXIT();
