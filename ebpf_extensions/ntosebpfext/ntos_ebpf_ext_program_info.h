@@ -17,6 +17,18 @@ static const ebpf_helper_function_prototype_t _process_ebpf_extension_helper_fun
      .return_type = EBPF_RETURN_TYPE_INTEGER,
      .arguments =
          {EBPF_ARGUMENT_TYPE_PTR_TO_CTX, EBPF_ARGUMENT_TYPE_PTR_TO_WRITABLE_MEM, EBPF_ARGUMENT_TYPE_CONST_SIZE}},
+    {.header = {EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION, EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION_SIZE},
+     .helper_id = EBPF_MAX_GENERAL_HELPER_FUNCTION + 2,
+     .name = "bpf_process_get_account_name",
+     .return_type = EBPF_RETURN_TYPE_INTEGER,
+     .arguments =
+         {EBPF_ARGUMENT_TYPE_PTR_TO_CTX, EBPF_ARGUMENT_TYPE_PTR_TO_WRITABLE_MEM, EBPF_ARGUMENT_TYPE_CONST_SIZE}},
+    {.header = {EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION, EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION_SIZE},
+     .helper_id = EBPF_MAX_GENERAL_HELPER_FUNCTION + 3,
+     .name = "bpf_process_get_account_domain",
+     .return_type = EBPF_RETURN_TYPE_INTEGER,
+     .arguments =
+         {EBPF_ARGUMENT_TYPE_PTR_TO_CTX, EBPF_ARGUMENT_TYPE_PTR_TO_WRITABLE_MEM, EBPF_ARGUMENT_TYPE_CONST_SIZE}},
 };
 
 static const ebpf_context_descriptor_t _ebpf_process_context_descriptor = {

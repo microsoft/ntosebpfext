@@ -6,6 +6,8 @@
 // This file contains APIs for hooks and helpers that are
 // exposed by ntosebpfext.sys for use by eBPF programs.
 
+#define TOKEN_SID_MAX_SIZE 68 ///< Maximum size of a SID (SECURITY_MAX_SID_SIZE).
+
 typedef enum _process_operation
 {
     PROCESS_OPERATION_CREATE, ///< Process creation.
@@ -24,6 +26,8 @@ typedef struct _process_md
     uint64_t exit_time;                ///< Process exit time (as a FILETIME).  Set only for PROCESS_OPERATION_DELETE.
     uint32_t process_exit_code;        ///< Process exit status.  Set only for PROCESS_OPERATION_DELETE.
     process_operation_t operation : 8; ///< Operation to do.
+    uint32_t token_sid_size;           ///< Size of the token SID in bytes. Set only for PROCESS_OPERATION_CREATE.
+    uint8_t token_sid[TOKEN_SID_MAX_SIZE]; ///< Primary token SID. Set only for PROCESS_OPERATION_CREATE.
 } process_md_t;
 
 /*
@@ -52,6 +56,8 @@ process_hook_t(process_md_t* context);
 typedef enum
 {
     BPF_FUNC_process_get_image_path = PROCESS_EXT_HELPER_FN_BASE + 1,
+    BPF_FUNC_process_get_account_name = PROCESS_EXT_HELPER_FN_BASE + 2,
+    BPF_FUNC_process_get_account_domain = PROCESS_EXT_HELPER_FN_BASE + 3,
 } ebpf_process_helper_id_t;
 
 /**
@@ -67,4 +73,34 @@ typedef enum
 EBPF_HELPER(int, bpf_process_get_image_path, (process_md_t * ctx, uint8_t* path, uint32_t path_length));
 #ifndef __doxygen
 #define bpf_process_get_image_path ((bpf_process_get_image_path_t)BPF_FUNC_process_get_image_path)
+#endif
+
+/**
+ * @brief Get the account name associated with the process's primary token.
+ *
+ * @param[in] context Process metadata.
+ * @param[out] name Buffer to store the account name.
+ * @param[in] name_length Length of the buffer in bytes.
+ *
+ * @retval >=0 The length of the account name in bytes.
+ * @retval <0 A failure occurred.
+ */
+EBPF_HELPER(int, bpf_process_get_account_name, (process_md_t * ctx, uint8_t* name, uint32_t name_length));
+#ifndef __doxygen
+#define bpf_process_get_account_name ((bpf_process_get_account_name_t)BPF_FUNC_process_get_account_name)
+#endif
+
+/**
+ * @brief Get the account domain associated with the process's primary token.
+ *
+ * @param[in] context Process metadata.
+ * @param[out] domain Buffer to store the account domain.
+ * @param[in] domain_length Length of the buffer in bytes.
+ *
+ * @retval >=0 The length of the account domain in bytes.
+ * @retval <0 A failure occurred.
+ */
+EBPF_HELPER(int, bpf_process_get_account_domain, (process_md_t * ctx, uint8_t* domain, uint32_t domain_length));
+#ifndef __doxygen
+#define bpf_process_get_account_domain ((bpf_process_get_account_domain_t)BPF_FUNC_process_get_account_domain)
 #endif

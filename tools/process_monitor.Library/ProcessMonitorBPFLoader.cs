@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,10 @@ namespace process_monitor.Library
         private static int process_map_fd = 0;
         private static IntPtr command_map = IntPtr.Zero;
         private static int command_map_fd = 0;
+        private static IntPtr account_name_map = IntPtr.Zero;
+        private static int account_name_map_fd = 0;
+        private static IntPtr account_domain_map = IntPtr.Zero;
+        private static int account_domain_map_fd = 0;
         private static bool _isShutdown;
         private static readonly object _lock = new();
         private static readonly List<ProcessMonitor> _processMonitors = [];
@@ -25,9 +30,11 @@ namespace process_monitor.Library
         // Note: this must be kept in sync with the C version in process_monitor.sys (process_monitor.c)
         [StructLayout(LayoutKind.Sequential)]
 #pragma warning disable IDE1006 // Naming Styles - this matches the native definition's name
-        internal readonly struct process_info_t
+        internal struct process_info_t
 #pragma warning restore IDE1006 // Naming Styles
         {
+            internal const int TOKEN_SID_MAX_SIZE = 68;
+
             internal readonly UInt32 process_id;
             internal readonly UInt32 parent_process_id;
             internal readonly UInt32 creating_process_id;
@@ -36,6 +43,8 @@ namespace process_monitor.Library
             internal readonly UInt64 exit_time;
             internal readonly UInt32 process_exit_code;
             internal readonly byte operation;
+            internal readonly UInt32 token_sid_size;
+            internal unsafe fixed byte token_sid[TOKEN_SID_MAX_SIZE];
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -101,6 +110,8 @@ namespace process_monitor.Library
                 }
                 (process_map, process_map_fd) = LoadMapByName("process_map", logger);
                 (command_map, command_map_fd) = LoadMapByName("command_map", logger);
+                (account_name_map, account_name_map_fd) = LoadMapByName("account_name_map", logger);
+                (account_domain_map, account_domain_map_fd) = LoadMapByName("account_domain_map", logger);
 
                 var process_monitor = PInvokes.bpf_object__find_program_by_name(process_monitor_bpfObject, "ProcessMonitor");
                 if (process_monitor == IntPtr.Zero)
@@ -192,6 +203,23 @@ namespace process_monitor.Library
 
             if (evt->operation == 0 /* 0 == PROCESS_OPERATION_COMPLETE */)
             {
+                var account_name_str = GetUnicodeStringFromBpfMapFD(account_name_map_fd, evt);
+                var account_domain_str = GetUnicodeStringFromBpfMapFD(account_domain_map_fd, evt);
+                string tokenSidStr = string.Empty;
+                if (evt->token_sid_size > 0 && evt->token_sid_size <= process_info_t.TOKEN_SID_MAX_SIZE)
+                {
+                    try
+                    {
+                        var sidBytes = new byte[evt->token_sid_size];
+                        byte* tokenSidPtr = &evt->token_sid[0];
+                        Marshal.Copy((IntPtr)tokenSidPtr, sidBytes, 0, (int)evt->token_sid_size);
+                        var sid = new SecurityIdentifier(sidBytes, 0);
+                        tokenSidStr = sid.Value;
+                    }
+                    catch (ArgumentException) { /* SID conversion failure is non-fatal */ }
+                    catch (SystemException) { /* SID marshalling failure is non-fatal */ }
+                }
+
                 var createdArgs = new ProcessCreatedEventArgs()
                 {
                     ProcessId = evt->process_id,
@@ -200,7 +228,10 @@ namespace process_monitor.Library
                     ParentProcessId = evt->parent_process_id,
                     CreatingProcessId = evt->creating_process_id,
                     CreatingThreadId = evt->creating_thread_id,
-                    CreateTime = DateTime.FromFileTime((long)evt->creation_time)
+                    CreateTime = DateTime.FromFileTime((long)evt->creation_time),
+                    TokenSid = tokenSidStr,
+                    AccountName = account_name_str,
+                    AccountDomain = account_domain_str
                 };
 
                 lock (_lock)
