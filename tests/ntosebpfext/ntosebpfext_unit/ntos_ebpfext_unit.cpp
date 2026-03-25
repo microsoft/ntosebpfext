@@ -99,6 +99,7 @@ typedef struct test_process_notify_context
     UNICODE_STRING image_file_name;
     UNICODE_STRING account_name;
     UNICODE_STRING account_domain;
+    BOOLEAN account_lookup_done;
 } test_process_notify_context_t;
 
 _Must_inspect_result_ ebpf_result_t

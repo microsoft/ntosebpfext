@@ -12,7 +12,7 @@
 
 #include <errno.h>
 
-// Maximum number of WCHARs for inline account name/domain buffers on the stack.
+// Maximum number of bytes for inline account name/domain buffers on the stack.
 #define ACCOUNT_STRING_INLINE_CHARS 80
 
 // Define the pool tag for this extension
@@ -249,6 +249,7 @@ typedef struct _process_notify_context
     UNICODE_STRING image_file_name;
     UNICODE_STRING account_name;
     UNICODE_STRING account_domain;
+    BOOLEAN account_lookup_done;
 } process_notify_context_t;
 
 static ebpf_result_t
@@ -285,6 +286,19 @@ _ebpf_process_context_create(
         goto Exit;
     }
 
+    // Validate that Length does not exceed MaximumLength for each UNICODE_STRING.
+    if (input_context->command_line.Length > input_context->command_line.MaximumLength ||
+        input_context->image_file_name.Length > input_context->image_file_name.MaximumLength ||
+        input_context->account_name.Length > input_context->account_name.MaximumLength ||
+        input_context->account_domain.Length > input_context->account_domain.MaximumLength) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "UNICODE_STRING Length exceeds MaximumLength");
+        result = EBPF_INVALID_ARGUMENT;
+        goto Exit;
+    }
+
     process_context = (process_notify_context_t*)ExAllocatePoolUninitialized(
         NonPagedPoolNx, sizeof(process_notify_context_t), EBPF_EXTENSION_POOL_TAG);
     EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
@@ -297,6 +311,8 @@ _ebpf_process_context_create(
     // These are kernel pointers that must be NULL when creating context from user mode.
     process_context->process = NULL;
     process_context->create_info = NULL;
+    // Test contexts have account data provided in data_in, so skip lazy lookup.
+    process_context->account_lookup_done = TRUE;
 
     // Parse data_in buffer: [command_line data][image_file_name data]
     // The lengths are specified in the UNICODE_STRING structures from the context
@@ -518,9 +534,8 @@ void
 _ebpf_process_create_process_notify_routine_ex(
     _Inout_ PEPROCESS process, _In_ HANDLE process_id, _Inout_opt_ PPS_CREATE_NOTIFY_INFO create_info)
 {
-    // Inline buffers for account name/domain to avoid pool allocation in the common case.
-    WCHAR account_name_inline[ACCOUNT_STRING_INLINE_CHARS] = {0};
-    WCHAR account_domain_inline[ACCOUNT_STRING_INLINE_CHARS] = {0};
+    WCHAR account_name_stack_buffer[ACCOUNT_STRING_INLINE_CHARS / sizeof(WCHAR)];
+    WCHAR account_domain_stack_buffer[ACCOUNT_STRING_INLINE_CHARS / sizeof(WCHAR)];
 
     process_notify_context_t process_notify_context = {
         .process_md = {0},
@@ -529,7 +544,14 @@ _ebpf_process_create_process_notify_routine_ex(
         .command_line = {0},
         .image_file_name = {0},
         .account_name = {0},
-        .account_domain = {0}};
+        .account_domain = {0},
+        .account_lookup_done = FALSE};
+
+    // Point account UNICODE_STRINGs at stack-allocated inline buffers.
+    process_notify_context.account_name.Buffer = account_name_stack_buffer;
+    process_notify_context.account_name.MaximumLength = ACCOUNT_STRING_INLINE_CHARS;
+    process_notify_context.account_domain.Buffer = account_domain_stack_buffer;
+    process_notify_context.account_domain.MaximumLength = ACCOUNT_STRING_INLINE_CHARS;
 
     EBPF_EXT_LOG_ENTRY();
     ebpf_extension_hook_client_t* client_context;
@@ -564,68 +586,6 @@ _ebpf_process_create_process_notify_routine_ex(
                         if (sid_length <= TOKEN_SID_MAX_SIZE) {
                             process_notify_context.process_md.token_sid_size = sid_length;
                             memcpy(process_notify_context.process_md.token_sid, token_user->User.Sid, sid_length);
-                        }
-
-                        // Resolve SID to account name and domain.
-                        {
-                            ULONG name_size = 0;
-                            ULONG domain_size = 0;
-                            SID_NAME_USE name_use;
-
-                            // First call with NULL buffers to get required sizes.
-#pragma warning(push)
-#pragma warning(disable : 6387) // NameBuffer can be NULL for the sizing call per API contract.
-                            NTSTATUS lookup_status = SecLookupAccountSid(
-                                token_user->User.Sid, &name_size, NULL, &domain_size, NULL, &name_use);
-                            if (lookup_status == STATUS_BUFFER_TOO_SMALL) {
-                                // Use inline stack buffers if they fit, otherwise pool-allocate.
-                                if (name_size <= sizeof(account_name_inline)) {
-                                    process_notify_context.account_name.Buffer = account_name_inline;
-                                } else {
-                                    process_notify_context.account_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-                                        NonPagedPoolNx, name_size, EBPF_EXTENSION_POOL_TAG);
-                                }
-                                if (process_notify_context.account_name.Buffer != NULL) {
-                                    process_notify_context.account_name.MaximumLength = (USHORT)name_size;
-                                }
-
-                                if (domain_size <= sizeof(account_domain_inline)) {
-                                    process_notify_context.account_domain.Buffer = account_domain_inline;
-                                } else {
-                                    process_notify_context.account_domain.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-                                        NonPagedPoolNx, domain_size, EBPF_EXTENSION_POOL_TAG);
-                                }
-                                if (process_notify_context.account_domain.Buffer != NULL) {
-                                    process_notify_context.account_domain.MaximumLength = (USHORT)domain_size;
-                                }
-
-                                if (process_notify_context.account_name.Buffer != NULL &&
-                                    process_notify_context.account_domain.Buffer != NULL) {
-                                    lookup_status = SecLookupAccountSid(
-                                        token_user->User.Sid,
-                                        &name_size,
-                                        &process_notify_context.account_name,
-                                        &domain_size,
-                                        &process_notify_context.account_domain,
-                                        &name_use);
-                                    if (!NT_SUCCESS(lookup_status)) {
-                                        // Lookup failed; free pool-allocated buffers and reset lengths.
-                                        if (process_notify_context.account_name.Buffer != account_name_inline) {
-                                            ExFreePool(process_notify_context.account_name.Buffer);
-                                        }
-                                        process_notify_context.account_name.Buffer = NULL;
-                                        process_notify_context.account_name.Length = 0;
-                                        process_notify_context.account_name.MaximumLength = 0;
-                                        if (process_notify_context.account_domain.Buffer != account_domain_inline) {
-                                            ExFreePool(process_notify_context.account_domain.Buffer);
-                                        }
-                                        process_notify_context.account_domain.Buffer = NULL;
-                                        process_notify_context.account_domain.Length = 0;
-                                        process_notify_context.account_domain.MaximumLength = 0;
-                                    }
-                                }
-                            }
-#pragma warning(pop)
                         }
                     }
                     ExFreePool(token_user);
@@ -672,11 +632,11 @@ _ebpf_process_create_process_notify_routine_ex(
     }
 
     if (process_notify_context.account_name.Buffer != NULL &&
-        process_notify_context.account_name.Buffer != account_name_inline) {
+        process_notify_context.account_name.Buffer != account_name_stack_buffer) {
         ExFreePool(process_notify_context.account_name.Buffer);
     }
     if (process_notify_context.account_domain.Buffer != NULL &&
-        process_notify_context.account_domain.Buffer != account_domain_inline) {
+        process_notify_context.account_domain.Buffer != account_domain_stack_buffer) {
         ExFreePool(process_notify_context.account_domain.Buffer);
     }
     EBPF_EXT_LOG_EXIT();
@@ -701,11 +661,119 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
     return result;
 }
 
+// Lazily resolve the account name and domain from the process token SID.
+// Called on first invocation of either account helper; results are cached.
+static void
+_ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_context)
+{
+    if (process_notify_context->account_lookup_done) {
+        return;
+    }
+    process_notify_context->account_lookup_done = TRUE;
+
+    if (process_notify_context->process == NULL) {
+        return;
+    }
+
+    PACCESS_TOKEN token = PsReferencePrimaryToken(process_notify_context->process);
+    if (token == NULL) {
+        return;
+    }
+
+    PTOKEN_USER token_user = NULL;
+    NTSTATUS sid_status = SeQueryInformationToken(token, TokenUser, (PVOID*)&token_user);
+    if (!NT_SUCCESS(sid_status) || token_user == NULL) {
+        PsDereferencePrimaryToken(token);
+        return;
+    }
+
+    if (!RtlValidSid(token_user->User.Sid)) {
+        ExFreePool(token_user);
+        PsDereferencePrimaryToken(token);
+        return;
+    }
+
+    ULONG name_size = process_notify_context->account_name.MaximumLength;
+    ULONG domain_size = process_notify_context->account_domain.MaximumLength;
+    SID_NAME_USE name_use;
+
+    // Try the lookup optimistically with the existing (stack) buffers.
+    NTSTATUS lookup_status = SecLookupAccountSid(
+        token_user->User.Sid,
+        &name_size,
+        &process_notify_context->account_name,
+        &domain_size,
+        &process_notify_context->account_domain,
+        &name_use);
+
+    if (lookup_status == STATUS_BUFFER_TOO_SMALL) {
+        // Stack buffers too small — heap-allocate with the returned sizes and retry.
+        BOOLEAN name_heap_allocated = FALSE;
+        BOOLEAN domain_heap_allocated = FALSE;
+
+        if (name_size > process_notify_context->account_name.MaximumLength) {
+            PWSTR new_buf = (PWSTR)ExAllocatePoolUninitialized(NonPagedPoolNx, name_size, EBPF_EXTENSION_POOL_TAG);
+            if (new_buf != NULL) {
+                process_notify_context->account_name.Buffer = new_buf;
+                process_notify_context->account_name.MaximumLength = (USHORT)name_size;
+                name_heap_allocated = TRUE;
+            } else {
+                process_notify_context->account_name.Buffer = NULL;
+            }
+        }
+
+        if (domain_size > process_notify_context->account_domain.MaximumLength) {
+            PWSTR new_buf = (PWSTR)ExAllocatePoolUninitialized(NonPagedPoolNx, domain_size, EBPF_EXTENSION_POOL_TAG);
+            if (new_buf != NULL) {
+                process_notify_context->account_domain.Buffer = new_buf;
+                process_notify_context->account_domain.MaximumLength = (USHORT)domain_size;
+                domain_heap_allocated = TRUE;
+            } else {
+                process_notify_context->account_domain.Buffer = NULL;
+            }
+        }
+
+        if (process_notify_context->account_name.Buffer != NULL &&
+            process_notify_context->account_domain.Buffer != NULL) {
+            lookup_status = SecLookupAccountSid(
+                token_user->User.Sid,
+                &name_size,
+                &process_notify_context->account_name,
+                &domain_size,
+                &process_notify_context->account_domain,
+                &name_use);
+        }
+
+        if (!NT_SUCCESS(lookup_status)) {
+            if (name_heap_allocated) {
+                ExFreePool(process_notify_context->account_name.Buffer);
+            }
+            process_notify_context->account_name.Buffer = NULL;
+            process_notify_context->account_name.Length = 0;
+            process_notify_context->account_name.MaximumLength = 0;
+            if (domain_heap_allocated) {
+                ExFreePool(process_notify_context->account_domain.Buffer);
+            }
+            process_notify_context->account_domain.Buffer = NULL;
+            process_notify_context->account_domain.Length = 0;
+            process_notify_context->account_domain.MaximumLength = 0;
+        }
+    } else if (!NT_SUCCESS(lookup_status)) {
+        // Lookup failed for a reason other than buffer size — clear results.
+        process_notify_context->account_name.Length = 0;
+        process_notify_context->account_domain.Length = 0;
+    }
+
+    ExFreePool(token_user);
+    PsDereferencePrimaryToken(token);
+}
+
 _Success_(return >= 0) static int32_t _ebpf_process_get_account_name(
     _In_ process_md_t* process_md, _Out_writes_bytes_(name_length) uint8_t* name, uint32_t name_length)
 {
     process_notify_context_t* process_notify_context =
         CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
+    _ebpf_process_resolve_account(process_notify_context);
     int32_t result = 0;
     if (process_notify_context->account_name.Length > name_length) {
         return -EINVAL;
@@ -724,6 +792,7 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_account_domain(
 {
     process_notify_context_t* process_notify_context =
         CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
+    _ebpf_process_resolve_account(process_notify_context);
     int32_t result = 0;
     if (process_notify_context->account_domain.Length > domain_length) {
         return -EINVAL;
