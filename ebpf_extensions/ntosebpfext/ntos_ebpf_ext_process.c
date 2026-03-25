@@ -352,7 +352,10 @@ _ebpf_process_context_create(
             result = EBPF_NO_MEMORY;
             goto Exit;
         }
+#pragma warning(push)
+#pragma warning(disable : 6386) // Length <= MaximumLength validated above.
         memcpy(process_context->image_file_name.Buffer, data_ptr, input_context->image_file_name.Length);
+#pragma warning(pop)
         process_context->image_file_name.Length = input_context->image_file_name.Length;
         process_context->image_file_name.MaximumLength = input_context->image_file_name.MaximumLength;
 
@@ -375,7 +378,10 @@ _ebpf_process_context_create(
             result = EBPF_NO_MEMORY;
             goto Exit;
         }
+#pragma warning(push)
+#pragma warning(disable : 6386) // Length <= MaximumLength validated above.
         memcpy(process_context->account_name.Buffer, data_ptr, input_context->account_name.Length);
+#pragma warning(pop)
         process_context->account_name.Length = input_context->account_name.Length;
         process_context->account_name.MaximumLength = input_context->account_name.MaximumLength;
 
@@ -398,7 +404,10 @@ _ebpf_process_context_create(
             result = EBPF_NO_MEMORY;
             goto Exit;
         }
+#pragma warning(push)
+#pragma warning(disable : 6386) // Length <= MaximumLength validated above.
         memcpy(process_context->account_domain.Buffer, data_ptr, input_context->account_domain.Length);
+#pragma warning(pop)
         process_context->account_domain.Length = input_context->account_domain.Length;
         process_context->account_domain.MaximumLength = input_context->account_domain.MaximumLength;
 
