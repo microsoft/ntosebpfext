@@ -66,7 +66,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
+      uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
       with:
         egress-policy: audit
 
@@ -103,18 +103,18 @@ jobs:
 
     - name: Initialize CodeQL
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/init@0d579ffd059c29b07949a3cce3983f0780820c98
+      uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13
       with:
         languages: 'cpp'
 
     - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
+      uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57
       with:
         msbuild-architecture: x64
 
     - name: Cache chocolatey packages
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
       env:
         cache-name: cache-choco-packages
       with:
@@ -159,7 +159,7 @@ jobs:
 
     - name: Cache nuget packages
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
       env:
         cache-name: cache-nuget-modules
       with:
@@ -246,4 +246,4 @@ jobs:
 
     - name: Perform CodeQL Analysis
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/analyze@0d579ffd059c29b07949a3cce3983f0780820c98
+      uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13
