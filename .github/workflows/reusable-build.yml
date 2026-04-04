@@ -66,7 +66,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+      uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
       with:
         egress-policy: audit
 
@@ -229,7 +229,7 @@ jobs:
     - name: Check for crash dumps
       # Check for crash dumps even if the workflow failed.
       if: (success() || failure()) && (steps.skip_check.outputs.should_skip != 'true')
-      uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6
+      uses: andstor/file-existence-action@558493d6c74bf472d87c84eab196434afc2fa029
       id: check_dumps
       with:
         files: c:/dumps/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}/*.dmp
