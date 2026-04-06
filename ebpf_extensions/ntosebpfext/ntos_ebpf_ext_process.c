@@ -9,11 +9,12 @@
 #include "ebpf_ntos_hooks.h"
 #include "ntos_ebpf_ext_process.h"
 #include "ntos_ebpf_ext_program_info.h"
+#include "shared_context.h"
 
 #include <errno.h>
 
 // Maximum number of bytes for inline account name/domain buffers on the stack.
-#define ACCOUNT_STRING_INLINE_CHARS 80
+#define ACCOUNT_STRING_INLINE_BYTES 80
 
 // Define the pool tag for this extension
 ULONG EBPF_EXTENSION_POOL_TAG = EBPF_NTOS_EXTENSION_POOL_TAG;
@@ -543,8 +544,8 @@ void
 _ebpf_process_create_process_notify_routine_ex(
     _Inout_ PEPROCESS process, _In_ HANDLE process_id, _Inout_opt_ PPS_CREATE_NOTIFY_INFO create_info)
 {
-    WCHAR account_name_stack_buffer[ACCOUNT_STRING_INLINE_CHARS / sizeof(WCHAR)];
-    WCHAR account_domain_stack_buffer[ACCOUNT_STRING_INLINE_CHARS / sizeof(WCHAR)];
+    WCHAR account_name_stack_buffer[ACCOUNT_STRING_INLINE_BYTES / sizeof(WCHAR)] = {0};
+    WCHAR account_domain_stack_buffer[ACCOUNT_STRING_INLINE_BYTES / sizeof(WCHAR)] = {0};
 
     process_notify_context_t process_notify_context = {
         .process_md = {0},
@@ -558,9 +559,9 @@ _ebpf_process_create_process_notify_routine_ex(
 
     // Point account UNICODE_STRINGs at stack-allocated inline buffers.
     process_notify_context.account_name.Buffer = account_name_stack_buffer;
-    process_notify_context.account_name.MaximumLength = ACCOUNT_STRING_INLINE_CHARS;
+    process_notify_context.account_name.MaximumLength = ACCOUNT_STRING_INLINE_BYTES;
     process_notify_context.account_domain.Buffer = account_domain_stack_buffer;
-    process_notify_context.account_domain.MaximumLength = ACCOUNT_STRING_INLINE_CHARS;
+    process_notify_context.account_domain.MaximumLength = ACCOUNT_STRING_INLINE_BYTES;
 
     EBPF_EXT_LOG_ENTRY();
     ebpf_extension_hook_client_t* client_context;
@@ -593,8 +594,13 @@ _ebpf_process_create_process_notify_routine_ex(
                     if (RtlValidSid(token_user->User.Sid)) {
                         ULONG sid_length = RtlLengthSid(token_user->User.Sid);
                         if (sid_length <= TOKEN_SID_MAX_SIZE) {
-                            process_notify_context.process_md.token_sid_size = sid_length;
-                            memcpy(process_notify_context.process_md.token_sid, token_user->User.Sid, sid_length);
+                            NTSTATUS copy_status = RtlCopySid(
+                                TOKEN_SID_MAX_SIZE,
+                                (PSID)process_notify_context.process_md.token_sid,
+                                token_user->User.Sid);
+                            if (NT_SUCCESS(copy_status)) {
+                                process_notify_context.process_md.token_sid_size = sid_length;
+                            }
                         }
                     }
                     ExFreePool(token_user);
@@ -672,42 +678,52 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
 
 // Lazily resolve the account name and domain from the process token SID.
 // Called on first invocation of either account helper; results are cached.
-static void
+// The process creation notify routine runs at PASSIVE_LEVEL, so PsReferencePrimaryToken is safe to call.
+static NTSTATUS
 _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_context)
 {
+    NTSTATUS status = STATUS_SUCCESS;
+    PTOKEN_USER token_user = NULL;
+    PACCESS_TOKEN token = NULL;
+    BOOLEAN name_heap_allocated = FALSE;
+    BOOLEAN domain_heap_allocated = FALSE;
+    ULONG name_size = 0;
+    ULONG domain_size = 0;
+    SID_NAME_USE name_use;
+
+    ebpf_assert(KeGetCurrentIrql() == PASSIVE_LEVEL);
+
     if (process_notify_context->account_lookup_done) {
-        return;
+        return STATUS_SUCCESS;
     }
-    process_notify_context->account_lookup_done = TRUE;
 
     if (process_notify_context->process == NULL) {
-        return;
+        status = STATUS_INVALID_PARAMETER;
+        goto Exit;
     }
 
-    PACCESS_TOKEN token = PsReferencePrimaryToken(process_notify_context->process);
+    token = PsReferencePrimaryToken(process_notify_context->process);
+    ebpf_assert(token != NULL);
     if (token == NULL) {
-        return;
+        status = STATUS_UNSUCCESSFUL;
+        goto Exit;
     }
 
-    PTOKEN_USER token_user = NULL;
-    NTSTATUS sid_status = SeQueryInformationToken(token, TokenUser, (PVOID*)&token_user);
-    if (!NT_SUCCESS(sid_status) || token_user == NULL) {
-        PsDereferencePrimaryToken(token);
-        return;
+    status = SeQueryInformationToken(token, TokenUser, (PVOID*)&token_user);
+    if (!NT_SUCCESS(status) || token_user == NULL) {
+        goto Exit;
     }
 
     if (!RtlValidSid(token_user->User.Sid)) {
-        ExFreePool(token_user);
-        PsDereferencePrimaryToken(token);
-        return;
+        status = STATUS_UNSUCCESSFUL;
+        goto Exit;
     }
 
-    ULONG name_size = process_notify_context->account_name.MaximumLength;
-    ULONG domain_size = process_notify_context->account_domain.MaximumLength;
-    SID_NAME_USE name_use;
+    name_size = process_notify_context->account_name.MaximumLength;
+    domain_size = process_notify_context->account_domain.MaximumLength;
 
     // Try the lookup optimistically with the existing (stack) buffers.
-    NTSTATUS lookup_status = SecLookupAccountSid(
+    status = SecLookupAccountSid(
         token_user->User.Sid,
         &name_size,
         &process_notify_context->account_name,
@@ -715,11 +731,8 @@ _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_c
         &process_notify_context->account_domain,
         &name_use);
 
-    if (lookup_status == STATUS_BUFFER_TOO_SMALL) {
+    if (status == STATUS_BUFFER_TOO_SMALL) {
         // Stack buffers too small — heap-allocate with the returned sizes and retry.
-        BOOLEAN name_heap_allocated = FALSE;
-        BOOLEAN domain_heap_allocated = FALSE;
-
         if (name_size > process_notify_context->account_name.MaximumLength) {
             PWSTR new_buf = (PWSTR)ExAllocatePoolUninitialized(NonPagedPoolNx, name_size, EBPF_EXTENSION_POOL_TAG);
             if (new_buf != NULL) {
@@ -727,7 +740,8 @@ _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_c
                 process_notify_context->account_name.MaximumLength = (USHORT)name_size;
                 name_heap_allocated = TRUE;
             } else {
-                process_notify_context->account_name.Buffer = NULL;
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                goto Exit;
             }
         }
 
@@ -738,54 +752,72 @@ _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_c
                 process_notify_context->account_domain.MaximumLength = (USHORT)domain_size;
                 domain_heap_allocated = TRUE;
             } else {
-                process_notify_context->account_domain.Buffer = NULL;
+                status = STATUS_INSUFFICIENT_RESOURCES;
+                goto Exit;
             }
         }
 
-        if (process_notify_context->account_name.Buffer != NULL &&
-            process_notify_context->account_domain.Buffer != NULL) {
-            lookup_status = SecLookupAccountSid(
-                token_user->User.Sid,
-                &name_size,
-                &process_notify_context->account_name,
-                &domain_size,
-                &process_notify_context->account_domain,
-                &name_use);
-        }
-
-        if (!NT_SUCCESS(lookup_status)) {
-            if (name_heap_allocated) {
-                ExFreePool(process_notify_context->account_name.Buffer);
-            }
-            process_notify_context->account_name.Buffer = NULL;
-            process_notify_context->account_name.Length = 0;
-            process_notify_context->account_name.MaximumLength = 0;
-            if (domain_heap_allocated) {
-                ExFreePool(process_notify_context->account_domain.Buffer);
-            }
-            process_notify_context->account_domain.Buffer = NULL;
-            process_notify_context->account_domain.Length = 0;
-            process_notify_context->account_domain.MaximumLength = 0;
-        }
-    } else if (!NT_SUCCESS(lookup_status)) {
-        // Lookup failed for a reason other than buffer size — clear results.
-        process_notify_context->account_name.Length = 0;
-        process_notify_context->account_domain.Length = 0;
+        status = SecLookupAccountSid(
+            token_user->User.Sid,
+            &name_size,
+            &process_notify_context->account_name,
+            &domain_size,
+            &process_notify_context->account_domain,
+            &name_use);
     }
 
-    ExFreePool(token_user);
-    PsDereferencePrimaryToken(token);
+    if (!NT_SUCCESS(status)) {
+        goto Exit;
+    }
+
+    process_notify_context->account_lookup_done = TRUE;
+
+Exit:
+    if (!NT_SUCCESS(status)) {
+        // Clear account results on failure.
+        if (name_heap_allocated) {
+            ExFreePool(process_notify_context->account_name.Buffer);
+        }
+        process_notify_context->account_name.Buffer = NULL;
+        process_notify_context->account_name.Length = 0;
+        process_notify_context->account_name.MaximumLength = 0;
+        if (domain_heap_allocated) {
+            ExFreePool(process_notify_context->account_domain.Buffer);
+        }
+        process_notify_context->account_domain.Buffer = NULL;
+        process_notify_context->account_domain.Length = 0;
+        process_notify_context->account_domain.MaximumLength = 0;
+    }
+
+    if (token_user != NULL) {
+        ExFreePool(token_user);
+    }
+    if (token != NULL) {
+        PsDereferencePrimaryToken(token);
+    }
+
+    return status;
 }
 
 _Success_(return >= 0) static int32_t _ebpf_process_get_account_name(
     _In_ process_md_t* process_md, _Out_writes_bytes_(name_length) uint8_t* name, uint32_t name_length)
 {
+    int32_t result = 0;
     process_notify_context_t* process_notify_context =
         CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
-    _ebpf_process_resolve_account(process_notify_context);
-    int32_t result = 0;
+    NTSTATUS status = _ebpf_process_resolve_account(process_notify_context);
+    if (!NT_SUCCESS(status)) {
+        EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+            EBPF_EXT_TRACELOG_LEVEL_WARNING,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "Failed to resolve account name",
+            status);
+        result = -ENOENT;
+        goto Exit;
+    }
     if (process_notify_context->account_name.Length > name_length) {
-        return -EINVAL;
+        result = -EINVAL;
+        goto Exit;
     }
     if (process_notify_context->account_name.Buffer != NULL) {
         if (name_length >= process_notify_context->account_name.Length) {
@@ -793,18 +825,30 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_account_name(
             result = process_notify_context->account_name.Length;
         }
     }
+
+Exit:
     return result;
 }
 
 _Success_(return >= 0) static int32_t _ebpf_process_get_account_domain(
     _In_ process_md_t* process_md, _Out_writes_bytes_(domain_length) uint8_t* domain, uint32_t domain_length)
 {
+    int32_t result = 0;
     process_notify_context_t* process_notify_context =
         CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
-    _ebpf_process_resolve_account(process_notify_context);
-    int32_t result = 0;
+    NTSTATUS status = _ebpf_process_resolve_account(process_notify_context);
+    if (!NT_SUCCESS(status)) {
+        EBPF_EXT_LOG_MESSAGE_NTSTATUS(
+            EBPF_EXT_TRACELOG_LEVEL_WARNING,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "Failed to resolve account domain",
+            status);
+        result = -ENOENT;
+        goto Exit;
+    }
     if (process_notify_context->account_domain.Length > domain_length) {
-        return -EINVAL;
+        result = -EINVAL;
+        goto Exit;
     }
     if (process_notify_context->account_domain.Buffer != NULL) {
         if (domain_length >= process_notify_context->account_domain.Length) {
@@ -813,5 +857,7 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_account_domain(
             result = process_notify_context->account_domain.Length;
         }
     }
+
+Exit:
     return result;
 }

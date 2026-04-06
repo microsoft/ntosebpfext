@@ -186,13 +186,17 @@ ProcessMonitor(process_md_t* ctx)
 
         // Copy account name into the LRU hash. Subtract 2 to leave room for a UTF-16 null terminator.
         memset(buffer, 0, MAX_ACCOUNT_NAME_SIZE);
-        bpf_process_get_account_name(ctx, buffer, MAX_ACCOUNT_NAME_SIZE - 2);
-        bpf_map_update_elem(&account_name_map, &process_info.process_id, buffer, BPF_ANY);
+        int name_result = bpf_process_get_account_name(ctx, buffer, MAX_ACCOUNT_NAME_SIZE - 2);
+        if (name_result >= 0) {
+            bpf_map_update_elem(&account_name_map, &process_info.process_id, buffer, BPF_ANY);
+        }
 
         // Copy account domain into the LRU hash. Subtract 2 to leave room for a UTF-16 null terminator.
         memset(buffer, 0, MAX_ACCOUNT_DOMAIN_SIZE);
-        bpf_process_get_account_domain(ctx, buffer, MAX_ACCOUNT_DOMAIN_SIZE - 2);
-        bpf_map_update_elem(&account_domain_map, &process_info.process_id, buffer, BPF_ANY);
+        int domain_result = bpf_process_get_account_domain(ctx, buffer, MAX_ACCOUNT_DOMAIN_SIZE - 2);
+        if (domain_result >= 0) {
+            bpf_map_update_elem(&account_domain_map, &process_info.process_id, buffer, BPF_ANY);
+        }
     }
     bpf_ringbuf_output(&process_ringbuf, &process_info, sizeof(process_info), 0);
     return 0;
