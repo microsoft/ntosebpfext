@@ -577,4 +577,212 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     bpf_opts.data_size_in = static_cast<uint32_t>(total_data_size - 1);
     REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) != 0);
 }
+
+TEST_CASE("process_resolve_account", "[ntosebpfext]")
+{
+    // Exercise _ebpf_process_resolve_account via bpf_prog_test_run.
+    // context_create no longer forces account_lookup_done = TRUE, so the BPF program's call
+    // to bpf_process_get_account_name triggers the lazy resolution using token_sid.
+    driver_service ntosebpfext_driver;
+    REQUIRE(
+        ntosebpfext_driver.create(L"ntosebpfext", driver_service::get_driver_path("ntosebpfext.sys").c_str()) == true);
+    REQUIRE(ntosebpfext_driver.start() == true);
+    auto cleanup_driver = wil::scope_exit([&]() {
+        ntosebpfext_driver.stop();
+        ntosebpfext_driver.unload();
+    });
+
+    struct bpf_object* object = bpf_object__open("process_monitor.sys");
+    REQUIRE(object != nullptr);
+    auto cleanup_object = wil::scope_exit([&]() { bpf_object__close(object); });
+
+    REQUIRE(bpf_object__load(object) == 0);
+
+    bpf_program* process_monitor = bpf_object__find_program_by_name(object, "ProcessMonitor");
+    REQUIRE(process_monitor != nullptr);
+
+    bpf_link* process_monitor_link = nullptr;
+    REQUIRE(
+        ebpf_program_attach(process_monitor, &EBPF_ATTACH_TYPE_PROCESS, nullptr, 0, &process_monitor_link) ==
+        EBPF_SUCCESS);
+    REQUIRE(process_monitor_link != nullptr);
+    auto cleanup_link = wil::scope_exit([&]() {
+        bpf_link_detach(bpf_link__fd(process_monitor_link));
+        bpf_link__destroy(process_monitor_link);
+    });
+
+    fd_t process_program_fd = bpf_program__fd(process_monitor);
+    REQUIRE(process_program_fd != ebpf_fd_invalid);
+
+    bpf_map* process_ringbuf_map = bpf_object__find_map_by_name(object, "process_ringbuf");
+    REQUIRE(process_ringbuf_map != nullptr);
+    ebpf_ring_buffer_opts ring_opts = {.sz = sizeof(ebpf_ring_buffer_opts), .flags = EBPF_RINGBUF_FLAG_AUTO_CALLBACK};
+    ring_buffer* process_ring_buffer =
+        ebpf_ring_buffer__new(bpf_map__fd(process_ringbuf_map), process_ringbuf_event_callback, nullptr, &ring_opts);
+    REQUIRE(process_ring_buffer != nullptr);
+    auto cleanup_ring_buffer = wil::scope_exit([&]() { ring_buffer__free(process_ring_buffer); });
+
+    bpf_map* account_name_map = bpf_object__find_map_by_name(object, "account_name_map");
+    REQUIRE(account_name_map != nullptr);
+    int account_name_map_fd = bpf_map__fd(account_name_map);
+    REQUIRE(account_name_map_fd != ebpf_fd_invalid);
+
+    bpf_map* account_domain_map = bpf_object__find_map_by_name(object, "account_domain_map");
+    REQUIRE(account_domain_map != nullptr);
+    int account_domain_map_fd = bpf_map__fd(account_domain_map);
+    REQUIRE(account_domain_map_fd != ebpf_fd_invalid);
+
+    std::wstring command_line = L"notepad.exe test.txt";
+    std::wstring image_path = L"C:\\Windows\\System32\\notepad.exe";
+    uint8_t test_sid[] = {
+        0x01, // Revision
+        0x01, // SubAuthorityCount
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x05, // IdentifierAuthority (NT Authority)
+        0x12,
+        0x00,
+        0x00,
+        0x00 // SubAuthority[0] = 18 (SECURITY_LOCAL_SYSTEM_RID)
+    };
+
+    // --- Scenario 1: Heap-fallback path ---
+    // Provide a valid SID but tiny account buffers (MaximumLength = 2) so SecLookupAccountSid
+    // returns STATUS_BUFFER_TOO_SMALL on the first try, forcing heap allocation and retry.
+    {
+        bpf_test_run_opts bpf_opts = {0};
+        test_process_notify_context_t process_ctx_in = {0};
+        test_process_notify_context_t process_ctx_out = {0};
+
+        process_ctx_in.process_md.process_id = TEST_PROCESS_ID;
+        process_ctx_in.process_md.operation = PROCESS_OPERATION_CREATE;
+        process_ctx_in.process_md.token_sid_size = sizeof(test_sid);
+        memcpy(process_ctx_in.process_md.token_sid, test_sid, sizeof(test_sid));
+
+        process_ctx_in.command_line.Length = static_cast<USHORT>(command_line.length() * sizeof(wchar_t));
+        process_ctx_in.command_line.MaximumLength = process_ctx_in.command_line.Length;
+        process_ctx_in.image_file_name.Length = static_cast<USHORT>(image_path.length() * sizeof(wchar_t));
+        process_ctx_in.image_file_name.MaximumLength = process_ctx_in.image_file_name.Length;
+
+        wchar_t dummy = L'X';
+        process_ctx_in.account_name.Length = sizeof(dummy);
+        process_ctx_in.account_name.MaximumLength = sizeof(dummy);
+        process_ctx_in.account_domain.Length = sizeof(dummy);
+        process_ctx_in.account_domain.MaximumLength = sizeof(dummy);
+
+        size_t total_data_size = static_cast<size_t>(process_ctx_in.command_line.Length) +
+                                 static_cast<size_t>(process_ctx_in.image_file_name.Length) +
+                                 static_cast<size_t>(process_ctx_in.account_name.Length) +
+                                 static_cast<size_t>(process_ctx_in.account_domain.Length);
+        std::vector<uint8_t> packed_data(total_data_size);
+
+        size_t offset = 0;
+        memcpy(packed_data.data() + offset, command_line.c_str(), process_ctx_in.command_line.Length);
+        offset += process_ctx_in.command_line.Length;
+        memcpy(packed_data.data() + offset, image_path.c_str(), process_ctx_in.image_file_name.Length);
+        offset += process_ctx_in.image_file_name.Length;
+        memcpy(packed_data.data() + offset, &dummy, process_ctx_in.account_name.Length);
+        offset += process_ctx_in.account_name.Length;
+        memcpy(packed_data.data() + offset, &dummy, process_ctx_in.account_domain.Length);
+
+        uint32_t event_count_before = process_event_count;
+        std::vector<uint8_t> data_out_buffer(1024);
+
+        bpf_opts.repeat = 1;
+        bpf_opts.ctx_in = &process_ctx_in;
+        bpf_opts.ctx_size_in = sizeof(process_ctx_in);
+        bpf_opts.ctx_out = &process_ctx_out;
+        bpf_opts.ctx_size_out = sizeof(process_ctx_out);
+        bpf_opts.data_in = packed_data.data();
+        bpf_opts.data_size_in = static_cast<uint32_t>(total_data_size);
+        bpf_opts.data_out = data_out_buffer.data();
+        bpf_opts.data_size_out = static_cast<uint32_t>(data_out_buffer.size());
+
+        REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
+
+        for (int i = 0; i < 5; i++) {
+            if (process_event_count == event_count_before + 1) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        REQUIRE(process_event_count == event_count_before + 1);
+
+        uint32_t lookup_key = TEST_PROCESS_ID;
+        std::vector<wchar_t> account_name_from_map(ACCOUNT_NAME_SIZE / sizeof(wchar_t), L'\0');
+        REQUIRE(bpf_map_lookup_elem(account_name_map_fd, &lookup_key, account_name_from_map.data()) == 0);
+        REQUIRE(account_name_from_map[0] != L'\0');
+
+        std::vector<wchar_t> account_domain_from_map(ACCOUNT_DOMAIN_SIZE / sizeof(wchar_t), L'\0');
+        REQUIRE(bpf_map_lookup_elem(account_domain_map_fd, &lookup_key, account_domain_from_map.data()) == 0);
+        REQUIRE(account_domain_from_map[0] != L'\0');
+
+        // Delete the map entries so scenario 2 starts clean.
+        bpf_map_delete_elem(account_name_map_fd, &lookup_key);
+        bpf_map_delete_elem(account_domain_map_fd, &lookup_key);
+    }
+
+    // --- Scenario 2: Zero SID ---
+    // token_sid_size == 0 causes _ebpf_process_resolve_account to return failure,
+    // so the helpers return -ENOENT and the BPF program skips account map writes.
+    {
+        bpf_test_run_opts bpf_opts = {0};
+        test_process_notify_context_t process_ctx_in = {0};
+        test_process_notify_context_t process_ctx_out = {0};
+
+        process_ctx_in.process_md.process_id = TEST_PROCESS_ID;
+        process_ctx_in.process_md.operation = PROCESS_OPERATION_CREATE;
+        process_ctx_in.process_md.token_sid_size = 0;
+
+        process_ctx_in.command_line.Length = static_cast<USHORT>(command_line.length() * sizeof(wchar_t));
+        process_ctx_in.command_line.MaximumLength = process_ctx_in.command_line.Length;
+        process_ctx_in.image_file_name.Length = static_cast<USHORT>(image_path.length() * sizeof(wchar_t));
+        process_ctx_in.image_file_name.MaximumLength = process_ctx_in.image_file_name.Length;
+
+        size_t total_data_size = static_cast<size_t>(process_ctx_in.command_line.Length) +
+                                 static_cast<size_t>(process_ctx_in.image_file_name.Length);
+        std::vector<uint8_t> packed_data(total_data_size);
+
+        size_t offset = 0;
+        memcpy(packed_data.data() + offset, command_line.c_str(), process_ctx_in.command_line.Length);
+        offset += process_ctx_in.command_line.Length;
+        memcpy(packed_data.data() + offset, image_path.c_str(), process_ctx_in.image_file_name.Length);
+
+        uint32_t event_count_before = process_event_count;
+        std::vector<uint8_t> data_out_buffer(total_data_size);
+
+        bpf_opts.repeat = 1;
+        bpf_opts.ctx_in = &process_ctx_in;
+        bpf_opts.ctx_size_in = sizeof(process_ctx_in);
+        bpf_opts.ctx_out = &process_ctx_out;
+        bpf_opts.ctx_size_out = sizeof(process_ctx_out);
+        bpf_opts.data_in = packed_data.data();
+        bpf_opts.data_size_in = static_cast<uint32_t>(total_data_size);
+        bpf_opts.data_out = data_out_buffer.data();
+        bpf_opts.data_size_out = static_cast<uint32_t>(total_data_size);
+
+        REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
+
+        for (int i = 0; i < 5; i++) {
+            if (process_event_count == event_count_before + 1) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        REQUIRE(process_event_count == event_count_before + 1);
+
+        REQUIRE(process_ctx_out.process_md.token_sid_size == 0);
+
+        uint32_t lookup_key = TEST_PROCESS_ID;
+        std::vector<wchar_t> account_name_from_map(ACCOUNT_NAME_SIZE / sizeof(wchar_t));
+        REQUIRE(bpf_map_lookup_elem(account_name_map_fd, &lookup_key, account_name_from_map.data()) != 0);
+
+        std::vector<wchar_t> account_domain_from_map(ACCOUNT_DOMAIN_SIZE / sizeof(wchar_t));
+        REQUIRE(bpf_map_lookup_elem(account_domain_map_fd, &lookup_key, account_domain_from_map.data()) != 0);
+    }
+}
+
 #pragma endregion process

@@ -254,6 +254,16 @@ typedef struct _process_notify_context
     BOOLEAN account_lookup_done;
 } process_notify_context_t;
 
+// Wrapper used only by context_create/context_destroy (bpf_prog_test_run path).
+// Tracks the initial account buffers so context_destroy can free them if
+// _ebpf_process_resolve_account replaced them with heap-allocated buffers.
+typedef struct _process_test_context
+{
+    process_notify_context_t base;
+    PWSTR account_name_initial_buffer;
+    PWSTR account_domain_initial_buffer;
+} process_test_context_t;
+
 // Deep-copy a UNICODE_STRING from a packed data buffer, advancing the data pointer.
 static ebpf_result_t
 _deep_copy_unicode_string_from_data(
@@ -303,6 +313,7 @@ _ebpf_process_context_create(
 {
     EBPF_EXT_LOG_ENTRY();
     ebpf_result_t result;
+    process_test_context_t* test_context = NULL;
     process_notify_context_t* process_context = NULL;
     process_notify_context_t* input_context = NULL;
     const uint8_t* data_ptr = data_in;
@@ -340,10 +351,12 @@ _ebpf_process_context_create(
         goto Exit;
     }
 
-    process_context = (process_notify_context_t*)ExAllocatePoolUninitialized(
-        NonPagedPoolNx, sizeof(process_notify_context_t), EBPF_EXTENSION_POOL_TAG);
-    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(
-        EBPF_EXT_TRACELOG_KEYWORD_PROCESS, process_context, "process_context", result);
+    test_context = (process_test_context_t*)ExAllocatePoolUninitialized(
+        NonPagedPoolNx, sizeof(process_test_context_t), EBPF_EXTENSION_POOL_TAG);
+    EBPF_EXT_BAIL_ON_ALLOC_FAILURE_RESULT(EBPF_EXT_TRACELOG_KEYWORD_PROCESS, test_context, "process_context", result);
+
+    memset(test_context, 0, sizeof(process_test_context_t));
+    process_context = &test_context->base;
 
     // Copy the context from the caller.
     memcpy(process_context, context_in, sizeof(process_notify_context_t));
@@ -352,8 +365,6 @@ _ebpf_process_context_create(
     // These are kernel pointers that must be NULL when creating context from user mode.
     process_context->process = NULL;
     process_context->create_info = NULL;
-    // Test contexts have account data provided in data_in, so skip lazy lookup.
-    process_context->account_lookup_done = TRUE;
 
     // Parse data_in buffer: [command_line][image_file_name][account_name][account_domain]
     // The lengths are specified in the UNICODE_STRING structures from the context.
@@ -394,17 +405,23 @@ _ebpf_process_context_create(
         goto Exit;
     }
 
+    // Save initial buffer pointers so context_destroy can free them if
+    // _ebpf_process_resolve_account replaced them with heap-allocated buffers.
+    test_context->account_name_initial_buffer = process_context->account_name.Buffer;
+    test_context->account_domain_initial_buffer = process_context->account_domain.Buffer;
+
     // Set command_start and command_end to point to the copied command_line buffer
     process_context->process_md.command_start = (uint8_t*)process_context->command_line.Buffer;
     process_context->process_md.command_end =
         (uint8_t*)process_context->command_line.Buffer + process_context->command_line.Length;
 
     *context = &process_context->process_md;
-    process_context = NULL;
+    test_context = NULL;
     result = EBPF_SUCCESS;
 
 Exit:
-    if (process_context) {
+    if (test_context) {
+        process_context = &test_context->base;
         if (process_context->command_line.Buffer != NULL) {
             ExFreePool(process_context->command_line.Buffer);
         }
@@ -417,8 +434,8 @@ Exit:
         if (process_context->account_domain.Buffer != NULL) {
             ExFreePool(process_context->account_domain.Buffer);
         }
-        ExFreePool(process_context);
-        process_context = NULL;
+        ExFreePool(test_context);
+        test_context = NULL;
     }
     EBPF_EXT_RETURN_RESULT(result);
 }
@@ -496,12 +513,25 @@ _ebpf_process_context_destroy(
         *data_size_out = 0;
     }
 
-    // Free the deep-copied buffers
+    // Free the deep-copied buffers.
+    // Recover the test wrapper to check if _ebpf_process_resolve_account replaced
+    // account buffers with heap-allocated ones.
     if (process_context->command_line.Buffer != NULL) {
         ExFreePool(process_context->command_line.Buffer);
     }
     if (process_context->image_file_name.Buffer != NULL) {
         ExFreePool(process_context->image_file_name.Buffer);
+    }
+    {
+        process_test_context_t* test_context = CONTAINING_RECORD(process_context, process_test_context_t, base);
+        if (test_context->account_name_initial_buffer != NULL &&
+            test_context->account_name_initial_buffer != process_context->account_name.Buffer) {
+            ExFreePool(test_context->account_name_initial_buffer);
+        }
+        if (test_context->account_domain_initial_buffer != NULL &&
+            test_context->account_domain_initial_buffer != process_context->account_domain.Buffer) {
+            ExFreePool(test_context->account_domain_initial_buffer);
+        }
     }
     if (process_context->account_name.Buffer != NULL) {
         ExFreePool(process_context->account_name.Buffer);
@@ -509,7 +539,7 @@ _ebpf_process_context_destroy(
     if (process_context->account_domain.Buffer != NULL) {
         ExFreePool(process_context->account_domain.Buffer);
     }
-    ExFreePool(process_context);
+    ExFreePool(CONTAINING_RECORD(process_context, process_test_context_t, base));
 
 Exit:
     EBPF_EXT_LOG_EXIT();
@@ -642,43 +672,32 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
 
 // Lazily resolve the account name and domain from the process token SID.
 // Called on first invocation of either account helper; results are cached.
-// The process creation notify routine runs at PASSIVE_LEVEL, so PsReferencePrimaryToken is safe to call.
 static NTSTATUS
 _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_context)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    PTOKEN_USER token_user = NULL;
-    PACCESS_TOKEN token = NULL;
     BOOLEAN name_heap_allocated = FALSE;
     BOOLEAN domain_heap_allocated = FALSE;
     ULONG name_size = 0;
     ULONG domain_size = 0;
     SID_NAME_USE name_use;
-
-    ebpf_assert(KeGetCurrentIrql() == PASSIVE_LEVEL);
+    PSID sid = (PSID)process_notify_context->process_md.token_sid;
 
     if (process_notify_context->account_lookup_done) {
-        return STATUS_SUCCESS;
+        // On a previous failure the cleanup code set Buffer to NULL.
+        return (process_notify_context->account_name.Buffer != NULL &&
+                process_notify_context->account_domain.Buffer != NULL)
+                   ? STATUS_SUCCESS
+                   : STATUS_UNSUCCESSFUL;
     }
 
-    if (process_notify_context->process == NULL) {
-        status = STATUS_INVALID_PARAMETER;
-        goto Exit;
-    }
-
-    token = PsReferencePrimaryToken(process_notify_context->process);
-    ebpf_assert(token != NULL);
-    if (token == NULL) {
+    // The SID was already captured by the notify routine into process_md.token_sid.
+    if (process_notify_context->process_md.token_sid_size == 0) {
         status = STATUS_UNSUCCESSFUL;
         goto Exit;
     }
 
-    status = SeQueryInformationToken(token, TokenUser, (PVOID*)&token_user);
-    if (!NT_SUCCESS(status) || token_user == NULL) {
-        goto Exit;
-    }
-
-    if (!RtlValidSid(token_user->User.Sid)) {
+    if (!RtlValidSid(sid)) {
         status = STATUS_UNSUCCESSFUL;
         goto Exit;
     }
@@ -688,7 +707,7 @@ _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_c
 
     // Try the lookup optimistically with the existing (stack) buffers.
     status = SecLookupAccountSid(
-        token_user->User.Sid,
+        sid,
         &name_size,
         &process_notify_context->account_name,
         &domain_size,
@@ -728,7 +747,7 @@ _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_c
         }
 
         status = SecLookupAccountSid(
-            token_user->User.Sid,
+            sid,
             &name_size,
             &process_notify_context->account_name,
             &domain_size,
@@ -758,13 +777,6 @@ Exit:
         process_notify_context->account_domain.Buffer = NULL;
         process_notify_context->account_domain.Length = 0;
         process_notify_context->account_domain.MaximumLength = 0;
-    }
-
-    if (token_user != NULL) {
-        ExFreePool(token_user);
-    }
-    if (token != NULL) {
-        PsDereferencePrimaryToken(token);
     }
 
     return status;
