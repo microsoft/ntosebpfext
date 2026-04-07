@@ -577,5 +577,4 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     bpf_opts.data_size_in = static_cast<uint32_t>(total_data_size - 1);
     REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) != 0);
 }
-
 #pragma endregion process

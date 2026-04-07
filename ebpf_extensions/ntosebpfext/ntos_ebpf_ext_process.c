@@ -12,6 +12,7 @@
 #include "shared_context.h"
 
 #include <errno.h>
+#include <limits.h>
 
 // Maximum number of bytes for inline account name/domain buffers on the stack.
 #define ACCOUNT_STRING_INLINE_BYTES 80
@@ -253,6 +254,45 @@ typedef struct _process_notify_context
     BOOLEAN account_lookup_done;
 } process_notify_context_t;
 
+// Deep-copy a UNICODE_STRING from a packed data buffer, advancing the data pointer.
+static ebpf_result_t
+_deep_copy_unicode_string_from_data(
+    _Out_ UNICODE_STRING* dest, _In_ const UNICODE_STRING* src_descriptor, _Inout_ const uint8_t** data_ptr)
+{
+    if (src_descriptor->Length == 0) {
+        RtlInitUnicodeString(dest, NULL);
+        return EBPF_SUCCESS;
+    }
+    dest->Buffer =
+        (PWSTR)ExAllocatePoolUninitialized(NonPagedPoolNx, src_descriptor->MaximumLength, EBPF_EXTENSION_POOL_TAG);
+    if (dest->Buffer == NULL) {
+        return EBPF_NO_MEMORY;
+    }
+#pragma warning(push)
+#pragma warning(disable : 6386) // Length <= MaximumLength validated by caller.
+    memcpy(dest->Buffer, *data_ptr, src_descriptor->Length);
+#pragma warning(pop)
+    dest->Length = src_descriptor->Length;
+    dest->MaximumLength = src_descriptor->MaximumLength;
+    *data_ptr += src_descriptor->Length;
+    return EBPF_SUCCESS;
+}
+
+// Copy a UNICODE_STRING's content into a caller-supplied byte buffer.
+static int32_t
+_copy_unicode_string_to_buffer(
+    _In_ const UNICODE_STRING* source, _Out_writes_bytes_(dest_length) uint8_t* dest, uint32_t dest_length)
+{
+    if (source->Length > dest_length) {
+        return -EINVAL;
+    }
+    if (source->Buffer != NULL && source->Length > 0) {
+        memcpy(dest, source->Buffer, source->Length);
+        return (int32_t)source->Length;
+    }
+    return 0;
+}
+
 static ebpf_result_t
 _ebpf_process_context_create(
     _In_reads_bytes_opt_(data_size_in) const uint8_t* data_in,
@@ -315,108 +355,43 @@ _ebpf_process_context_create(
     // Test contexts have account data provided in data_in, so skip lazy lookup.
     process_context->account_lookup_done = TRUE;
 
-    // Parse data_in buffer: [command_line data][image_file_name data]
-    // The lengths are specified in the UNICODE_STRING structures from the context
+    // Parse data_in buffer: [command_line][image_file_name][account_name][account_domain]
+    // The lengths are specified in the UNICODE_STRING structures from the context.
 
-    // Deep copy command_line buffer from data_in if present
-    if (input_context->command_line.Length > 0) {
-        process_context->command_line.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->command_line.MaximumLength, EBPF_EXTENSION_POOL_TAG);
-        if (process_context->command_line.Buffer == NULL) {
-            EBPF_EXT_LOG_MESSAGE(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-                "Failed to allocate command_line buffer");
-            result = EBPF_NO_MEMORY;
-            goto Exit;
-        }
-        memcpy(process_context->command_line.Buffer, data_ptr, input_context->command_line.Length);
-        process_context->command_line.Length = input_context->command_line.Length;
-        process_context->command_line.MaximumLength = input_context->command_line.MaximumLength;
-
-        data_ptr += input_context->command_line.Length;
-    } else {
-        process_context->command_line.Buffer = NULL;
-        process_context->command_line.Length = 0;
-        process_context->command_line.MaximumLength = 0;
+    result =
+        _deep_copy_unicode_string_from_data(&process_context->command_line, &input_context->command_line, &data_ptr);
+    if (result != EBPF_SUCCESS) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PROCESS, "Failed to allocate command_line buffer");
+        goto Exit;
     }
 
-    // Deep copy image_file_name buffer from data_in if present
-    if (input_context->image_file_name.Length > 0) {
-        process_context->image_file_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->image_file_name.MaximumLength, EBPF_EXTENSION_POOL_TAG);
-        if (process_context->image_file_name.Buffer == NULL) {
-            EBPF_EXT_LOG_MESSAGE(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-                "Failed to allocate image_file_name buffer");
-            result = EBPF_NO_MEMORY;
-            goto Exit;
-        }
-#pragma warning(push)
-#pragma warning(disable : 6386) // Length <= MaximumLength validated above.
-        memcpy(process_context->image_file_name.Buffer, data_ptr, input_context->image_file_name.Length);
-#pragma warning(pop)
-        process_context->image_file_name.Length = input_context->image_file_name.Length;
-        process_context->image_file_name.MaximumLength = input_context->image_file_name.MaximumLength;
-
-        data_ptr += input_context->image_file_name.Length;
-    } else {
-        process_context->image_file_name.Buffer = NULL;
-        process_context->image_file_name.Length = 0;
-        process_context->image_file_name.MaximumLength = 0;
+    result = _deep_copy_unicode_string_from_data(
+        &process_context->image_file_name, &input_context->image_file_name, &data_ptr);
+    if (result != EBPF_SUCCESS) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "Failed to allocate image_file_name buffer");
+        goto Exit;
     }
 
-    // Deep copy account_name buffer from data_in if present
-    if (input_context->account_name.Length > 0) {
-        process_context->account_name.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->account_name.MaximumLength, EBPF_EXTENSION_POOL_TAG);
-        if (process_context->account_name.Buffer == NULL) {
-            EBPF_EXT_LOG_MESSAGE(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-                "Failed to allocate account_name buffer");
-            result = EBPF_NO_MEMORY;
-            goto Exit;
-        }
-#pragma warning(push)
-#pragma warning(disable : 6386) // Length <= MaximumLength validated above.
-        memcpy(process_context->account_name.Buffer, data_ptr, input_context->account_name.Length);
-#pragma warning(pop)
-        process_context->account_name.Length = input_context->account_name.Length;
-        process_context->account_name.MaximumLength = input_context->account_name.MaximumLength;
-
-        data_ptr += input_context->account_name.Length;
-    } else {
-        process_context->account_name.Buffer = NULL;
-        process_context->account_name.Length = 0;
-        process_context->account_name.MaximumLength = 0;
+    result =
+        _deep_copy_unicode_string_from_data(&process_context->account_name, &input_context->account_name, &data_ptr);
+    if (result != EBPF_SUCCESS) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR, EBPF_EXT_TRACELOG_KEYWORD_PROCESS, "Failed to allocate account_name buffer");
+        goto Exit;
     }
 
-    // Deep copy account_domain buffer from data_in if present
-    if (input_context->account_domain.Length > 0) {
-        process_context->account_domain.Buffer = (PWSTR)ExAllocatePoolUninitialized(
-            NonPagedPoolNx, input_context->account_domain.MaximumLength, EBPF_EXTENSION_POOL_TAG);
-        if (process_context->account_domain.Buffer == NULL) {
-            EBPF_EXT_LOG_MESSAGE(
-                EBPF_EXT_TRACELOG_LEVEL_ERROR,
-                EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
-                "Failed to allocate account_domain buffer");
-            result = EBPF_NO_MEMORY;
-            goto Exit;
-        }
-#pragma warning(push)
-#pragma warning(disable : 6386) // Length <= MaximumLength validated above.
-        memcpy(process_context->account_domain.Buffer, data_ptr, input_context->account_domain.Length);
-#pragma warning(pop)
-        process_context->account_domain.Length = input_context->account_domain.Length;
-        process_context->account_domain.MaximumLength = input_context->account_domain.MaximumLength;
-
-        data_ptr += input_context->account_domain.Length;
-    } else {
-        process_context->account_domain.Buffer = NULL;
-        process_context->account_domain.Length = 0;
-        process_context->account_domain.MaximumLength = 0;
+    result = _deep_copy_unicode_string_from_data(
+        &process_context->account_domain, &input_context->account_domain, &data_ptr);
+    if (result != EBPF_SUCCESS) {
+        EBPF_EXT_LOG_MESSAGE(
+            EBPF_EXT_TRACELOG_LEVEL_ERROR,
+            EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
+            "Failed to allocate account_domain buffer");
+        goto Exit;
     }
 
     // Set command_start and command_end to point to the copied command_line buffer
@@ -662,18 +637,7 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_image_path(
 {
     process_notify_context_t* process_notify_context =
         CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
-    int32_t result = 0;
-    if (process_notify_context->image_file_name.Length > path_length) {
-        return -EINVAL;
-    }
-    if (process_notify_context->image_file_name.Buffer != NULL) {
-        if (path_length >= process_notify_context->image_file_name.Length) {
-            memcpy(
-                path, process_notify_context->image_file_name.Buffer, process_notify_context->image_file_name.Length);
-            result = process_notify_context->image_file_name.Length;
-        }
-    }
-    return result;
+    return _copy_unicode_string_to_buffer(&process_notify_context->image_file_name, path, path_length);
 }
 
 // Lazily resolve the account name and domain from the process token SID.
@@ -732,6 +696,12 @@ _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_c
         &name_use);
 
     if (status == STATUS_BUFFER_TOO_SMALL) {
+        // Guard against USHORT truncation when casting ULONG sizes.
+        if (name_size > USHRT_MAX || domain_size > USHRT_MAX) {
+            status = STATUS_BUFFER_OVERFLOW;
+            goto Exit;
+        }
+
         // Stack buffers too small — heap-allocate with the returned sizes and retry.
         if (name_size > process_notify_context->account_name.MaximumLength) {
             PWSTR new_buf = (PWSTR)ExAllocatePoolUninitialized(NonPagedPoolNx, name_size, EBPF_EXTENSION_POOL_TAG);
@@ -770,9 +740,10 @@ _ebpf_process_resolve_account(_Inout_ process_notify_context_t* process_notify_c
         goto Exit;
     }
 
-    process_notify_context->account_lookup_done = TRUE;
-
 Exit:
+    // Cache the result unconditionally (success or failure) to avoid redundant
+    // kernel API calls if multiple eBPF programs invoke account helpers.
+    process_notify_context->account_lookup_done = TRUE;
     if (!NT_SUCCESS(status)) {
         // Clear account results on failure.
         if (name_heap_allocated) {
@@ -802,7 +773,6 @@ Exit:
 _Success_(return >= 0) static int32_t _ebpf_process_get_account_name(
     _In_ process_md_t* process_md, _Out_writes_bytes_(name_length) uint8_t* name, uint32_t name_length)
 {
-    int32_t result = 0;
     process_notify_context_t* process_notify_context =
         CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
     NTSTATUS status = _ebpf_process_resolve_account(process_notify_context);
@@ -812,28 +782,14 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_account_name(
             EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
             "Failed to resolve account name",
             status);
-        result = -ENOENT;
-        goto Exit;
+        return -ENOENT;
     }
-    if (process_notify_context->account_name.Length > name_length) {
-        result = -EINVAL;
-        goto Exit;
-    }
-    if (process_notify_context->account_name.Buffer != NULL) {
-        if (name_length >= process_notify_context->account_name.Length) {
-            memcpy(name, process_notify_context->account_name.Buffer, process_notify_context->account_name.Length);
-            result = process_notify_context->account_name.Length;
-        }
-    }
-
-Exit:
-    return result;
+    return _copy_unicode_string_to_buffer(&process_notify_context->account_name, name, name_length);
 }
 
 _Success_(return >= 0) static int32_t _ebpf_process_get_account_domain(
     _In_ process_md_t* process_md, _Out_writes_bytes_(domain_length) uint8_t* domain, uint32_t domain_length)
 {
-    int32_t result = 0;
     process_notify_context_t* process_notify_context =
         CONTAINING_RECORD(process_md, process_notify_context_t, process_md);
     NTSTATUS status = _ebpf_process_resolve_account(process_notify_context);
@@ -843,21 +799,7 @@ _Success_(return >= 0) static int32_t _ebpf_process_get_account_domain(
             EBPF_EXT_TRACELOG_KEYWORD_PROCESS,
             "Failed to resolve account domain",
             status);
-        result = -ENOENT;
-        goto Exit;
+        return -ENOENT;
     }
-    if (process_notify_context->account_domain.Length > domain_length) {
-        result = -EINVAL;
-        goto Exit;
-    }
-    if (process_notify_context->account_domain.Buffer != NULL) {
-        if (domain_length >= process_notify_context->account_domain.Length) {
-            memcpy(
-                domain, process_notify_context->account_domain.Buffer, process_notify_context->account_domain.Length);
-            result = process_notify_context->account_domain.Length;
-        }
-    }
-
-Exit:
-    return result;
+    return _copy_unicode_string_to_buffer(&process_notify_context->account_domain, domain, domain_length);
 }
