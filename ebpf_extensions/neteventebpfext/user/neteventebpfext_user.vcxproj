@@ -133,14 +133,15 @@
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext.c" />
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_hook_provider.c" />
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c" />
-    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog.c" />
+    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog_provider.c" />
+    <ClCompile Include="..\..\..\external\ebpf-extension-common\src\ebpf_ext_tracelog.c" />
     <ClCompile Include="..\netevent_ebpf_ext_event.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext.h" />
     <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_hook_provider.h" />
     <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.h" />
-    <ClInclude Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog.h" />
+    <ClInclude Include="..\..\..\external\ebpf-extension-common\include\ebpf_ext_tracelog.h" />
     <ClInclude Include="..\netevent_ebpf_ext_event.h" />
     <ClInclude Include="netevent_ebpf_ext_platform.h" />
   </ItemGroup>

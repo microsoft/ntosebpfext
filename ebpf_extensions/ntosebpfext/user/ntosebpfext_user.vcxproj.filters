@@ -31,7 +31,10 @@
     <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.c">
+    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog_provider.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\external\ebpf-extension-common\src\ebpf_ext_tracelog.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -54,7 +57,7 @@
     <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\ebpf_ext\ebpf_ext_tracelog.h">
+    <ClInclude Include="..\..\..\external\ebpf-extension-common\include\ebpf_ext_tracelog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
