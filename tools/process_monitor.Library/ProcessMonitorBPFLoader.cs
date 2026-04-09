@@ -177,14 +177,19 @@ namespace process_monitor.Library
         private static unsafe string GetUnicodeStringFromBpfMapFD(int mapFD, process_info_t* evt)
         {
             Span<byte> utf16BytesOnStack = stackalloc byte[64 * 1024];
+            utf16BytesOnStack.Clear();
 
             var addrOfPID = (byte*)evt + process_info_t_process_id_offset;
             var byteSpanOfPID = new Span<byte>(addrOfPID, sizeof(uint));
 
-            PInvokes.bpf_map_lookup_elem(mapFD,
+            var result = PInvokes.bpf_map_lookup_elem(mapFD,
                                          key: ref MemoryMarshal.AsRef<byte>(byteSpanOfPID),
                                          value: ref MemoryMarshal.AsRef<byte>(utf16BytesOnStack));
 
+            if (result != 0)
+            {
+                return string.Empty;
+            }
             return Encoding.Unicode.GetString(utf16BytesOnStack).Trim('\0');
         }
 

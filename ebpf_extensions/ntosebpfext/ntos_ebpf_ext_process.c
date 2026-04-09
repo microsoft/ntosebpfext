@@ -595,18 +595,13 @@ _ebpf_process_create_process_notify_routine_ex(
             if (token != NULL) {
                 PTOKEN_USER token_user = NULL;
                 NTSTATUS sid_status = SeQueryInformationToken(token, TokenUser, (PVOID*)&token_user);
-                if (NT_SUCCESS(sid_status) && token_user != NULL) {
-                    if (RtlValidSid(token_user->User.Sid)) {
-                        ULONG sid_length = RtlLengthSid(token_user->User.Sid);
-                        if (sid_length <= TOKEN_SID_MAX_SIZE) {
-                            NTSTATUS copy_status = RtlCopySid(
-                                TOKEN_SID_MAX_SIZE,
-                                (PSID)process_notify_context.process_md.token_sid,
-                                token_user->User.Sid);
-                            if (NT_SUCCESS(copy_status)) {
-                                process_notify_context.process_md.token_sid_size = sid_length;
-                            }
-                        }
+                if (NT_SUCCESS(sid_status) && token_user != NULL && RtlValidSid(token_user->User.Sid)) {
+                    ULONG sid_length = RtlLengthSid(token_user->User.Sid);
+                    if (sid_length <= TOKEN_SID_MAX_SIZE && NT_SUCCESS(RtlCopySid(
+                                                                TOKEN_SID_MAX_SIZE,
+                                                                (PSID)process_notify_context.process_md.token_sid,
+                                                                token_user->User.Sid))) {
+                        process_notify_context.process_md.token_sid_size = sid_length;
                     }
                     ExFreePool(token_user);
                 }
