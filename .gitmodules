@@ -4,3 +4,6 @@
 [submodule "external/usersim"]
 	path = external/usersim
 	url = https://github.com/microsoft/usersim.git
+[submodule "external/ebpf-extension-common"]
+	path = external/ebpf-extension-common
+	url = https://github.com/LakshK98/ebpf-extension-common.git
