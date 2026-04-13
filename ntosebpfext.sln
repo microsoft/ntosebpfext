@@ -73,8 +73,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ebpf_ext", "ebpf_ext", "{69
 		libs\ebpf_ext\ebpf_ext_hook_provider.h = libs\ebpf_ext\ebpf_ext_hook_provider.h
 		libs\ebpf_ext\ebpf_ext_prog_info_provider.c = libs\ebpf_ext\ebpf_ext_prog_info_provider.c
 		libs\ebpf_ext\ebpf_ext_prog_info_provider.h = libs\ebpf_ext\ebpf_ext_prog_info_provider.h
-		libs\ebpf_ext\ebpf_ext_tracelog.c = libs\ebpf_ext\ebpf_ext_tracelog.c
-		libs\ebpf_ext\ebpf_ext_tracelog.h = libs\ebpf_ext\ebpf_ext_tracelog.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "user", "user", "{59FFA053-2547-498C-8A3B-9E83896C89B9}"
