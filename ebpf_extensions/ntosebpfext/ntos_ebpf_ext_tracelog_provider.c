@@ -3,6 +3,7 @@
 
 // This file provides the TRACELOGGING_DEFINE_PROVIDER definition required by
 // the common tracelogging implementation in ebpf-extension-common.
+// NtosEbpfExt uses its own provider name and GUID, separate from other extensions.
 
 #include "ebpf_ext_tracelog.h"
 

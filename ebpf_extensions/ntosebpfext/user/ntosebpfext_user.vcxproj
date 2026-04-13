@@ -101,7 +101,7 @@
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext.c" />
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_hook_provider.c" />
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c" />
-    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog_provider.c" />
+    <ClCompile Include="..\ntos_ebpf_ext_tracelog_provider.c" />
     <ClCompile Include="..\..\..\external\ebpf-extension-common\src\ebpf_ext_tracelog.c" />
     <ClCompile Include="..\ntos_ebpf_ext_process.c" />
   </ItemGroup>

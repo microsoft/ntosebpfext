@@ -31,7 +31,7 @@
     <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_prog_info_provider.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\libs\ebpf_ext\ebpf_ext_tracelog_provider.c">
+    <ClCompile Include="..\netevent_ebpf_ext_tracelog_provider.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\external\ebpf-extension-common\src\ebpf_ext_tracelog.c">
