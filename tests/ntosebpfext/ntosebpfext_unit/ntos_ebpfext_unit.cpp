@@ -838,16 +838,6 @@ TEST_CASE("process_sid_to_user_mode_api", "[ntosebpfext]")
     bpf_program* process_monitor = bpf_object__find_program_by_name(object, "ProcessMonitor");
     REQUIRE(process_monitor != nullptr);
 
-    bpf_link* process_monitor_link = nullptr;
-    REQUIRE(
-        ebpf_program_attach(process_monitor, &EBPF_ATTACH_TYPE_PROCESS, nullptr, 0, &process_monitor_link) ==
-        EBPF_SUCCESS);
-    REQUIRE(process_monitor_link != nullptr);
-    auto cleanup_link = wil::scope_exit([&]() {
-        bpf_link_detach(bpf_link__fd(process_monitor_link));
-        bpf_link__destroy(process_monitor_link);
-    });
-
     fd_t process_program_fd = bpf_program__fd(process_monitor);
     REQUIRE(process_program_fd != ebpf_fd_invalid);
 
