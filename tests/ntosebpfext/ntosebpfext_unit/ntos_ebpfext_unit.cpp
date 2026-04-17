@@ -785,4 +785,172 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
     }
 }
 
+static std::atomic<uint32_t> sid_event_count = 0;
+static uint32_t sid_event_sid_size = 0;
+static uint8_t sid_event_sid[TOKEN_SID_MAX_SIZE] = {};
+
+static int
+sid_ringbuf_event_callback(void* ctx, void* data, size_t size)
+{
+    UNREFERENCED_PARAMETER(ctx);
+
+    if (size != sizeof(process_info_t)) {
+        return 0;
+    }
+
+    process_info_t* info = (process_info_t*)data;
+    if (info->process_id != TEST_PROCESS_ID) {
+        return 0;
+    }
+
+    sid_event_sid_size = info->token_sid_size;
+    memcpy(sid_event_sid, info->token_sid, TOKEN_SID_MAX_SIZE);
+    sid_event_count++;
+    return 0;
+}
+
+TEST_CASE("process_sid_to_user_mode_api", "[ntosebpfext]")
+{
+    // This test verifies that a SID written by the BPF program (kernel side) into the
+    // ring buffer can be read in user mode and successfully passed to the Windows API
+    // GetSidSubAuthorityCount.
+
+    // Reset shared state.
+    sid_event_count = 0;
+    sid_event_sid_size = 0;
+    memset(sid_event_sid, 0, sizeof(sid_event_sid));
+
+    driver_service ntosebpfext_driver;
+    REQUIRE(
+        ntosebpfext_driver.create(L"ntosebpfext", driver_service::get_driver_path("ntosebpfext.sys").c_str()) == true);
+    REQUIRE(ntosebpfext_driver.start() == true);
+    auto cleanup_driver = wil::scope_exit([&]() {
+        ntosebpfext_driver.stop();
+        ntosebpfext_driver.unload();
+    });
+
+    struct bpf_object* object = bpf_object__open("process_monitor.sys");
+    REQUIRE(object != nullptr);
+    auto cleanup_object = wil::scope_exit([&]() { bpf_object__close(object); });
+
+    REQUIRE(bpf_object__load(object) == 0);
+
+    bpf_program* process_monitor = bpf_object__find_program_by_name(object, "ProcessMonitor");
+    REQUIRE(process_monitor != nullptr);
+
+    bpf_link* process_monitor_link = nullptr;
+    REQUIRE(
+        ebpf_program_attach(process_monitor, &EBPF_ATTACH_TYPE_PROCESS, nullptr, 0, &process_monitor_link) ==
+        EBPF_SUCCESS);
+    REQUIRE(process_monitor_link != nullptr);
+    auto cleanup_link = wil::scope_exit([&]() {
+        bpf_link_detach(bpf_link__fd(process_monitor_link));
+        bpf_link__destroy(process_monitor_link);
+    });
+
+    fd_t process_program_fd = bpf_program__fd(process_monitor);
+    REQUIRE(process_program_fd != ebpf_fd_invalid);
+
+    // Set up ring buffer with the SID-capturing callback.
+    bpf_map* process_ringbuf_map = bpf_object__find_map_by_name(object, "process_ringbuf");
+    REQUIRE(process_ringbuf_map != nullptr);
+    int process_ringbuf_fd = bpf_map__fd(process_ringbuf_map);
+    REQUIRE(process_ringbuf_fd != ebpf_fd_invalid);
+
+    ebpf_ring_buffer_opts ring_opts = {.sz = sizeof(ebpf_ring_buffer_opts), .flags = EBPF_RINGBUF_FLAG_AUTO_CALLBACK};
+    ring_buffer* process_ring_buffer =
+        ebpf_ring_buffer__new(process_ringbuf_fd, sid_ringbuf_event_callback, nullptr, &ring_opts);
+    REQUIRE(process_ring_buffer != nullptr);
+    auto cleanup_ring_buffer = wil::scope_exit([&]() { ring_buffer__free(process_ring_buffer); });
+
+    // Build the input context with a well-known SID (Local System: S-1-5-18).
+    uint8_t test_sid[] = {
+        0x01, // Revision
+        0x01, // SubAuthorityCount
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x05, // IdentifierAuthority (NT Authority)
+        0x12,
+        0x00,
+        0x00,
+        0x00 // SubAuthority[0] = 18 (SECURITY_LOCAL_SYSTEM_RID)
+    };
+
+    std::wstring command_line = L"cmd.exe /c echo test";
+    std::wstring image_path = L"C:\\Windows\\System32\\cmd.exe";
+
+    test_process_notify_context_t process_ctx_in = {0};
+    test_process_notify_context_t process_ctx_out = {0};
+
+    process_ctx_in.process_md.process_id = TEST_PROCESS_ID;
+    process_ctx_in.process_md.parent_process_id = 1;
+    process_ctx_in.process_md.operation = PROCESS_OPERATION_CREATE;
+    process_ctx_in.process_md.token_sid_size = sizeof(test_sid);
+    memcpy(process_ctx_in.process_md.token_sid, test_sid, sizeof(test_sid));
+
+    process_ctx_in.command_line.Length = static_cast<USHORT>(command_line.length() * sizeof(wchar_t));
+    process_ctx_in.command_line.MaximumLength = process_ctx_in.command_line.Length;
+    process_ctx_in.command_line.Buffer = NULL;
+
+    process_ctx_in.image_file_name.Length = static_cast<USHORT>(image_path.length() * sizeof(wchar_t));
+    process_ctx_in.image_file_name.MaximumLength = process_ctx_in.image_file_name.Length;
+    process_ctx_in.image_file_name.Buffer = NULL;
+
+    process_ctx_in.account_name.Length = 0;
+    process_ctx_in.account_name.MaximumLength = 0;
+    process_ctx_in.account_domain.Length = 0;
+    process_ctx_in.account_domain.MaximumLength = 0;
+
+    size_t total_data_size = static_cast<size_t>(process_ctx_in.command_line.Length) +
+                             static_cast<size_t>(process_ctx_in.image_file_name.Length);
+    std::vector<uint8_t> packed_data(total_data_size);
+
+    size_t offset = 0;
+    memcpy(packed_data.data() + offset, command_line.c_str(), process_ctx_in.command_line.Length);
+    offset += process_ctx_in.command_line.Length;
+    memcpy(packed_data.data() + offset, image_path.c_str(), process_ctx_in.image_file_name.Length);
+
+    std::vector<uint8_t> data_out_buffer(total_data_size);
+
+    bpf_test_run_opts bpf_opts = {0};
+    bpf_opts.repeat = 1;
+    bpf_opts.ctx_in = &process_ctx_in;
+    bpf_opts.ctx_size_in = sizeof(process_ctx_in);
+    bpf_opts.ctx_out = &process_ctx_out;
+    bpf_opts.ctx_size_out = sizeof(process_ctx_out);
+    bpf_opts.data_in = packed_data.data();
+    bpf_opts.data_size_in = static_cast<uint32_t>(total_data_size);
+    bpf_opts.data_out = data_out_buffer.data();
+    bpf_opts.data_size_out = static_cast<uint32_t>(total_data_size);
+
+    // Run the BPF program which writes process_info_t (including the SID) to the ring buffer.
+    REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
+
+    // Wait for the ring buffer callback to capture the SID.
+    for (int i = 0; i < 5; i++) {
+        if (sid_event_count > 0) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    REQUIRE(sid_event_count > 0);
+
+    // The SID has arrived in user mode via the ring buffer.
+    // Validate it solely through user-mode Windows APIs — no comparison against the input bytes.
+    REQUIRE(sid_event_sid_size > 0);
+
+    PSID received_sid = (PSID)sid_event_sid;
+    REQUIRE(IsValidSid(received_sid));
+    REQUIRE(GetLengthSid(received_sid) == sid_event_sid_size);
+
+    // Use GetSidSubAuthorityCount to inspect the SID received from the ring buffer.
+    // The Local System SID (S-1-5-18) has 1 sub-authority.
+    PUCHAR sub_authority_count = GetSidSubAuthorityCount(received_sid);
+    REQUIRE(sub_authority_count != nullptr);
+    REQUIRE(*sub_authority_count == 1);
+}
+
 #pragma endregion process
