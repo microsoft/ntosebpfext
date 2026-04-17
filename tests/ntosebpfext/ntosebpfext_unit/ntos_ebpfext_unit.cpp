@@ -15,6 +15,7 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <map>
+#include <sddl.h>
 #include <stop_token>
 #include <thread>
 #pragma warning(push)
@@ -941,6 +942,15 @@ TEST_CASE("process_sid_to_user_mode_api", "[ntosebpfext]")
     PUCHAR sub_authority_count = GetSidSubAuthorityCount(received_sid);
     REQUIRE(sub_authority_count != nullptr);
     REQUIRE(*sub_authority_count == 1);
+
+    // Convert the SID to a string representation using ConvertSidToStringSidW.
+    LPWSTR sid_string = nullptr;
+    REQUIRE(ConvertSidToStringSidW(received_sid, &sid_string));
+    REQUIRE(sid_string != nullptr);
+    auto sid_string_guard = wil::scope_exit([&]() { LocalFree(sid_string); });
+
+    std::wcout << L"  SID from ring buffer: " << sid_string << std::endl;
+    REQUIRE(wcscmp(sid_string, L"S-1-5-18") == 0);
 }
 
 #pragma endregion process
