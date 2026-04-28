@@ -106,17 +106,33 @@ jobs:
     - name: Install ProcDump
       id: install_procdump
       if: (inputs.gather_dumps == true) && (steps.skip_check.outputs.should_skip != 'true')
+      env:
+        PROCDUMP_EXPECTED_HASH: '863E7F078B35327CEDC5A1101C60E26C2A9E7F76388D0D0FFE44018B381784B4'
       run: |
-        choco install -y --requirechecksum=true --checksum=863E7F078B35327CEDC5A1101C60E26C2A9E7F76388D0D0FFE44018B381784B4 --checksum-type=sha256 procdump --version=11.0
-        where procdump.exe
+        curl.exe -L -o ${{github.workspace}}\Procdump.zip https://download.sysinternals.com/files/Procdump.zip
+        $actualHash = (Get-FileHash -Path ${{github.workspace}}\Procdump.zip -Algorithm SHA256).Hash
+        if ($actualHash -ne $env:PROCDUMP_EXPECTED_HASH) { throw "Checksum mismatch: expected $env:PROCDUMP_EXPECTED_HASH, got $actualHash" }
+        Expand-Archive -Path ${{github.workspace}}\Procdump.zip -DestinationPath ${{github.workspace}}\procdump -Force
+        Remove-Item -Path ${{github.workspace}}\Procdump.zip -Force
+        echo "${{github.workspace}}\procdump" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        if (-not (Test-Path "${{github.workspace}}\procdump\procdump.exe")) { throw "ProcDump download failed" }
+        # Accept Sysinternals EULA via registry (avoids exit code 1 from -accepteula)
+        New-Item -Path "HKCU:\SOFTWARE\Sysinternals\ProcDump" -Force | Out-Null
+        New-ItemProperty -Path "HKCU:\SOFTWARE\Sysinternals\ProcDump" -Name "EulaAccepted" -Value 1 -PropertyType DWORD -Force | Out-Null
 
     - name: Set up OpenCppCoverage and add to PATH
       id: set_up_opencppcoverage
       if: (inputs.code_coverage == true) && (inputs.environment != 'ebpf_cicd_tests_ws2019' && inputs.environment != 'ebpf_cicd_tests_ws2022' && inputs.environment != 'ebpf_cicd_perf_ws2022') && (steps.skip_check.outputs.should_skip != 'true')
+      env:
+        OPENCPPCOVERAGE_EXPECTED_HASH: '2295A733DA39412C61E4F478677519DD0BB1893D88313CE56B468C9E50517888'
       run: |
-        choco install -y --requirechecksum=true --checksum=2295A733DA39412C61E4F478677519DD0BB1893D88313CE56B468C9E50517888 --checksum-type=sha256 OpenCppCoverage
+        curl.exe -L -o ${{github.workspace}}\OpenCppCoverageSetup.exe https://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/release-0.9.9.0/OpenCppCoverageSetup-x64-0.9.9.0.exe
+        $actualHash = (Get-FileHash -Path ${{github.workspace}}\OpenCppCoverageSetup.exe -Algorithm SHA256).Hash
+        if ($actualHash -ne $env:OPENCPPCOVERAGE_EXPECTED_HASH) { throw "Checksum mismatch: expected $env:OPENCPPCOVERAGE_EXPECTED_HASH, got $actualHash" }
+        Start-Process -FilePath ${{github.workspace}}\OpenCppCoverageSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
+        Remove-Item -Path ${{github.workspace}}\OpenCppCoverageSetup.exe -Force
         echo "C:\Program Files\OpenCppCoverage" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        where OpenCppCoverage.exe
+        if (-not (Test-Path "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe")) { throw "OpenCppCoverage install failed" }
 
     - name: Configure Windows Error Reporting to make a local copy of any crashes that occur.
       id: configure_windows_error_reporting
