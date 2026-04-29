@@ -109,7 +109,7 @@ jobs:
       env:
         PROCDUMP_EXPECTED_HASH: '863E7F078B35327CEDC5A1101C60E26C2A9E7F76388D0D0FFE44018B381784B4'
       run: |
-        curl.exe -L -o ${{github.workspace}}\Procdump.zip https://download.sysinternals.com/files/Procdump.zip
+        curl.exe --location --fail --show-error --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o ${{github.workspace}}\Procdump.zip https://download.sysinternals.com/files/Procdump.zip
         $actualHash = (Get-FileHash -Path ${{github.workspace}}\Procdump.zip -Algorithm SHA256).Hash
         if ($actualHash -ne $env:PROCDUMP_EXPECTED_HASH) { throw "Checksum mismatch: expected $env:PROCDUMP_EXPECTED_HASH, got $actualHash" }
         Expand-Archive -Path ${{github.workspace}}\Procdump.zip -DestinationPath ${{github.workspace}}\procdump -Force
