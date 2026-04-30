@@ -73,8 +73,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ebpf_ext", "ebpf_ext", "{69
 		libs\ebpf_ext\ebpf_ext_hook_provider.h = libs\ebpf_ext\ebpf_ext_hook_provider.h
 		libs\ebpf_ext\ebpf_ext_prog_info_provider.c = libs\ebpf_ext\ebpf_ext_prog_info_provider.c
 		libs\ebpf_ext\ebpf_ext_prog_info_provider.h = libs\ebpf_ext\ebpf_ext_prog_info_provider.h
-		libs\ebpf_ext\ebpf_ext_tracelog.c = libs\ebpf_ext\ebpf_ext_tracelog.c
-		libs\ebpf_ext\ebpf_ext_tracelog.h = libs\ebpf_ext\ebpf_ext_tracelog.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "user", "user", "{59FFA053-2547-498C-8A3B-9E83896C89B9}"
@@ -118,6 +116,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "onebranch", "tools\onebranc
 		{DB2CE6D8-F3B3-4C35-A585-5C88B4684821} = {DB2CE6D8-F3B3-4C35-A585-5C88B4684821}
 		{FA9BB88D-8259-40C1-9422-BDEDF9E9CE68} = {FA9BB88D-8259-40C1-9422-BDEDF9E9CE68}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ebpf_extension_common_km", "external\ebpf-extension-common\sys\ebpf_extension_common_km.vcxproj", "{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ebpf_extension_common_um", "external\ebpf-extension-common\user\ebpf_extension_common_um.vcxproj", "{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -301,6 +303,22 @@ Global
 		{988A1731-F674-472F-8063-84D6DEA8988D}.Release|ARM64.Build.0 = Release|x64
 		{988A1731-F674-472F-8063-84D6DEA8988D}.Release|x64.ActiveCfg = Release|x64
 		{988A1731-F674-472F-8063-84D6DEA8988D}.Release|x64.Build.0 = Release|x64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Debug|ARM64.Build.0 = Debug|ARM64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Debug|x64.ActiveCfg = Debug|x64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Debug|x64.Build.0 = Debug|x64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Release|ARM64.ActiveCfg = Release|ARM64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Release|ARM64.Build.0 = Release|ARM64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Release|x64.ActiveCfg = Release|x64
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D}.Release|x64.Build.0 = Release|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Debug|ARM64.ActiveCfg = Debug|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Debug|ARM64.Build.0 = Debug|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Debug|x64.ActiveCfg = Debug|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Debug|x64.Build.0 = Debug|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Release|ARM64.ActiveCfg = Release|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Release|ARM64.Build.0 = Release|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Release|x64.ActiveCfg = Release|x64
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -338,6 +356,8 @@ Global
 		{745CE91D-4115-4739-9574-4344EBE5DE43} = {FD22C885-E280-4166-AE1C-79D71BD006A7}
 		{6F4A225E-D0C9-46B1-8392-86A3AD4450B8} = {54A23059-C3A5-4527-9AA6-F8850930D838}
 		{988A1731-F674-472F-8063-84D6DEA8988D} = {FD22C885-E280-4166-AE1C-79D71BD006A7}
+		{A9C1C11D-8B8E-4F3A-9D5C-6E7F8B9A0C1D} = {C9EAA3D8-0D9C-4E28-BD1F-13017476EAE5}
+		{B2D3E12F-9C7A-4E5B-8F6D-7A8C9B0D1E2F} = {C9EAA3D8-0D9C-4E28-BD1F-13017476EAE5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {90721348-AF7A-4E32-B38F-7368E0044BAC}
