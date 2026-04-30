@@ -109,11 +109,20 @@ jobs:
       env:
         PROCDUMP_EXPECTED_HASH: '863E7F078B35327CEDC5A1101C60E26C2A9E7F76388D0D0FFE44018B381784B4'
       run: |
-        curl.exe --location --fail --show-error --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o ${{github.workspace}}\Procdump.zip https://download.sysinternals.com/files/Procdump.zip
-        $actualHash = (Get-FileHash -Path ${{github.workspace}}\Procdump.zip -Algorithm SHA256).Hash
-        if ($actualHash -ne $env:PROCDUMP_EXPECTED_HASH) { throw "Checksum mismatch: expected $env:PROCDUMP_EXPECTED_HASH, got $actualHash" }
-        Expand-Archive -Path ${{github.workspace}}\Procdump.zip -DestinationPath ${{github.workspace}}\procdump -Force
-        Remove-Item -Path ${{github.workspace}}\Procdump.zip -Force
+        function Download-AndVerify {
+          param(
+            [Parameter(Mandatory = $true)][string]$Url,
+            [Parameter(Mandatory = $true)][string]$DestinationPath,
+            [Parameter(Mandatory = $true)][string]$ExpectedHash
+          )
+          curl.exe --location --fail --show-error --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o $DestinationPath $Url
+          $downloadedHash = (Get-FileHash -Path $DestinationPath -Algorithm SHA256).Hash
+          if ($downloadedHash -ne $ExpectedHash) { throw "Checksum mismatch: expected $ExpectedHash, got $downloadedHash" }
+        }
+        $procDumpZipPath = "${{github.workspace}}\Procdump.zip"
+        Download-AndVerify -Url "https://download.sysinternals.com/files/Procdump.zip" -DestinationPath $procDumpZipPath -ExpectedHash $env:PROCDUMP_EXPECTED_HASH
+        Expand-Archive -Path $procDumpZipPath -DestinationPath ${{github.workspace}}\procdump -Force
+        Remove-Item -Path $procDumpZipPath -Force
         echo "${{github.workspace}}\procdump" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         if (-not (Test-Path "${{github.workspace}}\procdump\procdump.exe")) { throw "ProcDump download failed" }
         # Accept Sysinternals EULA via registry (avoids exit code 1 from -accepteula)
@@ -126,11 +135,20 @@ jobs:
       env:
         OPENCPPCOVERAGE_EXPECTED_HASH: '2295A733DA39412C61E4F478677519DD0BB1893D88313CE56B468C9E50517888'
       run: |
-        curl.exe --fail --show-error --location --retry 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o ${{github.workspace}}\OpenCppCoverageSetup.exe https://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/release-0.9.9.0/OpenCppCoverageSetup-x64-0.9.9.0.exe
-        $actualHash = (Get-FileHash -Path ${{github.workspace}}\OpenCppCoverageSetup.exe -Algorithm SHA256).Hash
-        if ($actualHash -ne $env:OPENCPPCOVERAGE_EXPECTED_HASH) { throw "Checksum mismatch: expected $env:OPENCPPCOVERAGE_EXPECTED_HASH, got $actualHash" }
-        Start-Process -FilePath ${{github.workspace}}\OpenCppCoverageSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
-        Remove-Item -Path ${{github.workspace}}\OpenCppCoverageSetup.exe -Force
+        function Download-AndVerify {
+          param(
+            [Parameter(Mandatory = $true)][string]$Url,
+            [Parameter(Mandatory = $true)][string]$DestinationPath,
+            [Parameter(Mandatory = $true)][string]$ExpectedHash
+          )
+          curl.exe --location --fail --show-error --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o $DestinationPath $Url
+          $downloadedHash = (Get-FileHash -Path $DestinationPath -Algorithm SHA256).Hash
+          if ($downloadedHash -ne $ExpectedHash) { throw "Checksum mismatch: expected $ExpectedHash, got $downloadedHash" }
+        }
+        $setupPath = "${{github.workspace}}\OpenCppCoverageSetup.exe"
+        Download-AndVerify -Url "https://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/release-0.9.9.0/OpenCppCoverageSetup-x64-0.9.9.0.exe" -DestinationPath $setupPath -ExpectedHash $env:OPENCPPCOVERAGE_EXPECTED_HASH
+        Start-Process -FilePath $setupPath -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
+        Remove-Item -Path $setupPath -Force
         echo "C:\Program Files\OpenCppCoverage" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         if (-not (Test-Path "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe")) { throw "OpenCppCoverage install failed" }
 
