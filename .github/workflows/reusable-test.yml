@@ -107,7 +107,7 @@ jobs:
       id: install_procdump
       if: (inputs.gather_dumps == true) && (steps.skip_check.outputs.should_skip != 'true')
       run: |
-        choco install -y --requirechecksum=true --checksum=863E7F078B35327CEDC5A1101C60E26C2A9E7F76388D0D0FFE44018B381784B4 --checksum-type=sha256 procdump --version=11.0
+        choco install -y --requirechecksum=true --checksum=28588D9CFD3354A3A71204A570B9B60129761962F505B3CFE26DAA9A5175C14A --checksum-type=sha256 procdump --version=11.0
         where procdump.exe
 
     - name: Set up OpenCppCoverage and add to PATH
