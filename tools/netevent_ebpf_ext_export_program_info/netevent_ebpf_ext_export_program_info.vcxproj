@@ -115,7 +115,7 @@
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)external\ebpf-extension-common\include;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,7 +135,7 @@ $(OutDir)netevent_ebpf_ext_export_program_info.exe</Command>
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)external\ebpf-extension-common\include;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,7 +155,7 @@ $(OutDir)netevent_ebpf_ext_export_program_info.exe</Command>
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)external\ebpf-extension-common\include;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -175,7 +175,7 @@ $(OutDir)netevent_ebpf_ext_export_program_info.exe</Command>
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)external\ebpf-extension-common\include;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -197,7 +197,7 @@ $(OutDir)netevent_ebpf_ext_export_program_info.exe</Command>
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)include;$(SolutionDir)libs\include\user;$(SolutionDir)external\usersim\inc;$(SolutionDir)include\user;$(SolutionDir)neteventebpfext;$(SolutionDir)neteventebpfext\user;$(SolutionDir)external\usersim\cxplat\inc;$(SolutionDir)external\usersim\cxplat\inc\winuser;$(SolutionDir)external\ebpf-extension-common\include;$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
