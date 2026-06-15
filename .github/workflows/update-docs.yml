@@ -40,7 +40,7 @@ jobs:
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y doxygen
 
-      - uses: actions/checkout@de0fac2e...
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 
       - name: Clone docs
         run: |
