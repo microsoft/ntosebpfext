@@ -35,7 +35,7 @@ try {
     # llvm.tools NuGet package does not ship the builtin headers (stdbool.h, etc.).
     # The clang.headers NuGet package provides them at packages\clang.headers\include\.
     # Copy them to the resource directory so clang can find them automatically.
-    $clangResourceDir = (& "$llvmPath\clang.exe" --print-resource-dir 2>&1).Trim()
+    $clangResourceDir = (& "$llvmPath\clang.exe" --print-resource-dir).Trim()
     if ($LASTEXITCODE -ne 0 -or -not $clangResourceDir) { throw "Failed to query clang resource directory: $clangResourceDir" }
     $clangResourceInclude = Join-Path $clangResourceDir "include"
     if (-not (Test-Path $clangResourceInclude)) {
