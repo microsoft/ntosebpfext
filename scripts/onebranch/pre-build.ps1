@@ -28,13 +28,15 @@ try {
     Write-Host "##vso[task.prependpath]$llvmPath"
     Write-Host "LLVM tools installed. Clang version:"
     clang --version
+    if ($LASTEXITCODE -ne 0) { throw "Failed to run clang --version" }
 
     # Place clang builtin headers where the clang resource directory expects them.
     # clang --print-resource-dir resolves to <llvm.tools>\lib\clang\<major>, but the
     # llvm.tools NuGet package does not ship the builtin headers (stdbool.h, etc.).
     # The clang.headers NuGet package provides them at packages\clang.headers\include\.
     # Copy them to the resource directory so clang can find them automatically.
-    $clangResourceDir = & "$llvmPath\clang.exe" --print-resource-dir 2>&1
+    $clangResourceDir = (& "$llvmPath\clang.exe" --print-resource-dir 2>&1).Trim()
+    if ($LASTEXITCODE -ne 0 -or -not $clangResourceDir) { throw "Failed to query clang resource directory: $clangResourceDir" }
     $clangResourceInclude = Join-Path $clangResourceDir "include"
     if (-not (Test-Path $clangResourceInclude)) {
         New-Item -ItemType Directory -Path $clangResourceInclude -Force | Out-Null

@@ -33,7 +33,7 @@ if (-not (Test-Path $dst)) {
     New-Item -ItemType Directory -Path $dst -Force | Out-Null
 }
 
-# Use robocopy for reliable directory mirroring. Exit codes 0-7 are success.
+# Use robocopy for a reliable recursive copy. Exit codes 0-7 are success.
 robocopy $src $dst /E /NP /NFL /NDL
 if ($LASTEXITCODE -gt 7) {
     throw "robocopy failed with exit code $LASTEXITCODE"
