@@ -17,18 +17,18 @@ try {
 
     # Install LLVM tools (clang with BPF target support) for compiling eBPF programs.
     Write-Host "Installing LLVM tools..."
-nuget install llvm.tools -OutputDirectory packages -version 19.1.4-34 -ExcludeVersion
-if ($LASTEXITCODE -ne 0) { Write-Error "Failed to install llvm.tools (exit code $LASTEXITCODE)"; exit $LASTEXITCODE }
-nuget install clang.headers -OutputDirectory packages -version 19.1.4-34 -ExcludeVersion
-if ($LASTEXITCODE -ne 0) { Write-Error "Failed to install clang.headers (exit code $LASTEXITCODE)"; exit $LASTEXITCODE }
+    nuget install llvm.tools -OutputDirectory packages -Version 19.1.4-34 -ExcludeVersion
+    if ($LASTEXITCODE -ne 0) { Write-Error "Failed to install llvm.tools (exit code $LASTEXITCODE)"; exit $LASTEXITCODE }
+    nuget install clang.headers -OutputDirectory packages -Version 19.1.4-34 -ExcludeVersion
+    if ($LASTEXITCODE -ne 0) { Write-Error "Failed to install clang.headers (exit code $LASTEXITCODE)"; exit $LASTEXITCODE }
 
     # Add LLVM tools to PATH so clang is available for BPF compilation.
     $llvmPath = Join-Path (Get-Location) "packages\llvm.tools"
     $env:Path = "$llvmPath;$env:Path"
     Write-Host "##vso[task.prependpath]$llvmPath"
-Write-Host "LLVM tools installed. Clang version:"
-& "$llvmPath\clang.exe" --version
-if ($LASTEXITCODE -ne 0) { Write-Error "Failed to run clang --version (exit code $LASTEXITCODE)"; exit $LASTEXITCODE }
+    Write-Host "LLVM tools installed. Clang version:"
+    & "$llvmPath\clang.exe" --version
+    if ($LASTEXITCODE -ne 0) { Write-Error "Failed to run clang --version (exit code $LASTEXITCODE)"; exit $LASTEXITCODE }
 
     # Place clang builtin headers where the clang resource directory expects them.
     # clang --print-resource-dir resolves to <llvm.tools>\lib\clang\<major>, but the
@@ -41,10 +41,10 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Failed to run clang --version (exit code
     if (-not (Test-Path $clangResourceInclude)) {
         New-Item -ItemType Directory -Path $clangResourceInclude -Force | Out-Null
     }
-$headersSource = Join-Path (Get-Location) "packages\clang.headers\include"
-if (-not (Test-Path -Path $headersSource -PathType Container)) { Write-Error "Clang headers directory not found: $headersSource"; exit 1 }
-Write-Host "Copying clang headers from '$headersSource' to '$clangResourceInclude'..."
-Copy-Item -Path "$headersSource\*" -Destination $clangResourceInclude -Recurse -Force
+    $headersSource = Join-Path (Get-Location) "packages\clang.headers\include"
+    if (-not (Test-Path -Path $headersSource -PathType Container)) { Write-Error "Clang headers directory not found: $headersSource"; exit 1 }
+    Write-Host "Copying clang headers from '$headersSource' to '$clangResourceInclude'..."
+    Copy-Item -Path "$headersSource\*" -Destination $clangResourceInclude -Recurse -Force
     Write-Host "Clang builtin headers installed."
 
     # Copy any scripts that will be packaged into the output folder
