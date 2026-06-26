@@ -7,13 +7,18 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 # Change the parent directory for the script directory
 Set-Location $scriptPath\..
 
+# Read the eBPF-for-Windows version from ntosebpfext.props (single source of truth).
+[xml]$props = Get-Content "ntosebpfext.props"
+$ebpfVersion = $props.Project.PropertyGroup.eBPFForWindowsVersion
+$exportProgramInfoPath = ".\packages\eBPF-for-Windows.x64.$ebpfVersion\build\native\bin\export_program_info.exe"
+
 # Define the commands to run
 $commands = @(
     "git submodule update --init --recursive",
     "cmake -G 'Visual Studio 17 2022' -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF",
     "nuget restore ntosebpfext.sln",
     "dotnet restore ntosebpfext.sln",
-    ".\packages\eBPF-for-Windows.x64.1.0.0-rc1\build\native\bin\export_program_info.exe"
+    $exportProgramInfoPath
 )
 
 # Loop through each command and run them sequentially without opening a new window
