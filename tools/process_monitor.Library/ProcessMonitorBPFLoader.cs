@@ -64,11 +64,27 @@ namespace process_monitor.Library
 
         internal static void Unsubscribe(ProcessMonitor pm)
         {
+            Thread? threadToJoin = null;
             lock (_lock)
             {
                 _processMonitors.Remove(pm);
 
                 if (_processMonitors.Count == 0)
+                {
+                    // Signal the poll thread to stop and capture it.
+                    // We must NOT Join() here — the poll thread may be waiting to acquire _lock
+                    // inside ProcessMonitor_history_callback, which would deadlock.
+                    _pollCts?.Cancel();
+                    threadToJoin = _pollThread;
+                }
+            }
+
+            // Join outside _lock to avoid deadlock with ProcessMonitor_history_callback.
+            threadToJoin?.Join();
+
+            if (threadToJoin != null)
+            {
+                lock (_lock)
                 {
                     Shutdown();
                 }
@@ -138,14 +154,21 @@ namespace process_monitor.Library
                 }
 
                 // Start background polling thread.
+                _isShutdown = false;
                 _pollCts = new CancellationTokenSource();
                 var token = _pollCts.Token;
                 var rb = process_ringbuf;
+                var pollLogger = logger;
                 _pollThread = new Thread(() =>
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        PInvokes.ring_buffer__poll(rb, 200);
+                        var result = PInvokes.ring_buffer__poll(rb, 200);
+                        if (result < 0)
+                        {
+                            pollLogger.LogError("ring_buffer__poll(process_ringbuf) failed with {Result}; stopping poll thread.", result);
+                            break;
+                        }
                     }
                 }) { IsBackground = true, Name = "ProcessMonitor-RingBufPoll" };
                 _pollThread.Start();
@@ -288,9 +311,9 @@ namespace process_monitor.Library
 
                     if (process_ringbuf != IntPtr.Zero)
                     {
-                        // Stop the polling thread before freeing the ring buffer.
+                        // The poll thread should already be stopped (cancelled and joined in Unsubscribe).
+                        // If Shutdown is called by another path, cancel and clear; caller is responsible for joining.
                         _pollCts?.Cancel();
-                        _pollThread?.Join();
                         _pollCts?.Dispose();
                         _pollCts = null;
                         _pollThread = null;
