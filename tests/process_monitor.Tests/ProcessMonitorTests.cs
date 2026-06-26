@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using process_monitor.Library;
@@ -53,6 +54,7 @@ public class ProcessMonitorTests
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
+        Assert.AreEqual(WindowsIdentity.GetCurrent().User?.Value, createdArgs.TokenSid, "TokenSid should match the current user's SID");
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountName), "AccountName should be non-empty for process creation events");
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountDomain), "AccountDomain should be non-empty for process creation events");
 
@@ -73,6 +75,7 @@ public class ProcessMonitorTests
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.CreatingProcessId);
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
+        Assert.AreEqual(WindowsIdentity.GetCurrent().User?.Value, createdArgs.TokenSid, "TokenSid should match the current user's SID");
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountName), "AccountName should be non-empty for process creation events");
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.AccountDomain), "AccountDomain should be non-empty for process creation events");
 
@@ -98,7 +101,7 @@ public class ProcessMonitorTests
         Assert.AreEqual(expectedCreatingThreadId, createdArgs.CreatingThreadId);
         Assert.AreEqual($"\"cmd.exe\" /c echo {longArgs}", createdArgs.CommandLine);
         Assert.IsFalse(string.IsNullOrEmpty(createdArgs.TokenSid), "TokenSid should be non-empty for process creation events");
-
+        Assert.AreEqual(WindowsIdentity.GetCurrent().User?.Value, createdArgs.TokenSid, "TokenSid should match the current user's SID");
         Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
         Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);
         Assert.AreEqual(0u, destroyedArgs.ExitCode);
