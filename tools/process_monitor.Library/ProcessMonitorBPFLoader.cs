@@ -26,6 +26,8 @@ namespace process_monitor.Library
         private static readonly object _lock = new();
         private static readonly List<ProcessMonitor> _processMonitors = [];
         private static readonly IntPtr process_info_t_process_id_offset = Marshal.OffsetOf<process_info_t>(nameof(process_info_t.process_id));
+        private static CancellationTokenSource? _pollCts;
+        private static Thread? _pollThread;
 
         // Note: this must be kept in sync with the C version in process_monitor.sys (process_monitor.c)
         [StructLayout(LayoutKind.Sequential)]
@@ -46,17 +48,6 @@ namespace process_monitor.Library
             internal readonly UInt32 token_sid_size;
             internal unsafe fixed byte token_sid[TOKEN_SID_MAX_SIZE];
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-#pragma warning disable IDE1006 // Naming Styles - this matches the native definition's name
-        internal struct ebpf_ring_buffer_opts
-#pragma warning restore IDE1006 // Naming Styles
-        {
-            internal nuint sz;        // size_t - native unsigned integer
-            internal UInt64 flags;    // uint64_t
-        }
-
-        private const UInt64 EBPF_RINGBUF_FLAG_AUTO_CALLBACK = 1;
 
         internal static void Subscribe(ProcessMonitor pm, ILogger logger)
         {
@@ -136,21 +127,28 @@ namespace process_monitor.Library
                 // Attach to ring buffer
                 (_, var process_ringbuf_map_fd) = LoadMapByName("process_ringbuf", logger);
 
-                var ring_opts = new ebpf_ring_buffer_opts
-                {
-                    sz = (nuint)Marshal.SizeOf<ebpf_ring_buffer_opts>(),
-                    flags = EBPF_RINGBUF_FLAG_AUTO_CALLBACK
-                };
-
-                process_ringbuf = PInvokes.ebpf_ring_buffer__new(process_ringbuf_map_fd, &ProcessMonitor_history_callback, IntPtr.Zero, ref ring_opts);
+                process_ringbuf = PInvokes.ring_buffer__new(process_ringbuf_map_fd, &ProcessMonitor_history_callback, IntPtr.Zero, IntPtr.Zero);
                 if (process_ringbuf == IntPtr.Zero)
                 {
-                    throw new InvalidOperationException("ebpf_ring_buffer__new(process_ringbuf) failed!");
+                    throw new InvalidOperationException("ring_buffer__new(process_ringbuf) failed!");
                 }
                 else
                 {
-                    logger.LogDebug("SUCCESS: ebpf_ring_buffer__new(process_ringbuf) succeeded!");
+                    logger.LogDebug("SUCCESS: ring_buffer__new(process_ringbuf) succeeded!");
                 }
+
+                // Start background polling thread.
+                _pollCts = new CancellationTokenSource();
+                var token = _pollCts.Token;
+                var rb = process_ringbuf;
+                _pollThread = new Thread(() =>
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        PInvokes.ring_buffer__poll(rb, 200);
+                    }
+                }) { IsBackground = true, Name = "ProcessMonitor-RingBufPoll" };
+                _pollThread.Start();
             }
         }
 
@@ -290,6 +288,13 @@ namespace process_monitor.Library
 
                     if (process_ringbuf != IntPtr.Zero)
                     {
+                        // Stop the polling thread before freeing the ring buffer.
+                        _pollCts?.Cancel();
+                        _pollThread?.Join();
+                        _pollCts?.Dispose();
+                        _pollCts = null;
+                        _pollThread = null;
+
                         // Close ring buffer.
                         PInvokes.ring_buffer__free(process_ringbuf);
                         process_ringbuf = IntPtr.Zero;
