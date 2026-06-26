@@ -15,8 +15,6 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <map>
-#include <stop_token>
-#include <thread>
 #pragma warning(push)
 #pragma warning(disable : 28182) // Dereferencing NULL pointer. 'Temp_value_#12076' contains the same NULL
                                  //  value as 'new(1*144, nothrow)' did.
@@ -447,15 +445,14 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     offset += process_ctx_in.account_name.Length;
     memcpy(packed_data.data() + offset, account_domain.c_str(), process_ctx_in.account_domain.Length);
 
-    // Set up ring buffer consumer with auto-callback before running the test
+    // Set up ring buffer consumer before running the test
     bpf_map* process_ringbuf_map = bpf_object__find_map_by_name(object, "process_ringbuf");
     REQUIRE(process_ringbuf_map != nullptr);
     int process_ringbuf_fd = bpf_map__fd(process_ringbuf_map);
     REQUIRE(process_ringbuf_fd != ebpf_fd_invalid);
 
-    ebpf_ring_buffer_opts ring_opts = {.sz = sizeof(ebpf_ring_buffer_opts), .flags = EBPF_RINGBUF_FLAG_AUTO_CALLBACK};
     ring_buffer* process_ring_buffer =
-        ebpf_ring_buffer__new(process_ringbuf_fd, process_ringbuf_event_callback, nullptr, &ring_opts);
+        ring_buffer__new(process_ringbuf_fd, process_ringbuf_event_callback, nullptr, nullptr);
     REQUIRE(process_ring_buffer != nullptr);
     auto cleanup_ring_buffer = wil::scope_exit([&]() {
         if (process_ring_buffer != nullptr) {
@@ -463,7 +460,6 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
         }
     });
 
-    uint32_t event_count_before = process_event_count;
     // Prepare buffer for data_out
     std::vector<uint8_t> data_out_buffer(total_data_size);
 
@@ -495,14 +491,7 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
             process_ctx_in.process_md.token_sid_size) == 0);
 
     // Validate that one event was written to the ring buffer
-    // Wait for auto-callback to process events (up to 5 seconds)
-    for (int i = 0; i < 5; i++) {
-        if (process_event_count == event_count_before + 1) {
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-    REQUIRE(process_event_count == event_count_before + 1);
+    REQUIRE(ring_buffer__poll(process_ring_buffer, 5000) > 0);
 
     // Validate LRU_HASH maps: process_map and command_map
     bpf_map* process_map = bpf_object__find_map_by_name(object, "process_map");
@@ -616,9 +605,8 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
 
     bpf_map* process_ringbuf_map = bpf_object__find_map_by_name(object, "process_ringbuf");
     REQUIRE(process_ringbuf_map != nullptr);
-    ebpf_ring_buffer_opts ring_opts = {.sz = sizeof(ebpf_ring_buffer_opts), .flags = EBPF_RINGBUF_FLAG_AUTO_CALLBACK};
     ring_buffer* process_ring_buffer =
-        ebpf_ring_buffer__new(bpf_map__fd(process_ringbuf_map), process_ringbuf_event_callback, nullptr, &ring_opts);
+        ring_buffer__new(bpf_map__fd(process_ringbuf_map), process_ringbuf_event_callback, nullptr, nullptr);
     REQUIRE(process_ring_buffer != nullptr);
     auto cleanup_ring_buffer = wil::scope_exit([&]() { ring_buffer__free(process_ring_buffer); });
 
@@ -688,7 +676,6 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
         offset += process_ctx_in.account_name.Length;
         memcpy(packed_data.data() + offset, &dummy, process_ctx_in.account_domain.Length);
 
-        uint32_t event_count_before = process_event_count;
         std::vector<uint8_t> data_out_buffer(1024);
 
         bpf_opts.repeat = 1;
@@ -703,13 +690,7 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
 
         REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
 
-        for (int i = 0; i < 5; i++) {
-            if (process_event_count == event_count_before + 1) {
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        REQUIRE(process_event_count == event_count_before + 1);
+        REQUIRE(ring_buffer__poll(process_ring_buffer, 5000) > 0);
 
         uint32_t lookup_key = TEST_PROCESS_ID;
         std::vector<wchar_t> account_name_from_map(ACCOUNT_NAME_SIZE / sizeof(wchar_t), L'\0');
@@ -751,7 +732,6 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
         offset += process_ctx_in.command_line.Length;
         memcpy(packed_data.data() + offset, image_path.c_str(), process_ctx_in.image_file_name.Length);
 
-        uint32_t event_count_before = process_event_count;
         std::vector<uint8_t> data_out_buffer(total_data_size);
 
         bpf_opts.repeat = 1;
@@ -766,13 +746,7 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
 
         REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
 
-        for (int i = 0; i < 5; i++) {
-            if (process_event_count == event_count_before + 1) {
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        REQUIRE(process_event_count == event_count_before + 1);
+        REQUIRE(ring_buffer__poll(process_ring_buffer, 5000) > 0);
 
         REQUIRE(process_ctx_out.process_md.token_sid_size == 0);
 

@@ -28,7 +28,10 @@ namespace process_monitor
         internal static extern IntPtr bpf_program__attach(IntPtr bpf_program);
 
         [DllImport(ebpfApiDll, CharSet = CharSet.Ansi, PreserveSig = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern unsafe IntPtr ebpf_ring_buffer__new(int map_fd, delegate* unmanaged[Cdecl]<IntPtr, IntPtr, nint, int> sample_cb, IntPtr ctx, ref process_monitor.Library.ProcessMonitorBPFLoader.ebpf_ring_buffer_opts opts);
+        internal static extern unsafe IntPtr ring_buffer__new(int map_fd, delegate* unmanaged[Cdecl]<IntPtr, IntPtr, nint, int> sample_cb, IntPtr ctx, IntPtr opts);
+
+        [DllImport(ebpfApiDll, CharSet = CharSet.Ansi, PreserveSig = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int ring_buffer__poll(IntPtr ring_buffer, int timeout_ms);
 
         [DllImport(ebpfApiDll, CharSet = CharSet.Ansi, PreserveSig = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void ring_buffer__free(IntPtr ring_buffer);
