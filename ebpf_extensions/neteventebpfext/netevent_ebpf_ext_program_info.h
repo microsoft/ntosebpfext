@@ -18,7 +18,7 @@ static const ebpf_helper_function_prototype_t _netevent_event_ebpf_extension_hel
      .return_type = EBPF_RETURN_TYPE_INTEGER,
      .arguments = {EBPF_ARGUMENT_TYPE_PTR_TO_CTX}}};
 
-static const ebpf_ctx_descriptor_t _ebpf_netevent_program_context_descriptor = {
+static const ebpf_context_descriptor_t _ebpf_netevent_program_context_descriptor = {
     (int)sizeof(netevent_event_md_t),
     EBPF_OFFSET_OF(netevent_event_md_t, data),
     EBPF_OFFSET_OF(netevent_event_md_t, data_end),

@@ -31,7 +31,7 @@ static const ebpf_helper_function_prototype_t _process_ebpf_extension_helper_fun
          {EBPF_ARGUMENT_TYPE_PTR_TO_CTX, EBPF_ARGUMENT_TYPE_PTR_TO_WRITABLE_MEM, EBPF_ARGUMENT_TYPE_CONST_SIZE}},
 };
 
-static const ebpf_ctx_descriptor_t _ebpf_process_context_descriptor = {
+static const ebpf_context_descriptor_t _ebpf_process_context_descriptor = {
     sizeof(process_md_t),
     EBPF_OFFSET_OF(process_md_t, command_start),
     EBPF_OFFSET_OF(process_md_t, command_end),
