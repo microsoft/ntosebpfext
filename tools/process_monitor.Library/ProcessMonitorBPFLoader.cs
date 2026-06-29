@@ -23,6 +23,7 @@ namespace process_monitor.Library
         private static IntPtr account_domain_map = IntPtr.Zero;
         private static int account_domain_map_fd = 0;
         private static bool _isShutdown;
+        private static bool _shutdownInProgress;
         private static readonly object _lock = new();
         private static readonly List<ProcessMonitor> _processMonitors = [];
         private static readonly IntPtr process_info_t_process_id_offset = Marshal.OffsetOf<process_info_t>(nameof(process_info_t.process_id));
@@ -53,6 +54,14 @@ namespace process_monitor.Library
         {
             lock (_lock)
             {
+                // Wait if a concurrent Unsubscribe() is mid-shutdown (poll thread join is in progress).
+                // Without this, Subscribe() could call Initialize() before Shutdown() tears down the
+                // old resources, and Shutdown() would then destroy the newly initialized state.
+                while (_shutdownInProgress)
+                {
+                    Monitor.Wait(_lock);
+                }
+
                 if (_processMonitors.Count == 0)
                 {
                     Initialize(logger);
@@ -65,12 +74,15 @@ namespace process_monitor.Library
         internal static void Unsubscribe(ProcessMonitor pm)
         {
             Thread? threadToJoin = null;
+            bool doShutdown = false;
             lock (_lock)
             {
                 _processMonitors.Remove(pm);
 
                 if (_processMonitors.Count == 0)
                 {
+                    doShutdown = true;
+                    _shutdownInProgress = true;
                     // Signal the poll thread to stop and capture it.
                     // We must NOT Join() here — the poll thread may be waiting to acquire _lock
                     // inside ProcessMonitor_history_callback, which would deadlock.
@@ -82,11 +94,13 @@ namespace process_monitor.Library
             // Join outside _lock to avoid deadlock with ProcessMonitor_history_callback.
             threadToJoin?.Join();
 
-            if (threadToJoin != null)
+            if (doShutdown)
             {
                 lock (_lock)
                 {
                     Shutdown();
+                    _shutdownInProgress = false;
+                    Monitor.PulseAll(_lock); // Wake any Subscribe() calls waiting on shutdown.
                 }
             }
         }
