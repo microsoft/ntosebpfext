@@ -347,24 +347,9 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
     int res = bpf_object__load(object);
     REQUIRE(res == 0);
 
-    // Find and attach to the process monitor BPF program.
+    // Find the process monitor BPF program.
     bpf_program* process_monitor = bpf_object__find_program_by_name(object, "ProcessMonitor");
     REQUIRE(process_monitor != nullptr);
-
-    ebpf_result_t result;
-    bpf_link* process_monitor_link = nullptr;
-    result = ebpf_program_attach(process_monitor, &EBPF_ATTACH_TYPE_PROCESS, nullptr, 0, &process_monitor_link);
-    REQUIRE(result == EBPF_SUCCESS);
-    REQUIRE(process_monitor_link != nullptr);
-    auto cleanup_link = wil::scope_exit([&]() {
-        if (process_monitor_link != nullptr) {
-            int link_fd = bpf_link__fd(process_monitor_link);
-            if (link_fd != ebpf_fd_invalid) {
-                bpf_link_detach(link_fd);
-            }
-            bpf_link__destroy(process_monitor_link);
-        }
-    });
 
     // Initialize structures required for bpf_prog_test_run_opts
     bpf_test_run_opts bpf_opts = {0};
@@ -490,8 +475,10 @@ TEST_CASE("process_bpf_prog_run_test", "[ntosebpfext]")
             process_ctx_in.process_md.token_sid,
             process_ctx_in.process_md.token_sid_size) == 0);
 
-    // Validate that one event was written to the ring buffer
+    // Validate that exactly one event was written to the ring buffer
+    uint32_t event_count_before = process_event_count;
     REQUIRE(ring_buffer__poll(process_ring_buffer, 5000) > 0);
+    REQUIRE(process_event_count == event_count_before + 1);
 
     // Validate LRU_HASH maps: process_map and command_map
     bpf_map* process_map = bpf_object__find_map_by_name(object, "process_map");
@@ -590,16 +577,6 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
     bpf_program* process_monitor = bpf_object__find_program_by_name(object, "ProcessMonitor");
     REQUIRE(process_monitor != nullptr);
 
-    bpf_link* process_monitor_link = nullptr;
-    REQUIRE(
-        ebpf_program_attach(process_monitor, &EBPF_ATTACH_TYPE_PROCESS, nullptr, 0, &process_monitor_link) ==
-        EBPF_SUCCESS);
-    REQUIRE(process_monitor_link != nullptr);
-    auto cleanup_link = wil::scope_exit([&]() {
-        bpf_link_detach(bpf_link__fd(process_monitor_link));
-        bpf_link__destroy(process_monitor_link);
-    });
-
     fd_t process_program_fd = bpf_program__fd(process_monitor);
     REQUIRE(process_program_fd != ebpf_fd_invalid);
 
@@ -690,7 +667,9 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
 
         REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
 
+        uint32_t event_count_before_s1 = process_event_count;
         REQUIRE(ring_buffer__poll(process_ring_buffer, 5000) > 0);
+        REQUIRE(process_event_count == event_count_before_s1 + 1);
 
         uint32_t lookup_key = TEST_PROCESS_ID;
         std::vector<wchar_t> account_name_from_map(ACCOUNT_NAME_SIZE / sizeof(wchar_t), L'\0');
@@ -746,7 +725,9 @@ TEST_CASE("process_resolve_account", "[ntosebpfext]")
 
         REQUIRE(bpf_prog_test_run_opts(process_program_fd, &bpf_opts) == 0);
 
+        uint32_t event_count_before_s2 = process_event_count;
         REQUIRE(ring_buffer__poll(process_ring_buffer, 5000) > 0);
+        REQUIRE(process_event_count == event_count_before_s2 + 1);
 
         REQUIRE(process_ctx_out.process_md.token_sid_size == 0);
 
