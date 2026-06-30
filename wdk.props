@@ -6,8 +6,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="Platform">
   <PropertyGroup>
     <HostPlatform>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</HostPlatform>
-    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
-    <WDKVersion>10.0.26100.4204</WDKVersion>
+    <!-- Visual Studio 2026 (18.0+) requires the newer WDK; Visual Studio 2022 uses the prior WDK.
+         The matching NuGet packages for both versions are listed in scripts\setup_build\packages.config
+         so the imports below resolve to whichever toolset is active. -->
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">10.0.28000.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0.26100.0</WindowsTargetPlatformVersion>
+    <WDKVersion Condition="'$(WDKVersion)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">10.0.28000.1839</WDKVersion>
+    <WDKVersion Condition="'$(WDKVersion)' == ''">10.0.26100.4204</WDKVersion>
   </PropertyGroup>
 
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
