@@ -20,6 +20,14 @@
          generator) and the user-mode projects share one toolset, avoiding STL link mismatches. -->
     <EbpfPlatformToolset Condition="'$(EbpfPlatformToolset)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">v145</EbpfPlatformToolset>
     <EbpfPlatformToolset Condition="'$(EbpfPlatformToolset)' == ''">v143</EbpfPlatformToolset>
+    <!-- Platform toolset consumed by the ebpf-extension-common submodule. Its Directory.Build.props
+         imports "$(SolutionDir)wdk.props", which resolves to THIS file when the submodule is built as
+         part of ntosebpfext.sln, so the toolset variable its vcxproj files reference
+         ($(EbpfExtPlatformToolset)) must be defined here. Kept in lockstep with $(EbpfPlatformToolset)
+         so the submodule's user-mode lib and the consuming unit-test objects share one toolset
+         (mismatched toolsets cause C1047 under Release LTCG). -->
+    <EbpfExtPlatformToolset Condition="'$(EbpfExtPlatformToolset)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">v145</EbpfExtPlatformToolset>
+    <EbpfExtPlatformToolset Condition="'$(EbpfExtPlatformToolset)' == ''">v143</EbpfExtPlatformToolset>
   </PropertyGroup>
 
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
