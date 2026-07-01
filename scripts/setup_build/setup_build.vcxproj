@@ -51,13 +51,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>$(EbpfPlatformToolset)</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>$(EbpfPlatformToolset)</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -90,7 +90,7 @@
     <PreBuildEvent>
       <Command>powershell -NonInteractive -ExecutionPolicy Unrestricted $(SolutionDir)scripts\copy_pre_commit.ps1 $(SolutionDir)scripts\pre-commit
 powershell -NonInteractive -ExecutionPolicy Unrestricted $(SolutionDir)scripts\generate-commitid.ps1 $(SolutionDir)\include
-copy "$(VC_DebugCppRuntimeFilesPath_x64)\Microsoft.VC143.DebugCRT\*" "$(OutDir)"
+for /d %%d in ("$(VC_DebugCppRuntimeFilesPath_x64)\Microsoft.VC*.DebugCRT") do xcopy /D /Y "%%d\*" "$(OutDir)"
 copy "$(UniversalDebugCRT_ExecutablePath_x64)\ucrtbased.dll" "$(OutDir)"
 copy "$(EbpfBinPath)\ebpfapi.dll" $(OutDir)</Command>
     </PreBuildEvent>
@@ -109,7 +109,7 @@ copy "$(EbpfBinPath)\ebpfapi.dll" $(OutDir)</Command>
     <PreBuildEvent>
       <Command>powershell -NonInteractive -ExecutionPolicy Unrestricted $(SolutionDir)scripts\copy_pre_commit.ps1 $(SolutionDir)scripts\pre-commit
 powershell -NonInteractive -ExecutionPolicy Unrestricted $(SolutionDir)scripts\generate-commitid.ps1 $(SolutionDir)\include
-copy "$(VC_CppRuntimeFilesPath_x64)\Microsoft.VC143.CRT" "$(OutDir)"
+for /d %%d in ("$(VC_CppRuntimeFilesPath_x64)\Microsoft.VC*.CRT") do xcopy /D /Y "%%d\*" "$(OutDir)"
 copy "$(EbpfBinPath)\ebpfapi.dll" $(OutDir)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
