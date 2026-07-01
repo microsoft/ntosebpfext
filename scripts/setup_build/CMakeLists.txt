@@ -87,7 +87,7 @@ add_custom_command(
     OUTPUT
         "${output_redist_bins}"
     COMMAND
-        cmd /c for /d %%d in (\"${input_redist_root}\\${input_redist_glob}\") do ${CMAKE_COMMAND} -E copy_directory \"%%d\" ${output_dir}
+        cmd /c "for /d %%d in (\"${input_redist_root}\\${input_redist_glob}\") do \"${CMAKE_COMMAND}\" -E copy_directory \"%%d\" \"${output_dir}\""
 )
 
 add_custom_command(
