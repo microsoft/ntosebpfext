@@ -224,7 +224,14 @@ $source_directory="."
 $destination_directory="C:\Temp"
 $error.clear()
 $vm="Windows 10 dev environment"
-$vc_redist_dir = Join-Path -Path $env:VCToolsRedistDir '\debug_nonredist\x64\Microsoft.VC143.DebugCRT\'
+# Resolve the toolset-specific debug CRT redist folder. The folder is named after the toolset major
+# version (Microsoft.VC143.DebugCRT for v143, Microsoft.VC145.DebugCRT for v145), so glob it instead
+# of hardcoding a version to stay compatible across Visual Studio 2022 / 2026 toolsets.
+$vc_redist_parent = Join-Path -Path $env:VCToolsRedistDir 'debug_nonredist\x64'
+$vc_redist_dir = (Get-ChildItem -Path $vc_redist_parent -Directory -Filter 'Microsoft.VC*.DebugCRT' -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+if (-not $vc_redist_dir) {
+    $vc_redist_dir = Join-Path -Path $vc_redist_parent 'Microsoft.VC143.DebugCRT'
+}
 $copy_redist=$false
 
 ##
