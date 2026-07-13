@@ -64,12 +64,12 @@
     <ClCompile>
       <!-- Statically link the C++ runtime so the VC++ redistributable is not required at deployment. -->
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <WholeProgramOptimization Condition="'$(EnableAsan)' != 'true'">true</WholeProgramOptimization>
+      <WholeProgramOptimization Condition="'$(EnableASAN)' != 'true'">true</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <!-- Keep the Universal CRT dynamically linked (ucrtbase.dll ships with the OS) instead of static libucrt.lib. -->
       <AdditionalOptions Condition="'$(EnableASAN)' != 'true'">/NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib /spgo %(AdditionalOptions)</AdditionalOptions>
-      <LinkTimeCodeGeneration Condition="'$(EnableAsan)' != 'true'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration Condition="'$(EnableASAN)' != 'true'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
@@ -78,7 +78,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <!-- Statically link the C++ runtime so the VC++ redistributable is not required at deployment. -->
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <!-- Statically link the C++ runtime so the VC++ redistributable is not required at deployment. -->
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
+    <Link>
+      <!-- Keep the Universal CRT dynamically linked (ucrtbased.dll) instead of static libucrtd.lib. -->
+      <AdditionalOptions Condition="'$(EnableASAN)' != 'true'">/NODEFAULTLIB:libucrtd.lib /DEFAULTLIB:ucrtd.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
     <Link>
       <!-- Keep the Universal CRT dynamically linked (ucrtbased.dll) instead of static libucrtd.lib. -->
       <AdditionalOptions Condition="'$(EnableASAN)' != 'true'">/NODEFAULTLIB:libucrtd.lib /DEFAULTLIB:ucrtd.lib %(AdditionalOptions)</AdditionalOptions>
