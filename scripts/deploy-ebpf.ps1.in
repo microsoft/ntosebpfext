@@ -224,8 +224,6 @@ $source_directory="."
 $destination_directory="C:\Temp"
 $error.clear()
 $vm="Windows 10 dev environment"
-$vc_redist_dir = Join-Path -Path $env:VCToolsRedistDir '\debug_nonredist\x64\Microsoft.VC143.DebugCRT\'
-$copy_redist=$false
 
 ##
 ## Process command-line options
