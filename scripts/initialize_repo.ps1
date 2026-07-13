@@ -15,7 +15,7 @@ $exportProgramInfoPath = ".\packages\eBPF-for-Windows.x64.$ebpfVersion\build\nat
 # Define the commands to run
 $commands = @(
     "git submodule update --init --recursive",
-    'cmake -G "Visual Studio 17 2022" -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded`$<`$<CONFIG:Debug>:Debug>`$<`$<CONFIG:FuzzerDebug>:Debug>',
+    'cmake -G "Visual Studio 17 2022" -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded`$<`$<CONFIG:Debug>:Debug>`$<`$<CONFIG:FuzzerDebug>:Debug>"',
     "nuget restore ntosebpfext.sln",
     "dotnet restore ntosebpfext.sln",
     $exportProgramInfoPath
