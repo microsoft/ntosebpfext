@@ -12,10 +12,13 @@ Set-Location $scriptPath\..
 $ebpfVersion = $props.Project.PropertyGroup.eBPFForWindowsVersion
 $exportProgramInfoPath = ".\packages\eBPF-for-Windows.x64.$ebpfVersion\build\native\bin\export_program_info.exe"
 
-# Define the commands to run
+# Define the commands to run. String entries are run via Invoke-Expression; script block
+# entries are invoked directly so their arguments are not re-parsed by the shell. The cmake
+# call must be a script block because the CMake generator expression contains '<' and '>'
+# characters that Invoke-Expression would otherwise treat as redirection operators.
 $commands = @(
     "git submodule update --init --recursive",
-    'cmake -G "Visual Studio 17 2022" -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<CONFIG:FuzzerDebug>:Debug>',
+    { & cmake -G "Visual Studio 17 2022" -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<CONFIG:FuzzerDebug>:Debug>' },
     "nuget restore ntosebpfext.sln",
     "dotnet restore ntosebpfext.sln",
     $exportProgramInfoPath
@@ -24,7 +27,11 @@ $commands = @(
 # Loop through each command and run them sequentially without opening a new window
 foreach ($command in $commands) {
     Write-Host ">> Running command: $command"
-    Invoke-Expression -Command $command
+    if ($command -is [scriptblock]) {
+        & $command
+    } else {
+        Invoke-Expression -Command $command
+    }
 
     # Check the exit code
     if ($LASTEXITCODE -ne 0) {
