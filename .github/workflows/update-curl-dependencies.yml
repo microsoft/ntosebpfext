@@ -15,7 +15,7 @@ name: Update curl-downloaded dependencies
 on:
   # Allow this workflow to be manually triggered.
   workflow_dispatch:
-  # Run this everyday at 6am UTC.
+  # Run this every day at 6am UTC.
   schedule:
     - cron: '0 6 * * *'
 
