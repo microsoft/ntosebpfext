@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           # Download current ProcDump and compute hash.
-          URL=$(jq -r '.procdump.url' .github/curl-dependencies.json)
+          URL=$(jq -er '.procdump.url' .github/curl-dependencies.json)
           curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o /tmp/Procdump.zip "$URL"
           test -s /tmp/Procdump.zip || { echo "ERROR: ProcDump download is empty"; exit 1; }
           NEW_HASH=$(sha256sum /tmp/Procdump.zip | awk '{print toupper($1)}')
@@ -93,7 +93,7 @@ jobs:
           LATEST=$(gh api repos/OpenCppCoverage/OpenCppCoverage/releases/latest \
             --jq '.tag_name')
           # Current version pinned in the dependency manifest.
-          CURRENT=$(jq -r '.opencppcoverage.version' .github/curl-dependencies.json)
+          CURRENT=$(jq -er '.opencppcoverage.version' .github/curl-dependencies.json)
 
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
           echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
