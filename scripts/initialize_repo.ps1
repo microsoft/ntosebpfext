@@ -1,6 +1,11 @@
 # Copyright (c) Microsoft Corporation
 # SPDX-License-Identifier: MIT
 
+# Make PowerShell-level errors (e.g., command not found, parse errors) terminating so they
+# raise exceptions instead of merely writing to the error stream. Without this, a stale
+# $LASTEXITCODE from a previous native command could make a failed step look successful.
+$ErrorActionPreference = "Stop"
+
 # Get the path where this script is located
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -27,13 +32,27 @@ $commands = @(
 # Loop through each command and run them sequentially without opening a new window
 foreach ($command in $commands) {
     Write-Host ">> Running command: $command"
-    if ($command -is [scriptblock]) {
-        & $command
-    } else {
-        Invoke-Expression -Command $command
+
+    # Reset $LASTEXITCODE so a stale value from a previous native command cannot be
+    # mistaken for success if this step fails before setting its own exit code.
+    $global:LASTEXITCODE = 0
+
+    try {
+        if ($command -is [scriptblock]) {
+            & $command
+        } else {
+            Invoke-Expression -Command $command
+        }
+    } catch {
+        # A PowerShell-level failure (command not found, parse error, etc.) throws here.
+        Write-Host "Command failed: $($_.Exception.Message)"
+        if ($LASTEXITCODE -ne 0) {
+            Exit $LASTEXITCODE
+        }
+        Exit 1
     }
 
-    # Check the exit code
+    # Check the exit code for native command failures that do not throw.
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Command failed. Exit code: $LASTEXITCODE"
         Exit  $LASTEXITCODE
