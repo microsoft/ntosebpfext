@@ -107,7 +107,7 @@ jobs:
       id: install_procdump
       if: (inputs.gather_dumps == true) && (steps.skip_check.outputs.should_skip != 'true')
       run: |
-        $curlDependencies = Get-Content "${{github.workspace}}\.github\curl-dependencies.json" | ConvertFrom-Json
+        $curlDependencies = Get-Content -Raw "${{github.workspace}}\.github\curl-dependencies.json" | ConvertFrom-Json
         $url = $curlDependencies.procdump.url
         $expectedHash = $curlDependencies.procdump.hash
         $procDumpZipPath = "${{github.workspace}}\Procdump.zip"
@@ -124,7 +124,7 @@ jobs:
       id: set_up_opencppcoverage
       if: (inputs.code_coverage == true) && (inputs.environment != 'ebpf_cicd_tests_ws2019' && inputs.environment != 'ebpf_cicd_tests_ws2022' && inputs.environment != 'ebpf_cicd_perf_ws2022') && (steps.skip_check.outputs.should_skip != 'true')
       run: |
-        $curlDependencies = Get-Content "${{github.workspace}}\.github\curl-dependencies.json" | ConvertFrom-Json
+        $curlDependencies = Get-Content -Raw "${{github.workspace}}\.github\curl-dependencies.json" | ConvertFrom-Json
         $version = $curlDependencies.opencppcoverage.version
         $expectedHash = $curlDependencies.opencppcoverage.hash
         $versionNumber = $version -replace '^release-', ''

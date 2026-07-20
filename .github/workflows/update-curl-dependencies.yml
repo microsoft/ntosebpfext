@@ -42,8 +42,7 @@ jobs:
           rm /tmp/Procdump.zip
 
           # Extract current hash from the dependency manifest.
-          OLD_HASH=$(jq -r '.procdump.hash' .github/curl-dependencies.json)
-
+          OLD_HASH=$(jq -er '.procdump.hash' .github/curl-dependencies.json)
           echo "old_hash=$OLD_HASH" >> "$GITHUB_OUTPUT"
           echo "new_hash=$NEW_HASH" >> "$GITHUB_OUTPUT"
           if [ "$OLD_HASH" != "$NEW_HASH" ]; then
@@ -113,7 +112,7 @@ jobs:
           NEW_HASH=$(sha256sum /tmp/setup.exe | awk '{print toupper($1)}')
           rm /tmp/setup.exe
 
-          OLD_HASH=$(jq -r '.opencppcoverage.hash' .github/curl-dependencies.json)
+          OLD_HASH=$(jq -er '.opencppcoverage.hash' .github/curl-dependencies.json)
 
           echo "new_hash=$NEW_HASH" >> "$GITHUB_OUTPUT"
           echo "old_hash=$OLD_HASH" >> "$GITHUB_OUTPUT"
