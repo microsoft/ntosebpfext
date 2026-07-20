@@ -127,6 +127,7 @@ jobs:
         if ($expectedHash -notmatch '^[0-9A-Fa-f]{64}$') {
             throw "ProcDump expected hash is not a valid SHA256 hex digest: '$expectedHash'"
         }
+        $expectedHash = $expectedHash.ToUpperInvariant()
         $procDumpZipPath = "${{github.workspace}}\Procdump.zip"
         & ${{github.workspace}}\scripts\Download-AndVerify.ps1 -Url $url -DestinationPath $procDumpZipPath -ExpectedHash $expectedHash
         Expand-Archive -Path $procDumpZipPath -DestinationPath ${{github.workspace}}\procdump -Force
@@ -151,6 +152,7 @@ jobs:
         if ($expectedHash -notmatch '^[0-9A-Fa-f]{64}$') {
             throw "OpenCppCoverage expected hash is not a valid SHA256 hex digest: '$expectedHash'"
         }
+        $expectedHash = $expectedHash.ToUpperInvariant()
         $versionNumber = $version -replace '^release-', ''
         $url = "https://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/$version/OpenCppCoverageSetup-x64-$versionNumber.exe"
         $setupPath = "${{github.workspace}}\OpenCppCoverageSetup.exe"
