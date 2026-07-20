@@ -110,6 +110,23 @@ jobs:
         $curlDependencies = Get-Content -Raw "${{github.workspace}}\.github\curl-dependencies.json" | ConvertFrom-Json
         $url = $curlDependencies.procdump.url
         $expectedHash = $curlDependencies.procdump.hash
+        # Validate against a strict allowlist/format before downloading and executing anything on the runner.
+        $allowedHosts = @('download.sysinternals.com')
+        try {
+            $parsedUrl = [System.Uri]$url
+        } catch {
+            throw "ProcDump URL is not a valid URI: '$url'"
+        }
+        if ($parsedUrl.Scheme -ne 'https') {
+            throw "ProcDump URL must use https, got scheme '$($parsedUrl.Scheme)' in '$url'"
+        }
+        if ($allowedHosts -notcontains $parsedUrl.Host) {
+            throw "ProcDump URL host '$($parsedUrl.Host)' is not in the allowlist ($($allowedHosts -join ', '))"
+        }
+        # The expected hash must be exactly a 64-character hex SHA256 digest.
+        if ($expectedHash -notmatch '^[0-9A-Fa-f]{64}$') {
+            throw "ProcDump expected hash is not a valid SHA256 hex digest: '$expectedHash'"
+        }
         $procDumpZipPath = "${{github.workspace}}\Procdump.zip"
         & ${{github.workspace}}\scripts\Download-AndVerify.ps1 -Url $url -DestinationPath $procDumpZipPath -ExpectedHash $expectedHash
         Expand-Archive -Path $procDumpZipPath -DestinationPath ${{github.workspace}}\procdump -Force
@@ -127,6 +144,13 @@ jobs:
         $curlDependencies = Get-Content -Raw "${{github.workspace}}\.github\curl-dependencies.json" | ConvertFrom-Json
         $version = $curlDependencies.opencppcoverage.version
         $expectedHash = $curlDependencies.opencppcoverage.hash
+        # Validate the version and hash format strictly so that we don't allow arbitrary code execution.
+        if ($version -notmatch '^release-\d+(\.\d+){1,3}$') {
+            throw "OpenCppCoverage version is not in the expected 'release-X.Y.Z.W' format: '$version'"
+        }
+        if ($expectedHash -notmatch '^[0-9A-Fa-f]{64}$') {
+            throw "OpenCppCoverage expected hash is not a valid SHA256 hex digest: '$expectedHash'"
+        }
         $versionNumber = $version -replace '^release-', ''
         $url = "https://github.com/OpenCppCoverage/OpenCppCoverage/releases/download/$version/OpenCppCoverageSetup-x64-$versionNumber.exe"
         $setupPath = "${{github.workspace}}\OpenCppCoverageSetup.exe"
