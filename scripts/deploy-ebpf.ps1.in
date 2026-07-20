@@ -224,8 +224,6 @@ $source_directory="."
 $destination_directory="C:\Temp"
 $error.clear()
 $vm="Windows 10 dev environment"
-$vc_redist_dir = Join-Path -Path $env:VCToolsRedistDir '\debug_nonredist\x64\Microsoft.VC143.DebugCRT\'
-$copy_redist=$false
 
 ##
 ## Process command-line options
@@ -282,13 +280,11 @@ OPTIONS:
     { @("-t", "--test") -contains $_ }
         {
             $built_files= $built_runtime_files + $built_test_files
-            $copy_redist=$true
             break
         }
     { @("-j", "--jittest") -contains $_ }
         {
             $built_files= $built_runtime_files + $built_runtime_jit_files + $built_test_files
-            $copy_redist=$true
             break
         }
     default
@@ -312,21 +308,6 @@ if ($vm -eq $null) {
          New-Item -Type Directory $destination_full_directory -ErrorAction Stop | Write-Verbose
       }
       Copy-Item "$source_path" -Destination "$destination_path" -ErrorAction Stop
-   }
-
-   if ($copy_redist) {
-      Write-Host "Copying the VC++ Redist (Debug) files from `"$vc_redist_dir`" to `"$destination_directory`""
-      $files = Get-ChildItem -Path $vc_redist_dir -File
-      foreach ($file in $files) {
-        $source_path = $file.FullName
-        $destination_path = Join-Path -Path $destination_directory -ChildPath $file.Name
-        $destination_full_directory = Split-Path $destination_path -Parent
-        Write-Host " $source_path -> $destination_path"
-        if (!(Test-Path $destination_full_directory)) {
-          New-Item -Type Directory $destination_full_directory -ErrorAction Stop | Write-Verbose
-        }
-        Copy-Item -Path $source_path -Destination $destination_path -ErrorAction Stop
-      }
    }
 
    Write-Host "Copying files from `"$source_directory`" to `"$destination_directory`""
@@ -377,18 +358,4 @@ foreach ( $file in $source_files ) {
    if (! $?) {
        exit 1
    }
-}
-
-if ($copy_redist) {
-    Write-Host "Copying the VC++ Redist (Debug) files from `"$vc_redist_dir`" to `"$destination_directory`" in VM `"$vm`"..."
-    $files = Get-ChildItem -Path $vc_redist_dir -File
-    foreach ($file in $files) {
-        $source_path = $file.FullName
-        $destination_path = Join-Path -Path $destination_directory -ChildPath $file.Name
-        Write-Host " $source_path -> $destination_path"
-        Copy-VMFile "$vm" -SourcePath "$source_path" -DestinationPath "$destination_path" -CreateFullPath -FileSource Host -Force
-        if (! $?) {
-            exit 1
-        }
-    }
 }
