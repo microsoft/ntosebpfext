@@ -5,6 +5,7 @@
 #include "catch_wrapper.hpp"
 #include "cxplat_fault_injection.h"
 #include "cxplat_passed_test_log.h"
+#include "ebpf_extension.h"
 #include "ebpf_ntos_hooks.h"
 #include "ebpf_ntos_program_attach_type_guids.h"
 #include "ebpf_structs.h"
@@ -19,6 +20,7 @@
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
+#include <winternl.h>
 
 #define MAX_IMAGE_PATH_SIZE (1024)
 #define MAX_COMMAND_LINE_SIZE ((64 * 1024))
