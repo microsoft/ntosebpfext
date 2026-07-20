@@ -73,6 +73,8 @@ jobs:
           else
             gh pr create --title "Update ProcDump hash" \
               --body "ProcDump zip hash changed from \`$OLD_HASH\` to \`$NEW_HASH\`." \
+              --base main --head "$BRANCH" || gh pr view "$BRANCH" --json number >/dev/null 2>&1
+          fi
               --base main --head "$BRANCH"
           fi
 
