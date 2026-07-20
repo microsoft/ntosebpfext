@@ -36,7 +36,7 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+      uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
       with:
         egress-policy: audit
 
@@ -48,7 +48,7 @@ jobs:
 
     # Set up .NET SDK 8.0.420 which matches the version used in global.json in the repo root.
     - name: Setup .NET SDK 8.0.420
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
       with:
         dotnet-version: 8.0.420
 
@@ -62,7 +62,7 @@ jobs:
     # Set up .NET SDK using the version specified in global.json.
     - name: Setup .NET SDK
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
       with:
         global-json-file: global.json
 
@@ -94,6 +94,6 @@ jobs:
 
     - name: Upload results to Security tab
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a
+      uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a
       with:
         sarif_file: ${{ steps.ossar.outputs.sarifFile }}
