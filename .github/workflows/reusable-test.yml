@@ -95,10 +95,13 @@ jobs:
         cancel_others: 'false'
         paths_ignore: '["**.md", "**/docs/**"]'
 
-    # Checking out the branch is needed to gather correct code coverage data.
+    # Checking out the branch is needed to gather correct code coverage data, and to make
+    # .github/curl-dependencies.json and scripts/Download-AndVerify.ps1 available for the
+    # ProcDump / OpenCppCoverage install steps.
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-      # Only check out source code if code coverage is being gathered.
-      if: (inputs.code_coverage == true) && (steps.skip_check.outputs.should_skip != 'true')
+      # Check out source code if code coverage is being gathered or if crash dumps
+      # (which require ProcDump downloaded via the repo scripts) are being gathered.
+      if: ((inputs.code_coverage == true) || (inputs.gather_dumps == true)) && (steps.skip_check.outputs.should_skip != 'true')
       with:
         submodules: 'recursive'
         ref: ${{ github.event.workflow_run.head_branch }}
