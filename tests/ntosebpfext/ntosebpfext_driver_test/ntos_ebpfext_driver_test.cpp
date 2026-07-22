@@ -18,8 +18,14 @@
 #include <wil/resource.h>
 #pragma warning(pop)
 
+#include <atomic>
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
+#include <cstring>
+#include <cwchar>
+#include <iostream>
+#include <string>
+#include <vector>
 #include <winternl.h>
 
 #define MAX_IMAGE_PATH_SIZE (1024)
