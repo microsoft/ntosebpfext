@@ -24,7 +24,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{32DA760D-1A43-4940-BECE-59AE0B817ED9}</ProjectGuid>
-    <RootNamespace>neteventebpfextunit</RootNamespace>
+    <RootNamespace>neteventebpfextdrivertest</RootNamespace>
     <ProjectName>neteventebpfext_driver_test</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -132,7 +132,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="netevent_ebpfext_unit.cpp" />
+    <ClCompile Include="netevent_ebpfext_driver_test.cpp" />
     <ClCompile Include="netevent_ebpf_ext_helper.cpp" />
   </ItemGroup>
   <ItemGroup>
