@@ -95,16 +95,33 @@ jobs:
       environment: windows-2022
       capture_etw: true
 
-  # Run the neteventebpfext unit tests in GitHub.
-  neteventebpfext_units:
+  # Run the neteventebpfext driver tests in GitHub.
+  neteventebpfext_driver_tests:
     # Always run this job.
     needs: regular
     if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-test.yml
     with:
-      name: neteventebpfext unit tests
+      name: neteventebpfext driver tests
       pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.3.0
-      test_command: .\neteventebpfext_unit.exe -d yes
+      test_command: .\neteventebpfext_driver_test.exe -d yes
+      build_artifact: Build-x64
+      environment: windows-2022
+      code_coverage: true
+      gather_dumps: true
+      capture_etw: true
+      leak_detection: true
+
+  # Run the ntosebpfext driver tests in GitHub.
+  ntosebpfext_driver_tests:
+    # Always run this job.
+    needs: regular
+    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      name: ntosebpfext driver tests
+      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.3.0
+      test_command: .\ntosebpfext_driver_test.exe -d yes
       build_artifact: Build-x64
       environment: windows-2022
       code_coverage: true

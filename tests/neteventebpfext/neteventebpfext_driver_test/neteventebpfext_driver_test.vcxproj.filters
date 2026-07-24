@@ -19,7 +19,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="netevent_ebpfext_unit.cpp">
+    <ClCompile Include="netevent_ebpfext_driver_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="netevent_ebpf_ext_helper.cpp">
