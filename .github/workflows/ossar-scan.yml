@@ -41,7 +41,7 @@ jobs:
         egress-policy: audit
 
     - id: skip_check
-      uses: fkirc/skip-duplicate-actions@f75f66ce1886f00957d99748a42c724f4330bdcf # v5.3.1
+      uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
       with:
         cancel_others: 'false'
         paths_ignore: '["**.md", "**/docs/**"]'
@@ -53,7 +53,7 @@ jobs:
         dotnet-version: 8.0.420
 
     # Checking out the branch is needed to correctly log security alerts.
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       if: steps.skip_check.outputs.should_skip != 'true'
       with:
         # Only check out main repo, not submodules.
@@ -94,6 +94,6 @@ jobs:
 
     - name: Upload results to Security tab
       if: steps.skip_check.outputs.should_skip != 'true'
-      uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a
+      uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81
       with:
         sarif_file: ${{ steps.ossar.outputs.sarifFile }}

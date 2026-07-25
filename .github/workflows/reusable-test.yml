@@ -90,7 +90,7 @@ jobs:
         egress-policy: audit
 
     - id: skip_check
-      uses: fkirc/skip-duplicate-actions@f75f66ce1886f00957d99748a42c724f4330bdcf # v5.3.1
+      uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
       with:
         cancel_others: 'false'
         paths_ignore: '["**.md", "**/docs/**"]'
@@ -98,7 +98,7 @@ jobs:
     # Checking out the branch is needed to gather correct code coverage data, and to make
     # .github/curl-dependencies.json and scripts/Download-AndVerify.ps1 available for the
     # ProcDump / OpenCppCoverage install steps.
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # Check out source code if code coverage is being gathered or if crash dumps
       # (which require ProcDump downloaded via the repo scripts) are being gathered.
       if: ((inputs.code_coverage == true) || (inputs.gather_dumps == true)) && (steps.skip_check.outputs.should_skip != 'true')
@@ -414,7 +414,7 @@ jobs:
             api.github.com:443
 
       - id: skip_check
-        uses: fkirc/skip-duplicate-actions@f75f66ce1886f00957d99748a42c724f4330bdcf # v5.3.1
+        uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
         with:
           cancel_others: 'false'
           paths_ignore: '["**.md", "**/docs/**"]'
