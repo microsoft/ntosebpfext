@@ -34,20 +34,20 @@ To regards of this extension, the following artifacts will be generated in the `
 - `nteevent_sim.sys` - The driver that simulates network events.
 - `netevent_monitor.sys` - The native eBPF program that will be invoked by the `neteventebpfext` extension upon receiving network events,
 which will store them in a ring-buffer map.
-- `neteventebpfext_unit.exe` - An end-to-end unit test that includes a user-mode application that reads the network events from the ring buffer.
+- `neteventebpfext_driver_test.exe` - An end-to-end driver test that includes a user-mode application that reads the network events from the ring buffer.
 The test will generate network events using the `netevent_sim` driver, which will flow through the `neteventebpfext` extension and into the
 `netevent_monitor` eBPF program, which will store the events in the ring buffer map.
 
 #### Testing
 
-To run the end-to-end unit test, you can use the `neteventebpfext_unit.exe` application as follows:
+To run the end-to-end driver test, you can use the `neteventebpfext_driver_test.exe` application as follows:
 
 ```cmd
 REM Required only if the eBPF program information is not exported yet
 netevent_ebpf_ext_export_program_info.exe
 
 REM Run the test with debugging enabled
-neteventebpfext_unit.exe -d yes
+neteventebpfext_driver_test.exe -d yes
 ```
 
 This test will perform the following steps:
