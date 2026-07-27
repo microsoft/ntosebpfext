@@ -23,7 +23,7 @@ jobs:
 
     env:
       # Path to the solution file relative to the root of the project.
-      SOLUTION_FILE_PATH: ebpf-for-windows.sln
+      SOLUTION_FILE_PATH: ntosebpfext.sln
       BUILD_ARTIFACT_NAME: Build-x64
       BUILD_CONFIGURATION: Release
       BUILD_PLATFORM: x64

@@ -9,6 +9,10 @@
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     <CodeAnalysisRuleSet>$(SolutionDir)Analyze.default.ruleset</CodeAnalysisRuleSet>
+    <!-- VS2026 (VisualStudioVersion 18.x) ships an analysis engine that emits a spurious C28285
+         on compiler-internal SAL_range intrinsics. Use a ruleset that relaxes C28285 to Warning
+         only for VS2026, keeping it as Error for VS2022 (17.x). -->
+    <CodeAnalysisRuleSet Condition="'$(VisualStudioVersion)' &gt;= '18.0'">$(SolutionDir)Analyze.vs2026.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
     <eBPFExtensionsVersionMajor>0</eBPFExtensionsVersionMajor>
