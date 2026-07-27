@@ -144,7 +144,7 @@ jobs:
         Write-Host "Installing component '$component'..."
         $proc = Start-Process -FilePath $setup -Wait -PassThru -NoNewWindow -ArgumentList @(
           'modify',
-          '--installPath', "`"$installPath`"",
+          '--installPath', $installPath,
           '--add', $component,
           '--quiet', '--norestart', '--nocache'
         )
