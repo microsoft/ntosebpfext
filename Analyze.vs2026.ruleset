@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) Microsoft Corporation
+  SPDX-License-Identifier: MIT
+-->
+<RuleSet Name="Native Recommended Rules (VS2026)" Description="Native code analysis rules for VS2026 / SDK 10.0.28000. Inherits Analyze.default.ruleset and relaxes rules that are false positives only under the VS2026 analysis engine." ToolsVersion="16.0">
+  <Include Path="Analyze.default.ruleset" Action="Default" />
+  <Rules AnalyzerId="Microsoft.Analyzers.NativeCodeAnalysis" RuleNamespace="Microsoft.Rules.Native">
+    <!-- C28285 is downgraded to Warning because the Code Analysis engine (VS2026 /
+         SDK 10.0.28000) reports a spurious "syntax error in SAL_range" while parsing compiler-internal
+         intrinsic declarations such as _BitScanForward (SAL_range(0,(sizeof(Mask)*8)-1)). The diagnostic
+         fires in "predefined c++ types (compiler internal)", not in our source, so it is a non-actionable
+         false positive. It remains Action="Error" for VS2022 builds (Analyze.default.ruleset). Remove this
+         override once the VS2026 analysis engine parses these annotations correctly. -->
+    <Rule Id="C28285" Action="Warning" />
+  </Rules>
+</RuleSet>

@@ -6,8 +6,28 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="Platform">
   <PropertyGroup>
     <HostPlatform>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</HostPlatform>
-    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
-    <WDKVersion>10.0.26100.4204</WDKVersion>
+    <!-- Visual Studio 2026 (18.0+) requires the newer WDK; Visual Studio 2022 uses the prior WDK.
+         The matching NuGet packages for both versions are listed in scripts\setup_build\packages.config
+         so the imports below resolve to whichever toolset is active. -->
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">10.0.28000.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0.26100.0</WindowsTargetPlatformVersion>
+    <WDKVersion Condition="'$(WDKVersion)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">10.0.28000.1839</WDKVersion>
+    <WDKVersion Condition="'$(WDKVersion)' == ''">10.0.26100.4204</WDKVersion>
+    <!-- Default platform toolset for user-mode projects. Visual Studio 2026 (MSBuild 18) uses v145;
+         Visual Studio 2022 (MSBuild 17) uses v143. Kernel-mode projects override this with
+         WindowsKernelModeDriver10.0 in their own Configuration PropertyGroups. Keeping this in lockstep
+         with the WDK/target-platform selection above ensures Catch2 (built by the matching CMake
+         generator) and the user-mode projects share one toolset, avoiding STL link mismatches. -->
+    <EbpfPlatformToolset Condition="'$(EbpfPlatformToolset)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">v145</EbpfPlatformToolset>
+    <EbpfPlatformToolset Condition="'$(EbpfPlatformToolset)' == ''">v143</EbpfPlatformToolset>
+    <!-- Platform toolset consumed by the ebpf-extension-common submodule. Its Directory.Build.props
+         imports "$(SolutionDir)wdk.props", which resolves to THIS file when the submodule is built as
+         part of ntosebpfext.sln, so the toolset variable its vcxproj files reference
+         ($(EbpfExtPlatformToolset)) must be defined here. Kept in lockstep with $(EbpfPlatformToolset)
+         so the submodule's user-mode lib and the consuming unit-test objects share one toolset
+         (mismatched toolsets cause C1047 under Release LTCG). -->
+    <EbpfExtPlatformToolset Condition="'$(EbpfExtPlatformToolset)' == '' and '$(VisualStudioVersion)' &gt;= '18.0'">v145</EbpfExtPlatformToolset>
+    <EbpfExtPlatformToolset Condition="'$(EbpfExtPlatformToolset)' == ''">v143</EbpfExtPlatformToolset>
   </PropertyGroup>
 
   <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
