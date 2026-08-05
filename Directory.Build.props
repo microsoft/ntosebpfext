@@ -9,10 +9,13 @@
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
     <CodeAnalysisRuleSet>$(SolutionDir)Analyze.default.ruleset</CodeAnalysisRuleSet>
-    <!-- VS2026 (VisualStudioVersion 18.x) ships an analysis engine that emits a spurious C28285
+    <!-- VS2026 (MSBuild 18.x) ships an analysis engine that emits a spurious C28285
          on compiler-internal SAL_range intrinsics. Use a ruleset that relaxes C28285 to Warning
-         only for VS2026, keeping it as Error for VS2022 (17.x). -->
-    <CodeAnalysisRuleSet Condition="'$(VisualStudioVersion)' &gt;= '18.0'">$(SolutionDir)Analyze.vs2026.ruleset</CodeAnalysisRuleSet>
+         only for VS2026, keeping it as Error for VS2022 (MSBuild 17.x). Gated on
+         $(MSBuildAssemblyVersion) rather than $(VisualStudioVersion) for the reason documented in
+         wdk.props: $(VisualStudioVersion) is empty for a direct msbuild.exe invocation, which would
+         silently keep the VS2022 ruleset under VS2026 and fail the build on that spurious C28285. -->
+    <CodeAnalysisRuleSet Condition="'$(MSBuildAssemblyVersion)' &gt;= '18.0'">$(SolutionDir)Analyze.vs2026.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
     <eBPFExtensionsVersionMajor>0</eBPFExtensionsVersionMajor>
