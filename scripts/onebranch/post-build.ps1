@@ -24,8 +24,21 @@ Compress-Archive -Path $SignedOutputFolder -DestinationPath $OutputZipFile
 xcopy /y $SignedOutputFolder $BuildFolder
 
 # Create the nuget package with the signed binaries.
-Import-Module "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
-Enter-VsDevShell -VsInstallPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"  -DevCmdArguments "-arch=x64 -host_arch=x64"
+# Resolve the Visual Studio installation via vswhere rather than hardcoding a version-specific path.
+# The OneBranch build container ships whichever Visual Studio the image was built with (VS 2022 lives
+# under "...\2022\Enterprise", VS 2026 under "...\18\Enterprise"), so a literal path breaks whenever
+# the image is updated. This also puts msbuild on PATH for the packaging step below.
+$vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (-not (Test-Path $vswherePath)) {
+    throw "vswhere.exe not found at '$vswherePath'; unable to locate a Visual Studio installation."
+}
+$vsInstallPath = & $vswherePath -latest -products * -property installationPath | Select-Object -First 1
+if (-not $vsInstallPath) {
+    throw "Could not locate a Visual Studio installation via vswhere."
+}
+Write-Host "Using Visual Studio installation at '$vsInstallPath'."
+Import-Module (Join-Path $vsInstallPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll")
+Enter-VsDevShell -VsInstallPath $vsInstallPath -DevCmdArguments "-arch=x64 -host_arch=x64"
 Set-Location $scriptPath\..\..
 $SolutionDir = Get-Location
 msbuild /p:SolutionDir=$SolutionDir\ /p:Configuration=$OneBranchConfig /p:Platform=$OneBranchArch /p:BuildProjectReferences=false .\tools\nuget\nuget.proj /t:Restore,Build,Pack
