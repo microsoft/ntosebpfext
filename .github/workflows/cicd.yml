@@ -53,6 +53,21 @@ jobs:
       build_nuget: true
       configurations: '["Debug", "Release"]'
 
+  # Verify that this repository can allocate a runner from the 1ES hosted pool.
+  test_1es_access:
+    if: github.repository == 'microsoft/ntosebpfext'
+    runs-on:
+      - self-hosted
+      - 1ES.Pool=ebpf-cicd-runner-pool-server-2019
+      - 1ES.ImageOverride=server2022_v2
+      - JobId=ntos-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Print runner information
+        run: |
+          hostname
+          Get-ComputerInfo |
+            Select-Object WindowsProductName, WindowsVersion
+
   # Perform the onebranch build.
   onebranch:
     # Always run this job.
