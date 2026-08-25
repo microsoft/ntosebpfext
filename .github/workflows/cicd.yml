@@ -75,7 +75,7 @@ jobs:
       pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.4.0
       test_command: .\ntosebpfext_unit.exe -d yes
       build_artifact: Build-x64
-      environment: windows-2025
+      environment: '["windows-2025"]'
       code_coverage: true
       gather_dumps: true
       capture_etw: true
@@ -92,42 +92,52 @@ jobs:
       pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.4.0 && powershell -file .\bin\process_monitor.Tests\win-x64\Setup-ProcessMonitorTests.ps1 -ArtifactsRoot .
       test_command: dotnet test .\bin\process_monitor.Tests\win-x64\process_monitor.Tests.dll
       build_artifact: Build-x64
-      environment: windows-2025
+      environment: '["windows-2025"]'
       capture_etw: true
 
-  # Run the neteventebpfext driver tests in GitHub.
+  # Run the neteventebpfext driver tests on 1ES runners.
   neteventebpfext_driver_tests:
     # Always run this job.
     needs: regular
-    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
+    if: github.repository == 'microsoft/ntosebpfext' && (github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/reusable-test.yml
+    strategy:
+      matrix:
+        image:
+          - server2022
+          - server2025
     with:
-      name: neteventebpfext driver tests
-      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.4.0
-      test_command: .\neteventebpfext_driver_test.exe -d yes
+      name: neteventebpfext_driver_${{ matrix.image }}
+      pre_test: .\setup_ebpf_cicd_tests.ps1 -KmTracing $false
+      test_command: .\execute_ebpf_cicd_tests.ps1 -TestMode "CI/CD" -Options @("neteventebpfext")
+      post_test: .\cleanup_ebpf_cicd_tests.ps1 -KmTracing $false
       build_artifact: Build-x64
-      environment: windows-2025
-      code_coverage: true
-      gather_dumps: true
-      capture_etw: true
-      leak_detection: true
+      environment: '["self-hosted", "1ES.Pool=ebpf-extensions-cicd-runner-pool", "1ES.ImageOverride=${{ matrix.image }}_v2", "JobId=netevent-driver-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ strategy.job-index }}-{0}"]'
+      code_coverage: false
+      gather_dumps: false
+      capture_etw: false
 
-  # Run the ntosebpfext driver tests in GitHub.
+  # Run the ntosebpfext driver tests on 1ES runners.
   ntosebpfext_driver_tests:
     # Always run this job.
     needs: regular
-    if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
+    if: github.repository == 'microsoft/ntosebpfext' && (github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/reusable-test.yml
+    strategy:
+      matrix:
+        image:
+          - server2022
+          - server2025
     with:
-      name: ntosebpfext driver tests
-      pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.4.0
-      test_command: .\ntosebpfext_driver_test.exe -d yes
+      name: ntosebpfext_driver_${{ matrix.image }}
+      pre_test: .\setup_ebpf_cicd_tests.ps1 -KmTracing $false
+      test_command: .\execute_ebpf_cicd_tests.ps1 -TestMode "CI/CD" -Options @("ntosebpfext")
+      post_test: .\cleanup_ebpf_cicd_tests.ps1 -KmTracing $false
       build_artifact: Build-x64
-      environment: windows-2025
-      code_coverage: true
-      gather_dumps: true
-      capture_etw: true
-      leak_detection: true
+      environment: '["self-hosted", "1ES.Pool=ebpf-extensions-cicd-runner-pool", "1ES.ImageOverride=${{ matrix.image }}_v2", "JobId=ntos-driver-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ strategy.job-index }}-{0}"]'
+      code_coverage: false
+      gather_dumps: false
+      capture_etw: false
 
   ossar:
     # Always run this job.

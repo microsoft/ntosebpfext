@@ -1,0 +1,27 @@
+{
+  "license": [
+    "Copyright (c) Microsoft Corporation",
+    "SPDX-License-Identifier: MIT"
+  ],
+  "VMMap": {
+    "1ESRunner": [
+      {
+        "Name": "runner_vm"
+      }
+    ]
+  },
+  "Tests": [
+    {
+      "Suite": "ntosebpfext",
+      "Name": "ntosebpfext_driver_test.exe",
+      "Arguments": "-d yes",
+      "Timeout": 1800
+    },
+    {
+      "Suite": "neteventebpfext",
+      "Name": "neteventebpfext_driver_test.exe",
+      "Arguments": "-d yes",
+      "Timeout": 1800
+    }
+  ]
+}

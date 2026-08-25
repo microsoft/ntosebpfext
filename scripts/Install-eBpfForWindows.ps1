@@ -3,7 +3,12 @@
 
 # Define one parameter that takes the version of eBPF for Windows to install
 param(
-    [string]$version
+    [Parameter(Mandatory = $true)]
+    [string]$version,
+
+    [string]$DestinationPath = "$env:TEMP\ebpf-for-windows.$version.msi",
+
+    [switch]$DownloadOnly
 )
 
 # Define the URL to download the eBPF for Windows installer
@@ -11,10 +16,27 @@ $installer_url = "https://github.com/microsoft/ebpf-for-windows/releases/downloa
 $installer_url = $installer_url -replace "%%VER%%", $version
 
 # Define the path to download the eBPF for Windows installer
-$installer_path = "$env:TEMP\ebpf-for-windows.$version.msi"
+$installer_path = $DestinationPath
 
 # Download the eBPF for Windows installer
 Invoke-WebRequest -Uri $installer_url -OutFile $installer_path
 
+if (-not (Test-Path $installer_path -PathType Leaf)) {
+    throw "Failed to download the eBPF for Windows installer to '$installer_path'."
+}
+
+$signature = Get-AuthenticodeSignature -FilePath $installer_path
+if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
+    Remove-Item $installer_path -Force -ErrorAction SilentlyContinue
+    throw "The downloaded eBPF for Windows installer does not have a valid Authenticode signature."
+}
+
+if ($DownloadOnly) {
+    return
+}
+
 # Install eBPF for Windows
-Start-Process -FilePath msiexec -ArgumentList "/i $installer_path /quiet" -Wait
+$process = Start-Process -FilePath msiexec -ArgumentList "/i `"$installer_path`" /quiet /norestart" -Wait -PassThru
+if ($process.ExitCode -notin @(0, 3010)) {
+    throw "eBPF for Windows installation failed with exit code $($process.ExitCode)."
+}
