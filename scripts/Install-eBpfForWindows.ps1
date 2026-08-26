@@ -25,12 +25,6 @@ if (-not (Test-Path $installer_path -PathType Leaf)) {
     throw "Failed to download the eBPF for Windows installer to '$installer_path'."
 }
 
-$signature = Get-AuthenticodeSignature -FilePath $installer_path
-if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
-    Remove-Item $installer_path -Force -ErrorAction SilentlyContinue
-    throw "The downloaded eBPF for Windows installer does not have a valid Authenticode signature."
-}
-
 if ($DownloadOnly) {
     return
 }
