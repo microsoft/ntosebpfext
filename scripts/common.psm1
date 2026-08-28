@@ -1104,7 +1104,25 @@ function Invoke-CommandOnVM {
     if ($VMIsRemote) {
         Invoke-Command -ComputerName $VMName -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop
     } else {
-        Invoke-Command -VMName $VMName -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop
+        $maxAttempts = 5
+        for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            try {
+                Invoke-Command -VMName $VMName -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop
+                break
+            } catch {
+                $isTransientPowerShellDirectFailure =
+                    ($_.CategoryInfo.Reason -eq 'PSDirectException') -or
+                    ($_.FullyQualifiedErrorId -like 'PSSessionStateBroken*') -or
+                    ($_.Exception.Message -match 'credential is invalid') -or
+                    ($_.Exception.Message -match 'remote session might have ended')
+                if (-not $isTransientPowerShellDirectFailure -or $attempt -eq $maxAttempts) {
+                    throw
+                }
+
+                Write-Log "Transient PowerShell Direct failure for $VMName on attempt $attempt of $maxAttempts`: $($_.Exception.Message). Retrying..."
+                Start-Sleep -Seconds 5
+            }
+        }
     }
 }
 
