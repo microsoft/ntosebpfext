@@ -232,12 +232,68 @@ jobs:
       run: |
         ${{env.PRE_COMMAND}}
 
+    - name: Diagnose nested Hyper-V
+      if: steps.skip_check.outputs.should_skip != 'true' && contains(inputs.environment, '1ES')
+      continue-on-error: true
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        Get-ComputerInfo |
+          Select-Object CsName, WindowsProductName, OsBuildNumber, HyperVisorPresent |
+          Format-List
+
+        Get-CimInstance Win32_Processor |
+          Select-Object Name, VirtualizationFirmwareEnabled, VMMonitorModeExtensions, SecondLevelAddressTranslationExtensions |
+          Format-List
+
+        Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All |
+          Format-List FeatureName, State
+        Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Management-PowerShell |
+          Format-List FeatureName, State
+
+        Get-Service vmms, vmcompute -ErrorAction Continue |
+          Format-Table Name, Status, StartType
+
+        Get-CimInstance Win32_SystemDriver -Filter "Name = 'Vid'" |
+          Format-List Name, State, Status, StartMode, PathName
+
+        bcdedit /enum '{current}' |
+          Select-String hypervisorlaunchtype
+
+        Get-VMHost | Format-List *
+        Get-VM -Name runner_vm | Format-List *
+        Get-VMProcessor -VMName runner_vm | Format-List *
+        Get-VMSnapshot -VMName runner_vm | Format-Table Name, SnapshotType
+
     - name: Run pre test command on 1ES runner
       if: steps.skip_check.outputs.should_skip != 'true' && contains(inputs.environment, '1ES')
       id: run_pre_test_command_1es
       working-directory: ./${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}
       run: |
         ${{env.PRE_COMMAND}} -LogFileName ${{ runner.name }}.log -SelfHostedRunnerName '1ESRunner' -RegressionArtifactsConfiguration ${{env.BUILD_CONFIGURATION}}
+
+    - name: Diagnose nested Hyper-V failure
+      if: failure() && contains(inputs.environment, '1ES') && steps.run_pre_test_command_1es.outcome == 'failure'
+      continue-on-error: true
+      run: |
+        $ErrorActionPreference = 'Continue'
+        $startTime = (Get-Date).AddMinutes(-15)
+        $logs = @(
+          'Microsoft-Windows-Hyper-V-Hypervisor-Admin',
+          'Microsoft-Windows-Hyper-V-VMMS-Admin',
+          'Microsoft-Windows-Hyper-V-Worker-Admin',
+          'System'
+        )
+
+        foreach ($log in $logs) {
+          Write-Host "`n=== $log ==="
+          Get-WinEvent -FilterHashtable @{
+            LogName = $log
+            StartTime = $startTime
+          } -ErrorAction Continue |
+            Select-Object -First 50 TimeCreated, Id, LevelDisplayName, ProviderName, Message |
+            Format-List
+        }
 
     - name: Run test with Code Coverage and low resource simulation
       if: (inputs.code_coverage == true) && (inputs.fault_injection == true) && (steps.skip_check.outputs.should_skip != 'true')
