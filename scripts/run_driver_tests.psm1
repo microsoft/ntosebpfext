@@ -39,10 +39,16 @@ function Invoke-NtosDriverTest
         -RedirectStandardError $stderrPath `
         -PassThru
 
-    if (-not $process.WaitForExit($Timeout * 1000)) {
+    # Cache the process handle so its exit information remains available after termination.
+    $handle = $process.Handle
+
+    $exited = $process.WaitForExit($Timeout * 1000)
+    if (-not $exited -or -not $process.HasExited) {
         Write-Log "$Name exceeded its timeout. A kernel dump will be requested."
         throw [System.TimeoutException]::new("$Name timed out after $Timeout seconds.")
     }
+
+    $exitCode = $process.ExitCode
 
     if (Test-Path $stdoutPath) {
         Get-Content $stdoutPath | Write-Log
@@ -51,8 +57,11 @@ function Invoke-NtosDriverTest
         Get-Content $stderrPath | Write-Log
     }
 
-    if ($process.ExitCode -ne 0) {
-        throw "$Name failed with exit code $($process.ExitCode)."
+    if ($null -eq $exitCode) {
+        throw "$Name completed, but its exit code could not be read."
+    }
+    if ($exitCode -ne 0) {
+        throw "$Name failed with exit code $exitCode."
     }
 
     Write-Log "$Name passed."

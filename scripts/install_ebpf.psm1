@@ -38,6 +38,30 @@ function Install-eBPFComponents
         Write-Log "eBPF for Windows installation requested a reboot; continuing because the package was installed with /norestart."
     }
 
+    $exporterPaths = @()
+    foreach ($exporterName in @("ntos_ebpf_ext_export_program_info.exe", "netevent_ebpf_ext_export_program_info.exe")) {
+        $exporterPath = Join-Path $WorkingDirectory $exporterName
+        if (-not (Test-Path $exporterPath -PathType Leaf)) {
+            throw "Required eBPF store exporter was not found at '$exporterPath'."
+        }
+        $exporterPaths += $exporterPath
+    }
+
+    Write-Log "Clearing existing eBPF store information"
+    & $exporterPaths[0] --clear 2>&1 | Write-Log
+    if ($LASTEXITCODE -ne 0) {
+        throw "$([System.IO.Path]::GetFileName($exporterPaths[0])) --clear failed with exit code $LASTEXITCODE."
+    }
+
+    foreach ($exporterPath in $exporterPaths) {
+        $exporterName = [System.IO.Path]::GetFileName($exporterPath)
+        Write-Log "Registering extension program information with $exporterName"
+        & $exporterPath 2>&1 | Write-Log
+        if ($LASTEXITCODE -ne 0) {
+            throw "$exporterName failed with exit code $LASTEXITCODE."
+        }
+    }
+
     if ($KMDFVerifier) {
         Write-Log "The 1ES inner VM image controls driver verifier settings; no additional verifier configuration is applied."
     }
