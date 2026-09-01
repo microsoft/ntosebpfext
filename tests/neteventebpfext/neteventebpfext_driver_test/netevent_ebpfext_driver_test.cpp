@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "watchdog.h"
 
+#include <atomic>
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <cerrno>
