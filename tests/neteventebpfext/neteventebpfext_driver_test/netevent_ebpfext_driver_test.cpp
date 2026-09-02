@@ -79,6 +79,21 @@ _require_no_callback_errors(const netevent_callback_context& context)
     REQUIRE(context.lost_event_count == 0);
 }
 
+static bool
+_wait_for_events_to_drain()
+{
+    uint32_t previous_event_count = event_count.load();
+    for (uint32_t elapsed_seconds = 0; elapsed_seconds < timeout_seconds; elapsed_seconds += wait_interval_seconds) {
+        std::this_thread::sleep_for(std::chrono::seconds(wait_interval_seconds));
+        uint32_t current_event_count = event_count.load();
+        if (current_event_count == previous_event_count) {
+            return true;
+        }
+        previous_event_count = current_event_count;
+    }
+    return false;
+}
+
 typedef struct test_netevent_event_md
 {
     EBPF_CONTEXT_HEADER;
