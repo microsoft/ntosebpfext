@@ -209,34 +209,29 @@ function Export-BuildArtifactsToVMs
     )
 
     $tempFileName = [System.IO.Path]::GetTempFileName() + ".tgz"
-    Write-Log "Creating $tempFileName containing files in $pwd"
-    &tar @("cfz", "$tempFileName", "*")
-    Write-Log "Created $tempFileName containing files in $pwd"
-
-    # Copy artifacts to the given VM list.
-    foreach($VM in $VMList) {
-        $VMName = $VM.Name
-        Write-Log "Exporting build artifacts to $VMName"
-        $TestCredential = Get-VMCredential -Username 'Administrator' -VMIsRemote $VMIsRemote
-       if ($VMIsRemote) {
-            $VMSession = New-PSSession -ComputerName $VMName -Credential $TestCredential -ErrorAction SilentlyContinue
-        } else {
-            $VMSession = New-PSSession -VMName $VMName -Credential $TestCredential -ErrorAction SilentlyContinue
+    try {
+        Write-Log "Creating $tempFileName containing files in $pwd"
+        &tar @("cfz", "$tempFileName", "*")
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create build artifact archive with exit code $LASTEXITCODE."
         }
-        if (!$VMSession) {
-            ThrowWithErrorMessage -ErrorMessage "Failed to create PowerShell session on $VMName."
-        } else {
-            Write-Log "Created PowerShell session on $VMName"
-            Invoke-Command -Session $VMSession -ScriptBlock {
+        Write-Log "Created $tempFileName containing files in $pwd"
+
+        # Copy artifacts to the given VM list.
+        foreach($VM in $VMList) {
+            $VMName = $VM.Name
+            Write-Log "Exporting build artifacts to $VMName"
+            $TestCredential = Get-VMCredential -Username 'Administrator' -VMIsRemote $VMIsRemote
+            $initializeGuest = {
                 # Create working directory c:\eBPF.
                 if(!(Test-Path "$Env:SystemDrive\eBPF")) {
-                    New-Item -ItemType Directory -Path "$Env:SystemDrive\eBPF"
+                    New-Item -ItemType Directory -Path "$Env:SystemDrive\eBPF" | Out-Null
                 }
                 # Enable EULA for all SysInternals tools.
                 $RegistryPath = 'HKCU:\Software\Sysinternals'
                 if (-not (Test-Path $RegistryPath)) {
                     # Create the registry key if it doesn't exist
-                    New-Item -Path $RegistryPath -Force
+                    New-Item -Path $RegistryPath -Force | Out-Null
                 }
                 Set-ItemProperty -Path $RegistryPath -Name 'EulaAccepted' -Value 1
 
@@ -248,27 +243,53 @@ function Export-BuildArtifactsToVMs
 
                 return $Env:SystemDrive
             }
-            Write-Log "Created c:\eBPF, enabled SysInternals EULA and full memory dump on $VMName"
-            $VMSystemDrive = Invoke-Command -Session $VMSession -ScriptBlock {return $Env:SystemDrive}
-            Write-Log "VM $VMName system drive is $VMSystemDrive"
+
+            if ($VMIsRemote) {
+                $VMSession = New-SessionOnVM -VMName $VMName -VMIsRemote $true -Credential $TestCredential
+                try {
+                    $VMSystemDrive = Invoke-Command -Session $VMSession -ScriptBlock $initializeGuest -ErrorAction Stop
+                    Write-Log "Created c:\eBPF, enabled SysInternals EULA and full memory dump on $VMName"
+                    Write-Log "VM $VMName system drive is $VMSystemDrive"
+
+                    Write-Log "Copying $tempFileName to $VMSystemDrive\eBPF on $VMName"
+                    Copy-Item -ToSession $VMSession -Path $tempFileName -Destination "$VMSystemDrive\eBPF\ebpf.tgz" -Force -ErrorAction Stop
+                    Write-Log "Copied $tempFileName to $VMSystemDrive\eBPF on $VMName"
+
+                    Invoke-Command -Session $VMSession -ScriptBlock {
+                        Set-Location "$Env:SystemDrive\eBPF"
+                        &tar @("xf", "ebpf.tgz")
+                        if ($LASTEXITCODE -ne 0) {
+                            throw "Failed to unpack build artifacts with exit code $LASTEXITCODE."
+                        }
+                    } -ErrorAction Stop
+                } finally {
+                    Remove-PSSession $VMSession -ErrorAction SilentlyContinue
+                }
+            } else {
+                $VMSystemDrive = Invoke-CommandOnVM -VMName $VMName -Credential $TestCredential -ScriptBlock $initializeGuest
+                Write-Log "Created c:\eBPF, enabled SysInternals EULA and full memory dump on $VMName"
+                Write-Log "VM $VMName system drive is $VMSystemDrive"
+
+                Write-Log "Copying $tempFileName to $VMSystemDrive\eBPF on $VMName with Hyper-V Guest Services"
+                Copy-VMFile -VMName $VMName -SourcePath $tempFileName -DestinationPath "$VMSystemDrive\eBPF\ebpf.tgz" `
+                    -FileSource Host -CreateFullPath -Force -ErrorAction Stop
+                Write-Log "Copied $tempFileName to $VMSystemDrive\eBPF on $VMName"
+
+                Invoke-CommandOnVM -VMName $VMName -Credential $TestCredential -ScriptBlock {
+                    Set-Location "$Env:SystemDrive\eBPF"
+                    &tar @("xf", "ebpf.tgz")
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Failed to unpack build artifacts with exit code $LASTEXITCODE."
+                    }
+                }
+            }
+
+            Write-Log "Unpacked $tempFileName to $VMSystemDrive\eBPF on $VMName"
+            Write-Log "Export completed." -ForegroundColor Green
         }
-        Write-Log "Copying $tempFileName to $VMSystemDrive\eBPF on $VMName"
-        Copy-Item -ToSession $VMSession -Path $tempFileName -Destination "$VMSystemDrive\eBPF\ebpf.tgz" -Force 2>&1 -ErrorAction Stop | Write-Log
-        Write-Log "Copied $tempFileName to $VMSystemDrive\eBPF on $VMName"
-
-        Write-Log "Unpacking $tempFileName to $VMSystemDrive\eBPF on $VMName"
-        Invoke-Command -Session $VMSession -ScriptBlock {
-            cd $Env:SystemDrive\eBPF
-            &tar @("xf", "ebpf.tgz")
-        }
-        Write-Log "Unpacked $tempFileName to $VMSystemDrive\eBPF on $VMName"
-
-        Write-Log "Export completed." -ForegroundColor Green
-
-        Remove-PSSession $VMSession
+    } finally {
+        Remove-Item -Force $tempFileName -ErrorAction SilentlyContinue
     }
-
-    Remove-Item -Force $tempFileName
 }
 
 #
