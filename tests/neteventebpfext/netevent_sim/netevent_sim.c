@@ -101,10 +101,18 @@ timer_dpc_routine(
                  .PacketDescriptor = {.PacketMetaDataLength = sizeof(PKTMON_EVT_STREAM_METADATA)}},
             .payload = {
                 .event_id = NOTIFY_EVENT_TYPE_NETEVENT_LOG,
-                .source_ip = {192, 168, 1, 1},
-                .destination_ip = {10, 11, 12, 1},
-                .source_port = 12345,
-                .destination_port = 80,
+                .source_ip =
+                    {NETEVENT_TEST_SOURCE_IP_OCTET_1,
+                     NETEVENT_TEST_SOURCE_IP_OCTET_2,
+                     NETEVENT_TEST_SOURCE_IP_OCTET_3,
+                     NETEVENT_TEST_SOURCE_IP_OCTET_4},
+                .destination_ip =
+                    {NETEVENT_TEST_DESTINATION_IP_OCTET_1,
+                     NETEVENT_TEST_DESTINATION_IP_OCTET_2,
+                     NETEVENT_TEST_DESTINATION_IP_OCTET_3,
+                     NETEVENT_TEST_DESTINATION_IP_OCTET_4},
+                .source_port = NETEVENT_TEST_SOURCE_PORT,
+                .destination_port = NETEVENT_TEST_DESTINATION_PORT,
                 .event_counter = counter}};
 
         if (_netevent_provider_binding_context.client_dispatch->capture_type == NeteventCapture_Drop) {
