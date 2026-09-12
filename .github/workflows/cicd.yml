@@ -108,9 +108,9 @@ jobs:
           - server2025
     with:
       name: neteventebpfext_driver_${{ matrix.image }}
-      pre_test: .\setup_ebpf_cicd_tests.ps1 -KmTracing $false
+      pre_test: .\setup_ebpf_cicd_tests.ps1 -KmTracing $true -KmTraceType "memory"
       test_command: .\execute_ebpf_cicd_tests.ps1 -TestMode "CI/CD" -Options @("neteventebpfext")
-      post_test: .\cleanup_ebpf_cicd_tests.ps1 -KmTracing $false
+      post_test: .\cleanup_ebpf_cicd_tests.ps1 -KmTracing $true
       build_artifact: Build-x64
       environment: '["self-hosted", "1ES.Pool=ebpf-extensions-cicd-runner-pool", "1ES.ImageOverride=${{ matrix.image }}_v2", "JobId=netevent-driver-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-{0}"]'
       code_coverage: false
@@ -130,9 +130,9 @@ jobs:
           - server2025
     with:
       name: ntosebpfext_driver_${{ matrix.image }}
-      pre_test: .\setup_ebpf_cicd_tests.ps1 -KmTracing $false
+      pre_test: .\setup_ebpf_cicd_tests.ps1 -KmTracing $true -KmTraceType "memory"
       test_command: .\execute_ebpf_cicd_tests.ps1 -TestMode "CI/CD" -Options @("ntosebpfext")
-      post_test: .\cleanup_ebpf_cicd_tests.ps1 -KmTracing $false
+      post_test: .\cleanup_ebpf_cicd_tests.ps1 -KmTracing $true
       build_artifact: Build-x64
       environment: '["self-hosted", "1ES.Pool=ebpf-extensions-cicd-runner-pool", "1ES.ImageOverride=${{ matrix.image }}_v2", "JobId=ntos-driver-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-{0}"]'
       code_coverage: false

@@ -7,6 +7,7 @@ param(
 )
 
 Import-Module "$PSScriptRoot\common.psm1" -Force -ArgumentList $LogFileName -WarningAction SilentlyContinue
+Import-Module "$PSScriptRoot\tracing_utils.psm1" -Force -ArgumentList $LogFileName, $WorkingDirectory -WarningAction SilentlyContinue
 
 function Install-eBPFComponents
 {
@@ -64,6 +65,10 @@ function Install-eBPFComponents
 
     if ($KMDFVerifier) {
         Write-Log "The 1ES inner VM image controls driver verifier settings; no additional verifier configuration is applied."
+    }
+
+    if ($KmTracing) {
+        Start-WPRTrace -TraceType $KmTraceType
     }
 
     Write-Log "eBPF for Windows installation completed."

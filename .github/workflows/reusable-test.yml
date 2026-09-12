@@ -206,7 +206,7 @@ jobs:
       shell: cmd
       run: |
         mkdir ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\TestLogs
-        wpr.exe -start ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\ntosebpfext.wprp -filemode
+        wpr.exe -start ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\ebpfextensions.wprp -filemode
 
     - name: Set ASAN Environment Variable
       if: steps.skip_check.outputs.should_skip != 'true'

@@ -17,7 +17,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\ntosebpfext.wprp">
+    <CopyFileToFolders Include="..\ebpfextensions.wprp">
       <FileType>Document</FileType>
     </CopyFileToFolders>
     <None Include="..\pre-commit">

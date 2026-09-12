@@ -12,11 +12,12 @@
 
     <EventProvider Id="ExecutionContext" Name="394f321c-5cf4-404c-aa34-4df1428a7f9c" NonPagedMemory="true"/>
     <EventProvider Id="NtosEbpfExt" Name="d15cc421-e9e4-459b-87a6-b45b7d84e9a8" NonPagedMemory="true"/>
+    <EventProvider Id="NeteventEbpfExt" Name="bdd03353-2c68-4e7d-ae3a-c00790930188" NonPagedMemory="true"/>
 
     <Profile
-        Id="EbpfForWindowsProvider-File.Verbose.File"
-        Name="EbpfForWindowsProvider-File"
-        Description="Traces for all eBPF for Windows providers"
+        Id="EbpfExtensionsProvider-File.Verbose.File"
+        Name="EbpfExtensionsProvider-File"
+        Description="Traces for eBPF extension providers"
         LoggingMode="File"
         DetailLevel="Verbose">
       <Collectors>
@@ -27,14 +28,17 @@
           <EventProviders>
             <EventProviderId Value="NtosEbpfExt"/>
           </EventProviders>
+          <EventProviders>
+            <EventProviderId Value="NeteventEbpfExt"/>
+          </EventProviders>
         </EventCollectorId>
       </Collectors>
     </Profile>
 
     <Profile
-        Id="EbpfForWindowsProvider-Memory.Verbose.Memory"
-        Name="EbpfForWindowsProvider-Memory"
-        Description="Traces for all eBPF for Windows providers"
+        Id="EbpfExtensionsProvider-Memory.Verbose.Memory"
+        Name="EbpfExtensionsProvider-Memory"
+        Description="Traces for eBPF extension providers"
         LoggingMode="Memory"
         DetailLevel="Verbose">
       <Collectors>
@@ -44,6 +48,9 @@
           </EventProviders>
           <EventProviders>
             <EventProviderId Value="NtosEbpfExt"/>
+          </EventProviders>
+          <EventProviders>
+            <EventProviderId Value="NeteventEbpfExt"/>
           </EventProviders>
         </EventCollectorId>
       </Collectors>

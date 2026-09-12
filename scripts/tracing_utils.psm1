@@ -18,16 +18,16 @@ Import-Module (Join-Path $WorkingDirectory "common.psm1") -Force -ArgumentList (
     The type of tracing to use ("file" or "memory"). Defaults to "file".
 
 .PARAMETER WprpFileName
-    The name of the WPRP file to use. Defaults to "ebpfforwindows.wprp".
+    The name of the WPRP file to use. Defaults to "ebpfextensions.wprp".
 
 .PARAMETER TracingProfileName
-    The name of the tracing profile to use. Defaults to "EbpfForWindows-Networking".
+    The name of the tracing profile to use. Defaults to "EbpfExtensionsProvider".
 #>
 function Start-WPRTrace {
     param(
         [Parameter(Mandatory=$false)] [string] $TraceType = "file",
-        [Parameter(Mandatory=$false)] [string] $WprpFileName = "ebpfforwindows.wprp",
-        [Parameter(Mandatory=$false)] [string] $TracingProfileName = "EbpfForWindows-Networking",
+        [Parameter(Mandatory=$false)] [string] $WprpFileName = "ebpfextensions.wprp",
+        [Parameter(Mandatory=$false)] [string] $TracingProfileName = "EbpfExtensionsProvider",
         [Parameter(Mandatory=$false)] [int] $TimeoutSeconds = 60
     )
 
