@@ -227,6 +227,45 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{env.BUILD_PLATFORM}} /bl:${{env.BUILD_PLATFORM}}_${{env.BUILD_CONFIGURATION}}\build_logs\build.binlog ${{env.BUILD_OPTIONS}} ${{env.SOLUTION_FILE_PATH}}
 
+    - name: Add eBPF for Windows installer to VM test payload
+      if: steps.skip_check.outputs.should_skip != 'true' && inputs.build_artifact == 'Build-x64'
+      working-directory: ${{github.workspace}}
+      run: |
+        .\scripts\Install-eBpfForWindows.ps1 `
+          -version 1.4.0 `
+          -DestinationPath "${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\ebpf-for-windows.msi" `
+          -DownloadOnly
+
+    - name: Verify VM test payload
+      if: steps.skip_check.outputs.should_skip != 'true' && inputs.build_artifact == 'Build-x64'
+      working-directory: ${{github.workspace}}
+      run: |
+        $output = "${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}"
+        $requiredFiles = @(
+          "ntosebpfext_driver_test.exe",
+          "neteventebpfext_driver_test.exe",
+          "ntosebpfext.sys",
+          "neteventebpfext.sys",
+          "netevent_sim.sys",
+          "NtosEbpfExt.inf",
+          "NetEventEbpfExt.inf",
+          "ebpf-for-windows.msi",
+          "common.psm1",
+          "config_test_vm.psm1",
+          "tracing_utils.psm1",
+          "setup_ebpf_cicd_tests.ps1",
+          "execute_ebpf_cicd_tests.ps1",
+          "cleanup_ebpf_cicd_tests.ps1",
+          "install_ebpf.psm1",
+          "run_driver_tests.psm1",
+          "vm_run_tests.psm1",
+          "test_execution.json"
+        )
+        $missingFiles = $requiredFiles | Where-Object { -not (Test-Path (Join-Path $output $_)) }
+        if ($missingFiles) {
+          throw "Missing required VM test payload files: $($missingFiles -join ', ')"
+        }
+
     - name: Zip Build Output
       if: always() && (steps.skip_check.outputs.should_skip != 'true')
       working-directory: ${{github.workspace}}
