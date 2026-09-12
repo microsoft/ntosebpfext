@@ -74,10 +74,10 @@ $Job = Start-Job -ScriptBlock {
     Import-Module .\config_test_vm.psm1 -Force -ArgumentList ($WorkingDirectory, $LogFileName) -WarningAction SilentlyContinue
 
     if  ($ExecuteOnVM) {
-        $VMList = $Config.VMMap.$SelfHostedRunnerName
+        $VMList = @(Get-TestVMList -Config $Config -SelfHostedRunnerName $SelfHostedRunnerName)
         if (-not $VMIsRemote) {
             # Get all local VMs to ready state.
-            Initialize-AllVMs -VMList $VMList -ErrorAction Stop
+            Initialize-AllVMs -VMList $VMList -VMIsRemote $VMIsRemote -ErrorAction Stop
         }
     } else {
         Import-Module .\install_ebpf.psm1 -Force -ArgumentList ($WorkingDirectory, $LogFileName) -WarningAction SilentlyContinue
@@ -111,7 +111,6 @@ $Job = Start-Job -ScriptBlock {
     $ExecuteOnHost = -not $ExecuteOnVM
     if  ($ExecuteOnHost) {
         # Install eBPF components on host, but skip anything that requires reboot.
-        # Note that installing ebpf components requires psexec which does not run in a powershell job.
         Write-Log "Installing eBPF components on host"
         Install-eBPFComponents -TestMode $TestMode -KmTracing $KmTracing -KmTraceType $KmTraceType -SkipRebootOperations -GranularTracing:$GranularTracing
         return

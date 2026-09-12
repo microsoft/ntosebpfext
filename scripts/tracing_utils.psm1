@@ -8,7 +8,7 @@ param(
     [Parameter(Mandatory=$true)] [string] $WorkingDirectory
 )
 
-Import-Module $WorkingDirectory\common.psm1 -Force -ArgumentList ($LogFileName) -WarningAction SilentlyContinue
+Import-Module (Join-Path $WorkingDirectory "common.psm1") -Force -ArgumentList ($LogFileName) -WarningAction SilentlyContinue
 
 <#
 .SYNOPSIS

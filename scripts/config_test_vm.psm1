@@ -163,7 +163,10 @@ function Start-AllVMs
 
 function Initialize-AllVMs
 {
-    param ([Parameter(Mandatory=$True)] $VMList)
+    param(
+        [Parameter(Mandatory=$True)] $VMList,
+        [Parameter(Mandatory=$false)][bool] $VMIsRemote = $false
+    )
 
     # Restore the VMs.
     Restore-AllVMs -VMList $VMList
@@ -317,8 +320,8 @@ function Install-eBPFComponentsOnVM
               [parameter(Mandatory=$true)][string] $TestMode,
               [parameter(Mandatory=$false)][bool] $GranularTracing = $false)
         $WorkingDirectory = "$env:SystemDrive\$WorkingDirectory"
-        Import-Module $WorkingDirectory\common.psm1 -ArgumentList ($LogFileName) -Force -WarningAction SilentlyContinue
-        Import-Module $WorkingDirectory\install_ebpf.psm1 -ArgumentList ($WorkingDirectory, $LogFileName) -Force -WarningAction SilentlyContinue
+        Import-Module (Join-Path $WorkingDirectory "common.psm1") -ArgumentList ($LogFileName) -Force -WarningAction SilentlyContinue
+        Import-Module (Join-Path $WorkingDirectory "install_ebpf.psm1") -ArgumentList ($WorkingDirectory, $LogFileName) -Force -WarningAction SilentlyContinue
 
         Install-eBPFComponents -KmTracing $KmTracing -KmTraceType $KmTraceType -KMDFVerifier $true -TestMode $TestMode -GranularTracing $GranularTracing -ErrorAction Stop
     }
@@ -332,15 +335,15 @@ function Uninstall-eBPFComponentsOnVM
 {
     param([parameter(Mandatory=$true)][string] $VMName)
 
-    Write-Log "Unnstalling eBPF components on $VMName"
+    Write-Log "Uninstalling eBPF components on $VMName"
     $TestCredential = Get-VMCredential -Username 'Administrator'
 
     Invoke-Command -VMName $VMName -Credential $TestCredential -ScriptBlock {
         param([Parameter(Mandatory=$True)] [string] $WorkingDirectory,
               [Parameter(Mandatory=$True)] [string] $LogFileName)
         $WorkingDirectory = "$env:SystemDrive\$WorkingDirectory"
-        Import-Module $WorkingDirectory\common.psm1 -ArgumentList ($LogFileName) -Force -WarningAction SilentlyContinue
-        Import-Module $WorkingDirectory\install_ebpf.psm1 -ArgumentList ($WorkingDirectory, $LogFileName) -Force -WarningAction SilentlyContinue
+        Import-Module (Join-Path $WorkingDirectory "common.psm1") -ArgumentList ($LogFileName) -Force -WarningAction SilentlyContinue
+        Import-Module (Join-Path $WorkingDirectory "install_ebpf.psm1") -ArgumentList ($WorkingDirectory, $LogFileName) -Force -WarningAction SilentlyContinue
 
         Uninstall-eBPFComponents
     } -ArgumentList ("eBPF", $LogFileName) -ErrorAction Stop
@@ -365,10 +368,10 @@ function Stop-eBPFComponentsOnVM
             )
 
             $WorkingDirectory = "$env:SystemDrive\$WorkingDirectory"
-            Import-Module $WorkingDirectory\common.psm1 `
+            Import-Module (Join-Path $WorkingDirectory "common.psm1") `
                 -ArgumentList ($LogFileName) -Force -WarningAction SilentlyContinue
 
-            Import-Module $WorkingDirectory\install_ebpf.psm1 `
+            Import-Module (Join-Path $WorkingDirectory "install_ebpf.psm1") `
                 -ArgumentList($WorkingDirectory, $LogFileName) `
                 -Force -WarningAction SilentlyContinue
 

@@ -23,7 +23,7 @@ $VMIsRemote = [bool]$VMIsRemote
 
 Push-Location $WorkingDirectory
 
-Import-Module $WorkingDirectory\common.psm1 -Force -ArgumentList ($LogFileName) -ErrorAction Stop
+Import-Module (Join-Path $WorkingDirectory "common.psm1") -Force -ArgumentList ($LogFileName) -ErrorAction Stop
 
 # Read the test execution json.
 $Config = Get-Content ("{0}\{1}" -f $PSScriptRoot, $TestExecutionJsonFileName) | ConvertFrom-Json
@@ -52,11 +52,11 @@ $Job = Start-Job -ScriptBlock {
     )
     Push-Location $WorkingDirectory
     # Load other utility modules.
-    Import-Module $WorkingDirectory\common.psm1 -Force -ArgumentList ($LogFileName) -WarningAction SilentlyContinue
+    Import-Module (Join-Path $WorkingDirectory "common.psm1") -Force -ArgumentList ($LogFileName) -WarningAction SilentlyContinue
 
     if ($ExecuteOnVM) {
         Write-Log "Tests will be executed on VM" -ForegroundColor Cyan
-        $VMList = $Config.VMMap.$SelfHostedRunnerName
+        $VMList = @(Get-TestVMList -Config $Config -SelfHostedRunnerName $SelfHostedRunnerName)
         $VMName = $VMList[0].Name
         $TestWorkingDirectory = "C:\ebpf"
     } else {
@@ -64,7 +64,7 @@ $Job = Start-Job -ScriptBlock {
         $VMName = $null
         $TestWorkingDirectory = $WorkingDirectory
     }
-    Import-Module $WorkingDirectory\vm_run_tests.psm1 `
+    Import-Module (Join-Path $WorkingDirectory "vm_run_tests.psm1") `
         -Force `
         -ArgumentList(
             $ExecuteOnHost,
@@ -82,7 +82,7 @@ $Job = Start-Job -ScriptBlock {
         -WarningAction SilentlyContinue
     try {
         Write-Log "Running kernel tests"
-        Run-KernelTests -Config $Config
+        Run-KernelTests
         Write-Log "Running kernel tests completed"
 
         Stop-eBPFComponents -GranularTracing $GranularTracing
@@ -131,7 +131,7 @@ $JobTimedOut = `
 # Re-import common.psm1 in case the kernel-dump timeout handler inside
 # Wait-TestJobToComplete forcefully re-imported it (via vm_run_tests.psm1),
 # which removes it from this script's scope.
-Import-Module $WorkingDirectory\common.psm1 -Force -ArgumentList ($LogFileName) -ErrorAction SilentlyContinue
+Import-Module (Join-Path $WorkingDirectory "common.psm1") -Force -ArgumentList ($LogFileName) -ErrorAction SilentlyContinue
 
 # Check job result before cleanup.
 $JobFailed = $Job.State -eq 'Failed'

@@ -104,12 +104,12 @@ jobs:
       if: ((inputs.code_coverage == true) || (inputs.gather_dumps == true)) && !contains(inputs.environment, '1ES') && (steps.skip_check.outputs.should_skip != 'true')
       with:
         submodules: 'recursive'
-        ref: ${{ github.event.workflow_run.head_branch }}
+        ref: ${{ github.sha }}
 
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       if: contains(inputs.environment, '1ES') && (steps.skip_check.outputs.should_skip != 'true')
       with:
-        ref: ${{ github.event.workflow_run.head_branch }}
+        ref: ${{ github.sha }}
 
     - name: Install ProcDump
       id: install_procdump
@@ -231,39 +231,6 @@ jobs:
       working-directory: ./${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}
       run: |
         ${{env.PRE_COMMAND}}
-
-    - name: Diagnose nested Hyper-V
-      if: steps.skip_check.outputs.should_skip != 'true' && contains(inputs.environment, '1ES')
-      continue-on-error: true
-      run: |
-        $ErrorActionPreference = 'Continue'
-
-        Get-ComputerInfo |
-          Select-Object CsName, WindowsProductName, OsBuildNumber, HyperVisorPresent |
-          Format-List
-
-        Get-CimInstance Win32_Processor |
-          Select-Object Name, VirtualizationFirmwareEnabled, VMMonitorModeExtensions, SecondLevelAddressTranslationExtensions |
-          Format-List
-
-        Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All |
-          Format-List FeatureName, State
-        Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Management-PowerShell |
-          Format-List FeatureName, State
-
-        Get-Service vmms, vmcompute -ErrorAction Continue |
-          Format-Table Name, Status, StartType
-
-        Get-CimInstance Win32_SystemDriver -Filter "Name = 'Vid'" |
-          Format-List Name, State, Status, StartMode, PathName
-
-        bcdedit /enum '{current}' |
-          Select-String hypervisorlaunchtype
-
-        Get-VMHost | Format-List *
-        Get-VM -Name runner_vm | Format-List *
-        Get-VMProcessor -VMName runner_vm | Format-List *
-        Get-VMSnapshot -VMName runner_vm | Format-Table Name, SnapshotType
 
     - name: Run pre test command on 1ES runner
       if: steps.skip_check.outputs.should_skip != 'true' && contains(inputs.environment, '1ES')

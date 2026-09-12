@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory = $false)][bool] $ExecuteOnHost = $false,
     [Parameter(Mandatory = $false)][bool] $ExecuteOnVM = $false,
     [Parameter(Mandatory = $false)][bool] $VMIsRemote = $false,
-    [Parameter(Mandatory = $true)][string] $VMName,
+    [Parameter(Mandatory = $false)][string] $VMName = "",
     [Parameter(Mandatory = $true)][string] $WorkingDirectory,
     [Parameter(Mandatory = $true)][string] $LogFileName,
     [Parameter(Mandatory = $false)][string] $TestMode = "CI/CD",
@@ -15,6 +15,10 @@ param(
     [Parameter(Mandatory = $false)][bool] $GranularTracing = $false,
     [Parameter(Mandatory = $false)][bool] $RunXdpTests = $false
 )
+
+if ($ExecuteOnVM -and [string]::IsNullOrWhiteSpace($VMName)) {
+    throw "VMName is required when ExecuteOnVM is true."
+}
 
 Import-Module "$PSScriptRoot\common.psm1" -Force -ArgumentList $LogFileName -WarningAction SilentlyContinue
 
@@ -45,24 +49,14 @@ function Invoke-OnHostOrVM
 
 function Run-KernelTests
 {
-    param([Parameter(Mandatory = $true)][PSCustomObject] $Config)
-
-    $selectedTests = @($Config.Tests)
-    if ($script:Options -and ($script:Options -notcontains "None")) {
-        $selectedTests = @($Config.Tests | Where-Object { $script:Options -contains $_.Suite })
-    }
-    if ($selectedTests.Count -eq 0) {
-        throw "No driver tests matched options: $($script:Options -join ', ')."
-    }
-
     $scriptBlock = {
-        param($WorkingDirectory, $LogFileName, $Tests, $TestHangTimeout, $UserModeDumpFolder)
+        param($WorkingDirectory, $LogFileName, $Options, $TestHangTimeout, $UserModeDumpFolder)
         Import-Module "$WorkingDirectory\common.psm1" -Force -ArgumentList $LogFileName -WarningAction SilentlyContinue
         Import-Module "$WorkingDirectory\run_driver_tests.psm1" `
             -Force `
             -ArgumentList $WorkingDirectory, $LogFileName, $TestHangTimeout, $UserModeDumpFolder `
             -WarningAction SilentlyContinue
-        Invoke-NtosDriverTests -Tests $Tests
+        Invoke-CICDTests -Suites $Options
     }
 
     Invoke-OnHostOrVM `
@@ -70,7 +64,7 @@ function Run-KernelTests
         -ArgumentList @(
             $script:WorkingDirectory,
             $script:LogFileName,
-            $selectedTests,
+            $script:Options,
             $script:TestHangTimeout,
             $script:UserModeDumpFolder)
 }
@@ -80,16 +74,16 @@ function Stop-eBPFComponents
     param([Parameter(Mandatory = $false)][bool] $GranularTracing = $false)
 
     $scriptBlock = {
-        param($WorkingDirectory, $LogFileName)
+        param($WorkingDirectory, $LogFileName, $GranularTracing)
         Import-Module "$WorkingDirectory\common.psm1" -Force -ArgumentList $LogFileName -WarningAction SilentlyContinue
         Import-Module "$WorkingDirectory\install_ebpf.psm1" `
             -Force `
             -ArgumentList $WorkingDirectory, $LogFileName `
             -WarningAction SilentlyContinue
-        Stop-eBPFServiceAndDrivers
+        Stop-eBPFServiceAndDrivers -GranularTracing $GranularTracing
     }
 
-    Invoke-OnHostOrVM -ScriptBlock $scriptBlock -ArgumentList @($script:WorkingDirectory, $script:LogFileName)
+    Invoke-OnHostOrVM -ScriptBlock $scriptBlock -ArgumentList @($script:WorkingDirectory, $script:LogFileName, $GranularTracing)
 }
 
 function Generate-KernelDumpOnVM

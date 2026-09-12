@@ -18,7 +18,7 @@ function Write-Log
     {
         if (![System.String]::IsNullOrEmpty($TraceMessage)) {
             $timestamp = (Get-Date).ToString('HH:mm:ss')
-            Write-Host "[$timestamp] :: $TraceMessage"-ForegroundColor $ForegroundColor
+            Write-Host "[$timestamp] :: $TraceMessage" -ForegroundColor $ForegroundColor
             Write-Output "[$timestamp] :: $TraceMessage" | Out-File "$env:TEMP\$LogFileName" -Append
         }
     }
@@ -561,6 +561,7 @@ function Wait-TestJobToComplete
            [Parameter(Mandatory = $false)] [string] $UserModeDumpFolder="C:\Dumps",
            [Parameter(Mandatory = $false)] [bool] $GenerateKernelDumpOnTimeout=$false)
     $TimeElapsed = 0
+    $JobTimedOut = $false
     # Loop to fetch and print job output in near real-time.
     while ($Job.State -eq 'Running') {
         try {
@@ -879,6 +880,29 @@ function Get-VMCredential {
         $securePassword = ConvertTo-SecureString -String (Get-VMPassword) -AsPlainText -Force
         return [System.Management.Automation.PSCredential]::new($Username, $securePassword)
     }
+}
+
+function Get-TestVMList {
+    param(
+        [Parameter(Mandatory = $true)][PSCustomObject] $Config,
+        [Parameter(Mandatory = $true)][string] $SelfHostedRunnerName
+    )
+
+    if ($null -eq $Config.VMMap) {
+        throw "No valid test VM is configured for runner '$SelfHostedRunnerName'."
+    }
+
+    $vmMapProperty = $Config.VMMap.PSObject.Properties[$SelfHostedRunnerName]
+    if ($null -eq $vmMapProperty) {
+        throw "No valid test VM is configured for runner '$SelfHostedRunnerName'."
+    }
+
+    $VMList = @($vmMapProperty.Value)
+    if ($VMList.Count -eq 0 -or ($VMList | Where-Object { [string]::IsNullOrWhiteSpace($_.Name) })) {
+        throw "No valid test VM is configured for runner '$SelfHostedRunnerName'."
+    }
+
+    return $VMList
 }
 
 

@@ -11,7 +11,7 @@ param(
 
 Import-Module "$PSScriptRoot\common.psm1" -Force -ArgumentList $LogFileName -WarningAction SilentlyContinue
 
-function Invoke-NtosDriverTest
+function Invoke-ExtensionDriverTest
 {
     param(
         [Parameter(Mandatory = $true)][string] $Name,
@@ -67,14 +67,45 @@ function Invoke-NtosDriverTest
     Write-Log "$Name passed."
 }
 
-function Invoke-NtosDriverTests
+function New-TestTuple
 {
-    param([Parameter(Mandatory = $true)][object[]] $Tests)
+    param(
+        [Parameter(Mandatory = $true)][string] $Suite,
+        [Parameter(Mandatory = $true)][string] $Test,
+        [Parameter(Mandatory = $false)][string] $Arguments = "-d yes",
+        [Parameter(Mandatory = $false)][int] $Timeout = $TestHangTimeout
+    )
 
-    foreach ($test in $Tests) {
-        $arguments = if ($null -ne $test.Arguments) { [string]$test.Arguments } else { "-d yes" }
-        $timeout = if ($null -ne $test.Timeout) { [int]$test.Timeout } else { $TestHangTimeout }
-        Invoke-NtosDriverTest -Name ([string]$test.Name) -Arguments $arguments -Timeout $timeout
+    [PSCustomObject]@{
+        Suite = $Suite
+        Test = $Test
+        Arguments = $Arguments
+        Timeout = $Timeout
+    }
+}
+
+function Invoke-CICDTests
+{
+    param([Parameter(Mandatory = $false)][string[]] $Suites = @("None"))
+
+    $testList = @(
+        (New-TestTuple -Suite "ntosebpfext" -Test "ntosebpfext_driver_test.exe" -Timeout 1800),
+        (New-TestTuple -Suite "neteventebpfext" -Test "neteventebpfext_driver_test.exe" -Timeout 1800)
+    )
+
+    $selectedTests = $testList
+    if ($Suites -and ($Suites -notcontains "None")) {
+        $selectedTests = @($testList | Where-Object { $Suites -contains $_.Suite })
+    }
+    if ($selectedTests.Count -eq 0) {
+        throw "No driver tests matched options: $($Suites -join ', ')."
+    }
+
+    foreach ($test in $selectedTests) {
+        Invoke-ExtensionDriverTest `
+            -Name $test.Test `
+            -Arguments $test.Arguments `
+            -Timeout $test.Timeout
     }
 }
 

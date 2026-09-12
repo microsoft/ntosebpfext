@@ -38,7 +38,7 @@ $Job = Start-Job -ScriptBlock {
     Import-Module .\config_test_vm.psm1 -Force -ArgumentList ($WorkingDirectory, $LogFileName) -WarningAction SilentlyContinue
 
     if ($ExecuteOnVM) {
-        $VMList = $Config.VMMap.$SelfHostedRunnerName
+        $VMList = @(Get-TestVMList -Config $Config -SelfHostedRunnerName $SelfHostedRunnerName)
         # Wait for all VMs to be in ready state, in case the test run caused any VM to crash.
         Wait-AllVMsToInitialize -VMList $VMList -VMIsRemote $VMIsRemote
 
@@ -87,7 +87,7 @@ $JobTimedOut = `
 
 # Re-import common.psm1 in case Wait-TestJobToComplete's timeout handler
 # forcefully re-imported it (via vm_run_tests.psm1), removing it from this scope.
-Import-Module $WorkingDirectory\common.psm1 -Force -ArgumentList ($LogFileName) -ErrorAction SilentlyContinue
+Import-Module (Join-Path $WorkingDirectory "common.psm1") -Force -ArgumentList ($LogFileName) -ErrorAction SilentlyContinue
 
 # Check job result before cleanup.
 $JobFailed = $Job.State -eq 'Failed'
