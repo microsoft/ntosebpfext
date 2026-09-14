@@ -25,49 +25,59 @@ function Install-eBPFComponents
         throw "Required eBPF for Windows installer was not found at '$msiPath'."
     }
 
-    Write-Log "Installing eBPF for Windows from $msiPath"
-    $arguments = @("/i", $msiPath, "ADDLOCAL=ALL", "/qn", "/norestart", "/l*v", "msi-install.log")
-    $process = Start-Process -FilePath msiexec.exe -ArgumentList $arguments -Wait -PassThru
-    if ($process.ExitCode -notin @(0, 3010)) {
-        if (Test-Path "msi-install.log") {
-            Get-Content "msi-install.log" | Write-Log
+    if ($GranularTracing) {
+        Start-WPRTrace -TraceType $KmTraceType
+    }
+
+    try {
+        Write-Log "Installing eBPF for Windows from $msiPath"
+        $arguments = @("/i", $msiPath, "ADDLOCAL=ALL", "/qn", "/norestart", "/l*v", "msi-install.log")
+        $process = Start-Process -FilePath msiexec.exe -ArgumentList $arguments -Wait -PassThru
+        if ($process.ExitCode -notin @(0, 3010)) {
+            if (Test-Path "msi-install.log") {
+                Get-Content "msi-install.log" | Write-Log
+            }
+            throw "eBPF for Windows installation failed with exit code $($process.ExitCode)."
         }
-        throw "eBPF for Windows installation failed with exit code $($process.ExitCode)."
-    }
 
-    if ($process.ExitCode -eq 3010) {
-        Write-Log "eBPF for Windows installation requested a reboot; continuing because the package was installed with /norestart."
-    }
-
-    $exporterPaths = @()
-    foreach ($exporterName in @("ntos_ebpf_ext_export_program_info.exe", "netevent_ebpf_ext_export_program_info.exe")) {
-        $exporterPath = Join-Path $WorkingDirectory $exporterName
-        if (-not (Test-Path $exporterPath -PathType Leaf)) {
-            throw "Required eBPF store exporter was not found at '$exporterPath'."
+        if ($process.ExitCode -eq 3010) {
+            Write-Log "eBPF for Windows installation requested a reboot; continuing because the package was installed with /norestart."
         }
-        $exporterPaths += $exporterPath
-    }
 
-    Write-Log "Clearing existing eBPF store information"
-    & $exporterPaths[0] --clear 2>&1 | Write-Log
-    if ($LASTEXITCODE -ne 0) {
-        throw "$([System.IO.Path]::GetFileName($exporterPaths[0])) --clear failed with exit code $LASTEXITCODE."
-    }
+        $exporterPaths = @()
+        foreach ($exporterName in @("ntos_ebpf_ext_export_program_info.exe", "netevent_ebpf_ext_export_program_info.exe")) {
+            $exporterPath = Join-Path $WorkingDirectory $exporterName
+            if (-not (Test-Path $exporterPath -PathType Leaf)) {
+                throw "Required eBPF store exporter was not found at '$exporterPath'."
+            }
+            $exporterPaths += $exporterPath
+        }
 
-    foreach ($exporterPath in $exporterPaths) {
-        $exporterName = [System.IO.Path]::GetFileName($exporterPath)
-        Write-Log "Registering extension program information with $exporterName"
-        & $exporterPath 2>&1 | Write-Log
+        Write-Log "Clearing existing eBPF store information"
+        & $exporterPaths[0] --clear 2>&1 | Write-Log
         if ($LASTEXITCODE -ne 0) {
-            throw "$exporterName failed with exit code $LASTEXITCODE."
+            throw "$([System.IO.Path]::GetFileName($exporterPaths[0])) --clear failed with exit code $LASTEXITCODE."
+        }
+
+        foreach ($exporterPath in $exporterPaths) {
+            $exporterName = [System.IO.Path]::GetFileName($exporterPath)
+            Write-Log "Registering extension program information with $exporterName"
+            & $exporterPath 2>&1 | Write-Log
+            if ($LASTEXITCODE -ne 0) {
+                throw "$exporterName failed with exit code $LASTEXITCODE."
+            }
+        }
+
+        if ($KMDFVerifier) {
+            Write-Log "The 1ES inner VM image controls driver verifier settings; no additional verifier configuration is applied."
+        }
+    } finally {
+        if ($GranularTracing) {
+            Stop-WPRTrace -FileName "install_ebpf"
         }
     }
 
-    if ($KMDFVerifier) {
-        Write-Log "The 1ES inner VM image controls driver verifier settings; no additional verifier configuration is applied."
-    }
-
-    if ($KmTracing) {
+    if (-not $GranularTracing -and $KmTracing) {
         Start-WPRTrace -TraceType $KmTraceType
     }
 
@@ -78,11 +88,21 @@ function Stop-eBPFServiceAndDrivers
 {
     param([Parameter(Mandatory = $false)][bool] $GranularTracing = $false)
 
-    foreach ($serviceName in @("ntosebpfext", "neteventebpfext", "netevent_sim")) {
-        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-        if ($service -and $service.Status -ne "Stopped") {
-            Write-Log "Stopping leftover test driver service $serviceName"
-            Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+    if ($GranularTracing) {
+        Start-WPRTrace
+    }
+
+    try {
+        foreach ($serviceName in @("ntosebpfext", "neteventebpfext", "netevent_sim")) {
+            $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+            if ($service -and $service.Status -ne "Stopped") {
+                Write-Log "Stopping leftover test driver service $serviceName"
+                Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } finally {
+        if ($GranularTracing) {
+            Stop-WPRTrace -FileName "stop_ebpf"
         }
     }
 }

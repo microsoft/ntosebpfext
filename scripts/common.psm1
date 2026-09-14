@@ -638,7 +638,6 @@ function Wait-TestJobToComplete
         } else {
             Write-Log "*** ERROR *** Job failed with unknown error."
         }
-        return $true  # Signal failure to the caller.
     }
 
     return $JobTimedOut
