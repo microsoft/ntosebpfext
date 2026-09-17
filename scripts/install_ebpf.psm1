@@ -54,9 +54,12 @@ function Install-eBPFComponents
         }
 
         Write-Log "Clearing existing eBPF store information"
-        & $exporterPaths[0] --clear 2>&1 | Write-Log
-        if ($LASTEXITCODE -ne 0) {
-            throw "$([System.IO.Path]::GetFileName($exporterPaths[0])) --clear failed with exit code $LASTEXITCODE."
+        foreach ($exporterPath in $exporterPaths) {
+            $exporterName = [System.IO.Path]::GetFileName($exporterPath)
+            & $exporterPath --clear 2>&1 | Write-Log
+            if ($LASTEXITCODE -ne 0) {
+                throw "$exporterName --clear failed with exit code $LASTEXITCODE."
+            }
         }
 
         foreach ($exporterPath in $exporterPaths) {

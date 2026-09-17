@@ -45,6 +45,8 @@ function Invoke-ExtensionDriverTest
     $exited = $process.WaitForExit($Timeout * 1000)
     if (-not $exited -or -not $process.HasExited) {
         Write-Log "$Name exceeded its timeout. A kernel dump will be requested."
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        $process.WaitForExit()
         throw [System.TimeoutException]::new("$Name timed out after $Timeout seconds.")
     }
 
@@ -89,8 +91,8 @@ function Invoke-CICDTests
     param([Parameter(Mandatory = $false)][string[]] $Suites = @("None"))
 
     $testList = @(
-        (New-TestTuple -Suite "ntosebpfext" -Test "ntosebpfext_driver_test.exe" -Timeout 1800),
-        (New-TestTuple -Suite "neteventebpfext" -Test "neteventebpfext_driver_test.exe" -Timeout 1800)
+        (New-TestTuple -Suite "ntosebpfext" -Test "ntosebpfext_driver_test.exe" -Timeout $TestHangTimeout),
+        (New-TestTuple -Suite "neteventebpfext" -Test "neteventebpfext_driver_test.exe" -Timeout $TestHangTimeout)
     )
 
     $selectedTests = $testList

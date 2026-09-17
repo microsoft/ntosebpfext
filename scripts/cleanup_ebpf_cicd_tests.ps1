@@ -39,14 +39,16 @@ $Job = Start-Job -ScriptBlock {
 
     if ($ExecuteOnVM) {
         $VMList = @(Get-TestVMList -Config $Config -SelfHostedRunnerName $SelfHostedRunnerName)
-        # Wait for all VMs to be in ready state, in case the test run caused any VM to crash.
-        Wait-AllVMsToInitialize -VMList $VMList -VMIsRemote $VMIsRemote
+        try {
+            # Wait for all VMs to be in ready state, in case the test run caused any VM to crash.
+            Wait-AllVMsToInitialize -VMList $VMList -VMIsRemote $VMIsRemote
 
-        # Import logs from VMs.
-        Import-ResultsFromVM -VMList $VMList -KmTracing $KmTracing
-
-        # Stop the VMs.
-        Stop-AllVMs -VMList $VMList
+            # Import logs from VMs.
+            Import-ResultsFromVM -VMList $VMList -KmTracing $KmTracing -VMIsRemote $VMIsRemote
+        } finally {
+            # Always release the VMs, even if recovery or result collection fails.
+            Stop-AllVMs -VMList $VMList -VMIsRemote $VMIsRemote
+        }
     } else {
         try {
             Import-ResultsFromHost -KmTracing $KmTracing

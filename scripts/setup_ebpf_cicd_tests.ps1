@@ -93,6 +93,9 @@ $Job = Start-Job -ScriptBlock {
                 break
             } catch [System.Exception] {
                 Write-Log "Export-BuildArtifactsToVMs failed: $_"
+                if ($i -eq ($MaxRetryCount - 1)) {
+                    throw
+                }
                 Write-Log "Export-BuildArtifactsToVMs failed. Retrying..."
             }
         }

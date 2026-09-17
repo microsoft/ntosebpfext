@@ -24,11 +24,7 @@
         <EventCollectorId Value="EventCollector_EbpfCoreProvider">
           <EventProviders>
             <EventProviderId Value="ExecutionContext"/>
-          </EventProviders>
-          <EventProviders>
             <EventProviderId Value="NtosEbpfExt"/>
-          </EventProviders>
-          <EventProviders>
             <EventProviderId Value="NeteventEbpfExt"/>
           </EventProviders>
         </EventCollectorId>
@@ -45,11 +41,7 @@
         <EventCollectorId Value="EventCollector_EbpfCoreProvider">
           <EventProviders>
             <EventProviderId Value="ExecutionContext"/>
-          </EventProviders>
-          <EventProviders>
             <EventProviderId Value="NtosEbpfExt"/>
-          </EventProviders>
-          <EventProviders>
             <EventProviderId Value="NeteventEbpfExt"/>
           </EventProviders>
         </EventCollectorId>
