@@ -17,7 +17,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\ntosebpfext.wprp">
+    <CopyFileToFolders Include="..\ebpfextensions.wprp">
       <FileType>Document</FileType>
     </CopyFileToFolders>
     <None Include="..\pre-commit">
@@ -27,6 +27,39 @@
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir).git\hooks</DestinationFolders>
     </None>
     <CopyFileToFolders Include="..\Run-Test.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\Install-eBpfForWindows.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\common.psm1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\config_test_vm.psm1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\tracing_utils.psm1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\setup_ebpf_cicd_tests.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\execute_ebpf_cicd_tests.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\cleanup_ebpf_cicd_tests.ps1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\install_ebpf.psm1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\run_driver_tests.psm1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\vm_run_tests.psm1">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\test_execution.json">
       <FileType>Document</FileType>
     </CopyFileToFolders>
     <None Include="packages.config" />
