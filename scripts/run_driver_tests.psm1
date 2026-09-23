@@ -11,6 +11,21 @@ param(
 
 Import-Module "$PSScriptRoot\common.psm1" -Force -ArgumentList $LogFileName -WarningAction SilentlyContinue
 
+function Write-DriverTestOutput
+{
+    param(
+        [Parameter(Mandatory = $true)][string] $StdoutPath,
+        [Parameter(Mandatory = $true)][string] $StderrPath
+    )
+
+    if (Test-Path $StdoutPath) {
+        Get-Content $StdoutPath | Write-Log
+    }
+    if ((Test-Path $StderrPath) -and (Get-Item $StderrPath).Length -gt 0) {
+        Get-Content $StderrPath | Write-Log
+    }
+}
+
 function Invoke-ExtensionDriverTest
 {
     param(
@@ -46,18 +61,15 @@ function Invoke-ExtensionDriverTest
     if (-not $exited -or -not $process.HasExited) {
         Write-Log "$Name exceeded its timeout. A kernel dump will be requested."
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-        $process.WaitForExit()
+        if (-not $process.WaitForExit(5000)) {
+            Write-Log "Warning: $Name did not exit within 5 seconds after termination was requested."
+        }
+        Write-DriverTestOutput -StdoutPath $stdoutPath -StderrPath $stderrPath
         throw [System.TimeoutException]::new("$Name timed out after $Timeout seconds.")
     }
 
     $exitCode = $process.ExitCode
-
-    if (Test-Path $stdoutPath) {
-        Get-Content $stdoutPath | Write-Log
-    }
-    if ((Test-Path $stderrPath) -and (Get-Item $stderrPath).Length -gt 0) {
-        Get-Content $stderrPath | Write-Log
-    }
+    Write-DriverTestOutput -StdoutPath $stdoutPath -StderrPath $stderrPath
 
     if ($null -eq $exitCode) {
         throw "$Name completed, but its exit code could not be read."

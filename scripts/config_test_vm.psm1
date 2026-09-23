@@ -532,7 +532,10 @@ function Import-ResultsFromVM
         }
 
         $TestCredential = Get-VMCredential -Username 'Administrator' -VMIsRemote $VMIsRemote
-        $VMSession = New-SessionOnVM -VMName $VMName -VMIsRemote $VMIsRemote -Credential $TestCredential
+        $VMSession = Get-ValidSession `
+            -VMName $VMName `
+            -TestCredential $TestCredential `
+            -VMIsRemote $VMIsRemote
         if (!$VMSession) {
             Write-Log "*** WARNING *** Failed to create PowerShell session on $VMName. Skipping result import for this VM."
             continue

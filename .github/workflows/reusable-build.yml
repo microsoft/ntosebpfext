@@ -250,6 +250,8 @@ jobs:
           "NtosEbpfExt.inf",
           "NetEventEbpfExt.inf",
           "ebpf-for-windows.msi",
+          "ebpfextensions.wprp",
+          "Install-eBpfForWindows.ps1",
           "common.psm1",
           "config_test_vm.psm1",
           "tracing_utils.psm1",
