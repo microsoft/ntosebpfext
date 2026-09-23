@@ -8,6 +8,7 @@ param ([parameter(Mandatory = $false)][bool] $KmTracing = $true,
        [parameter(Mandatory = $false)][string] $WorkingDirectory = $pwd.ToString(),
        [parameter(Mandatory = $false)][string] $RegressionArtifactsVersion = "",
        [parameter(Mandatory = $false)][string] $RegressionArtifactsConfiguration = "",
+       [parameter(Mandatory = $false)][string] $RegressionArtifactsHash = "",
        [parameter(Mandatory = $false)][string] $TestExecutionJsonFileName = "test_execution.json",
        [parameter(Mandatory = $false)][string] $SelfHostedRunnerName = [System.Net.Dns]::GetHostName(),
        [Parameter(Mandatory = $false)][int] $TestJobTimeout = (30*60),
@@ -47,7 +48,10 @@ Remove-Item ".\TestLogs" -Recurse -Confirm:$false -ErrorAction SilentlyContinue
 if ($TestMode -eq "Regression") {
 
     # Download the release artifacts for regression tests.
-    Get-RegressionTestArtifacts -ArtifactVersion $RegressionArtifactsVersion -Configuration $RegressionArtifactsConfiguration
+    Get-RegressionTestArtifacts `
+        -ArtifactVersion $RegressionArtifactsVersion `
+        -Configuration $RegressionArtifactsConfiguration `
+        -ExpectedHash $RegressionArtifactsHash
 }
 
 Get-CoreNetTools -Architecture $Architecture

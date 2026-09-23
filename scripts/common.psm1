@@ -948,7 +948,8 @@ function Get-ZipFileFromUrl {
     param(
         [Parameter(Mandatory=$True)][string] $Url,
         [Parameter(Mandatory=$True)][string] $DownloadFilePath,
-        [Parameter(Mandatory=$True)][string] $OutputDir
+        [Parameter(Mandatory=$True)][string] $OutputDir,
+        [Parameter(Mandatory=$True)][string] $ExpectedHash
     )
     $maxRetries = 5
     $retryDelay = 5 # seconds
@@ -973,6 +974,12 @@ function Get-ZipFileFromUrl {
             if (Wait-Job -Job $job -Timeout $timeout) {
                 Receive-Job -Job $job
 
+                $downloadedHash = (Get-FileHash -Path $DownloadFilePath -Algorithm SHA256).Hash
+                if ($downloadedHash -ne $ExpectedHash) {
+                    throw "Checksum mismatch for ${DownloadFilePath}: expected $ExpectedHash, got $downloadedHash"
+                }
+                Write-Log "Verified SHA256 for $DownloadFilePath"
+
                 Write-Log "Extracting $DownloadFilePath to $OutputDir"
                 Expand-ZipFile -DownloadFilePath $DownloadFilePath -OutputDir $OutputDir -maxRetries $maxRetries -retryDelay $retryDelay -timeout $timeout
                 break
@@ -983,7 +990,7 @@ function Get-ZipFileFromUrl {
                     Remove-Item -Path $DownloadFilePath -Force -ErrorAction Ignore
                 }
                 if ($i -eq ($maxRetries - 1)) {
-                    throw "Failed to download $Url after $maxRetries attempts."
+                    throw "Failed to download and verify $Url after $maxRetries attempts. Last error: $($_.Exception.Message)"
                 } else {
                     Start-Sleep -Seconds $retryDelay
                 }
@@ -1004,7 +1011,8 @@ function Get-ZipFileFromUrl {
 function Get-RegressionTestArtifacts
 {
     param([Parameter(Mandatory=$True)][string] $Configuration,
-          [Parameter(Mandatory=$True)][string] $ArtifactVersion)
+          [Parameter(Mandatory=$True)][string] $ArtifactVersion,
+          [Parameter(Mandatory=$True)][string] $ExpectedHash)
 
     $RegressionTestArtifactsPath = "$pwd\regression"
     $OriginalPath = $pwd
@@ -1024,12 +1032,22 @@ function Get-RegressionTestArtifacts
     $DownloadPath = "$RegressionTestArtifactsPath"
     $ArtifactName = "v$ArtifactVersion/Build.$Configuration.x64.zip"
     $ArtifactUrl = "https://github.com/microsoft/ebpf-for-windows/releases/download/" + $ArtifactName
+    $artifactUri = [System.Uri]$ArtifactUrl
+    if ($artifactUri.Scheme -ne "https" -or
+        $artifactUri.Host -ne "github.com" -or
+        $artifactUri.AbsolutePath -ne "/microsoft/ebpf-for-windows/releases/download/$ArtifactName") {
+        throw "Unexpected regression artifact URL: '$ArtifactUrl'."
+    }
 
     if (Test-Path -Path $DownloadPath\Build-x64.$Configuration) {
         Remove-Item -Path $DownloadPath\Build-x64.$Configuration -Recurse -Force
     }
 
-    Get-ZipFileFromUrl -Url $ArtifactUrl -DownloadFilePath "$DownloadPath\Build-x64.$Configuration.zip" -OutputDir $DownloadPath
+    Get-ZipFileFromUrl `
+        -Url $ArtifactUrl `
+        -DownloadFilePath "$DownloadPath\Build-x64.$Configuration.zip" `
+        -OutputDir $DownloadPath `
+        -ExpectedHash $ExpectedHash
     $DownloadedArtifactPath = "$DownloadPath\Build $Configuration x64"
     if (!(Test-Path -Path $DownloadedArtifactPath)) {
         throw ("Path ""$DownloadedArtifactPath"" not found.")
@@ -1056,21 +1074,28 @@ function Get-CoreNetTools {
         [string] $Architecture = "x64"
     )
     # Download and extract https://github.com/microsoft/corenet-ci.
+    $coreNetCommit = "5c39610141ee4583246f6854883d6dba25e00f52"
+    $coreNetArchiveHash = "7D04FFB8F1141056A2E37CC47BED06706023883CD72F092C924354ECD467E8E2"
     $DownloadPath = "$pwd\corenet-ci"
+    $coreNetRoot = "$DownloadPath\corenet-ci-$coreNetCommit"
     mkdir $DownloadPath
     Write-Log "Downloading CoreNet-CI to $DownloadPath"
-    Get-ZipFileFromUrl -Url "https://github.com/microsoft/corenet-ci/archive/refs/heads/main.zip" -DownloadFilePath "$DownloadPath\corenet-ci.zip" -OutputDir $DownloadPath
+    Get-ZipFileFromUrl `
+        -Url "https://github.com/microsoft/corenet-ci/archive/$coreNetCommit.zip" `
+        -DownloadFilePath "$DownloadPath\corenet-ci.zip" `
+        -OutputDir $DownloadPath `
+        -ExpectedHash $coreNetArchiveHash
     # DuoNic.
     if ($Architecture -eq "arm64") {
-        $duoNicPath = "$DownloadPath\corenet-ci-main\vm-setup\duonic\arm64\*"
+        $duoNicPath = "$coreNetRoot\vm-setup\duonic\arm64\*"
     } else {
-        $duoNicPath = "$DownloadPath\corenet-ci-main\vm-setup\duonic\*"
+        $duoNicPath = "$coreNetRoot\vm-setup\duonic\*"
     }
     Move-Item -Path $duoNicPath -Destination $pwd -Force
     # Procdump.
-    Move-Item -Path "$DownloadPath\corenet-ci-main\vm-setup\procdump64.exe" -Destination $pwd -Force
+    Move-Item -Path "$coreNetRoot\vm-setup\procdump64.exe" -Destination $pwd -Force
     # NotMyFault.
-    Move-Item -Path "$DownloadPath\corenet-ci-main\vm-setup\notmyfault64.exe" -Destination $pwd -Force
+    Move-Item -Path "$coreNetRoot\vm-setup\notmyfault64.exe" -Destination $pwd -Force
     Remove-Item -Path $DownloadPath -Force -Recurse
 }
 
@@ -1082,9 +1107,21 @@ function Get-PSExec {
         return $psExecPath
     }
     $url = "https://download.sysinternals.com/files/PSTools.zip"
+    $expectedHash = "2B10B3D9DAE0403B06D90B13BFB53E723A8B14A788F78CDFD43A445D8991415E"
     $DownloadPath = "$pwd\psexec"
 
-    Get-ZipFileFromUrl -Url $url -DownloadFilePath "$pwd\pstools.zip" -OutputDir "$DownloadPath"
+    $uri = [System.Uri]$url
+    if ($uri.Scheme -ne "https" -or
+        $uri.Host -ne "download.sysinternals.com" -or
+        $uri.AbsolutePath -ne "/files/PSTools.zip") {
+        throw "Unexpected PSTools download URL: '$url'."
+    }
+
+    Get-ZipFileFromUrl `
+        -Url $url `
+        -DownloadFilePath "$pwd\pstools.zip" `
+        -OutputDir "$DownloadPath" `
+        -ExpectedHash $expectedHash
     Move-Item -Path "$DownloadPath\PsExec64.exe" -Destination $pwd -Force
     Remove-Item -Path $DownloadPath -Force -Recurse -ErrorAction Ignore
     return $psExecPath

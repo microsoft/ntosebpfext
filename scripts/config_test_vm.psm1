@@ -45,7 +45,7 @@ function Wait-AllVMsReadyForCommands
                             Write-Log "PS Direct threw transient exception for $VMName - $($_.Exception.Message). Will retry."
                         } else {
                             Write-Log "PS Direct threw fatal exception for $VMName - $($_.Exception.Message)."
-                            break
+                            throw
                         }
                     }
                 }
@@ -1029,9 +1029,11 @@ function Initialize-VM {
                 Write-Log "Successfully added 'baseline' checkpoint for VM: $VMName" -ForegroundColor Green
                 break
             } catch {
+                if ($i -eq 4) {
+                    throw "Failed to checkpoint VM '$VmName' after 5 attempts: $($_.Exception.Message)"
+                }
                 Write-Log "Failed to checkpoint VM: $VmName. Retrying..."
                 Start-Sleep -Seconds 5
-                continue
             }
         }
 

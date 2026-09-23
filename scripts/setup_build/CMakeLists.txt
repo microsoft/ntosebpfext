@@ -39,6 +39,7 @@ set (output_ucrtbased_dll $<$<CONFIG:Debug>:${ucrtbased_dll}>)
 
 set (misc_files "setup-ebpf.ps1"
     "run_tests.bat"
+    "Install-eBpfForWindows.ps1"
     "common.psm1"
     "config_test_vm.psm1"
     "tracing_utils.psm1"
