@@ -33,18 +33,21 @@ main(int argc, char** argv)
         status = export_all_program_information();
         if (status != ERROR_SUCCESS) {
             std::cout << "Failed export_all_program_information() - ERROR #" << status << std::endl;
+            return 1;
         }
 
         std::cout << "Exporting section information." << std::endl;
         status = export_all_section_information();
         if (status != ERROR_SUCCESS) {
             std::cout << "Failed export_all_section_information() - ERROR #" << status << std::endl;
+            return 1;
         }
     } else {
         std::cout << "Clearing eBPF store." << std::endl;
         status = clear_ebpf_store();
         if (status != EBPF_SUCCESS) {
             std::cout << "Failed clear_ebpf_store() - ERROR #" << status << std::endl;
+            return 1;
         }
     }
 

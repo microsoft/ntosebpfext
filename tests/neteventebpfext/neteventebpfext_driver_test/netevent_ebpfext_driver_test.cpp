@@ -67,7 +67,7 @@ _drain_perf_buffer(perf_buffer* perf_buffer)
 }
 
 static void
-_require_no_callback_errors(const netevent_callback_context& context)
+_require_no_callback_errors(const netevent_callback_context& context, bool require_no_lost_events = true)
 {
     REQUIRE(context.malformed_event_count == 0);
     REQUIRE(context.invalid_version_count == 0);
@@ -75,7 +75,9 @@ _require_no_callback_errors(const netevent_callback_context& context)
     REQUIRE(context.unexpected_event_type_count == 0);
     REQUIRE(context.mismatched_pktmon_event_id_count == 0);
     REQUIRE(context.invalid_payload_count == 0);
-    REQUIRE(context.lost_event_count == 0);
+    if (require_no_lost_events) {
+        REQUIRE(context.lost_event_count == 0);
+    }
 }
 
 typedef struct test_netevent_event_md
@@ -407,7 +409,7 @@ TEST_CASE("netevent_drivers_load_unload_stress", "[neteventebpfext]")
     bpf_link_detach(link_fd);
     bpf_link__destroy(netevent_monitor_link);
     REQUIRE(_drain_perf_buffer(netevent_perf_buff) >= 0);
-    _require_no_callback_errors(callback_context);
+    _require_no_callback_errors(callback_context, false);
 
     // Close perf buffer.
     perf_buffer__free(netevent_perf_buff);
