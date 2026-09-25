@@ -206,7 +206,7 @@ jobs:
       shell: cmd
       run: |
         mkdir ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\TestLogs
-        wpr.exe -start ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\ebpfextensions.wprp -filemode
+        wpr.exe -start ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\ebpfextensions.wprp!EbpfExtensionsProvider-File -filemode
 
     - name: Set ASAN Environment Variable
       if: steps.skip_check.outputs.should_skip != 'true'
@@ -216,7 +216,7 @@ jobs:
         powershell.exe "echo 'ASAN_WIN_CONTINUE_ON_INTERCEPTION_FAILURE=true' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append"
 
     - name: Configure eBPF store
-      if: steps.skip_check.outputs.should_skip != 'true'
+      if: steps.skip_check.outputs.should_skip != 'true' && !contains(inputs.environment, '1ES')
       id: configure_ebpf_store
       working-directory: ./${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}
       run: |

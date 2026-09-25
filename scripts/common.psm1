@@ -773,19 +773,20 @@ function Get-VMPassword {
 
 <#
 .SYNOPSIS
-    Imports the CredentialManager, and installs it if necessary.
+    Imports the pinned CredentialManager version.
 
 .DESCRIPTION
-    This function imports the CredentialManager module and installs it if it is not already installed. It also ensures that any dependencies are installed.
+    This function requires CredentialManager 2.0 to be provisioned on the runner image.
 #>
 function Get-CredentialManager {
-    # Import the CredentialManager module. Ensure any dependencies are installed.
-    Install-PackageProvider -Name NuGet -Force -ErrorAction Stop *> $null 2>&1
-    Import-PackageProvider -Name NuGet -Force -ErrorAction Stop *> $null 2>&1
-    if (-not (Get-Module -ListAvailable -Name CredentialManager)) {
-        Install-Module -Name CredentialManager -Force -ErrorAction Stop *> $null 2>&1
+    $requiredVersion = '2.0'
+    $module = Get-Module -ListAvailable -Name CredentialManager |
+        Where-Object { $_.Version -eq $requiredVersion } |
+        Select-Object -First 1
+    if (-not $module) {
+        throw "CredentialManager $requiredVersion must be preinstalled on the runner image."
     }
-    Import-Module CredentialManager -ErrorAction Stop
+    Import-Module CredentialManager -RequiredVersion $requiredVersion -ErrorAction Stop
 }
 
 <#
@@ -808,7 +809,7 @@ function Retrieve-StoredCredential {
     Get-CredentialManager
 
     $Script = @"
-        Import-Module CredentialManager -ErrorAction Stop;
+        Import-Module CredentialManager -RequiredVersion 2.0 -ErrorAction Stop;
         `$Credential = Get-StoredCredential -Target '$Target';
         `$UserName = `$Credential.UserName;
         `$Password = `$Credential.GetNetworkCredential().Password;

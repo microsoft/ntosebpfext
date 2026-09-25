@@ -247,6 +247,8 @@ jobs:
           "ntosebpfext.sys",
           "neteventebpfext.sys",
           "netevent_sim.sys",
+          "process_monitor.sys",
+          "netevent_monitor.sys",
           "NtosEbpfExt.inf",
           "NetEventEbpfExt.inf",
           "ebpf-for-windows.msi",
