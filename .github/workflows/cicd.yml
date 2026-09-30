@@ -70,6 +70,7 @@ jobs:
     needs: regular
     if: github.event_name == 'schedule' || github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-test.yml
+    secrets: inherit
     with:
       name: ntosebpfext_units
       pre_test: powershell -file .\bin\process_monitor.Tests\win-x64\Install-eBpfForWindows.ps1 1.4.0
