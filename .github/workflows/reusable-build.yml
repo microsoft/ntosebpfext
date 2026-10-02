@@ -232,7 +232,7 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         .\scripts\Install-eBpfForWindows.ps1 `
-          -version 1.4.0 `
+          -version 1.6.0 `
           -DestinationPath "${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\ebpf-for-windows.msi" `
           -DownloadOnly
 

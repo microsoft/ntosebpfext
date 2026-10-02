@@ -18,7 +18,7 @@ $installer_url = "https://github.com/microsoft/ebpf-for-windows/releases/downloa
 $installer_url = $installer_url -replace "%%VER%%", $version
 
 $knownInstallerHashes = @{
-    "1.4.0" = "22C2989DFDEBF7DBCE22602CA7605C36CB805F86E71146F1D63693AA3184894E"
+    "1.6.0" = "DBCAAF09A767BEFA9517F469713F56B26DE933B8831B39EFC304973195D2880B"
 }
 if (-not $ExpectedHash) {
     $ExpectedHash = $knownInstallerHashes[$version]
