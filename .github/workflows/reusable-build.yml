@@ -282,7 +282,7 @@ jobs:
       with:
         name: ${{inputs.build_artifact}}-${{matrix.configurations}}
         path: ${{github.workspace}}/build-${{ matrix.configurations }}.zip
-        retention-days: 5
+        retention-days: 10
 
     - name: Copy required scripts to build output
       if: inputs.build_nuget == true && matrix.configurations == 'Release' && steps.skip_check.outputs.should_skip != 'true'
@@ -301,7 +301,7 @@ jobs:
         name: ebpf-for-windows-extensions - NuGet package (${{inputs.build_artifact}}_${{env.BUILD_CONFIGURATION}})
         path: ${{github.workspace}}\${{env.BUILD_PLATFORM}}\${{env.BUILD_CONFIGURATION}}\*.nupkg
         if-no-files-found: error
-        retention-days: 5
+        retention-days: 10
 
     - name: Upload Build Logs
       if: always()
@@ -309,7 +309,7 @@ jobs:
       with:
         name: ${{inputs.build_artifact}} Build Logs-${{matrix.configurations}}
         path: ${{github.workspace}}\${{env.BUILD_PLATFORM}}_${{env.BUILD_CONFIGURATION}}\build_logs\*.binlog
-        retention-days: 5
+        retention-days: 10
 
     - name: Check for crash dumps
       # Check for crash dumps even if the workflow failed.
@@ -327,7 +327,7 @@ jobs:
       with:
         name: Crash-Dumps-${{env.NAME}}-${{env.BUILD_PLATFORM}}-${{env.BUILD_CONFIGURATION}}
         path: c:/dumps/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION}}
-        retention-days: 5
+        retention-days: 10
 
     - name: Perform CodeQL Analysis
       if: inputs.build_codeql == true && steps.skip_check.outputs.should_skip != 'true'
