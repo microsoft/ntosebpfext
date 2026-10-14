@@ -1150,6 +1150,10 @@ function Get-PSExec {
 .PARAMETER ArgumentList
     The arguments to pass to the script block.
 
+.PARAMETER MaxAttempts
+    Maximum attempts for transient local PowerShell Direct failures. Readiness polling uses one
+    attempt so its own deadline controls retries.
+
 .EXAMPLE
     Invoke-CommandOnVM -VMName "MyVM" -VMIsRemote $true -Credential $credential -ScriptBlock { Get-Process }
 #>
@@ -1159,13 +1163,13 @@ function Invoke-CommandOnVM {
         [Parameter(Mandatory = $false)][bool] $VMIsRemote = $false,
         [Parameter(Mandatory = $true)][PSCredential] $Credential,
         [Parameter(Mandatory = $true)][ScriptBlock] $ScriptBlock,
-        [Parameter(Mandatory = $false)][object[]] $ArgumentList = @()
+        [Parameter(Mandatory = $false)][object[]] $ArgumentList = @(),
+        [Parameter(Mandatory = $false)][ValidateRange(1, 5)][int] $MaxAttempts = 5
     )
     Write-Log "Invoking command on VM: $VMName (IsRemote: $VMIsRemote)"
     if ($VMIsRemote) {
         Invoke-Command -ComputerName $VMName -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop
     } else {
-        $maxAttempts = 5
         for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             try {
                 Invoke-Command -VMName $VMName -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop
