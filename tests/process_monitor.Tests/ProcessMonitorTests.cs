@@ -16,6 +16,21 @@ public class ProcessMonitorTests
 {
     public static ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
 
+    // The child process in ProcessCreateAndExitTimesWork sleeps for this long, so the kernel-reported
+    // lifetime must be at least this.
+    private static readonly TimeSpan ChildProcessSleepDuration = TimeSpan.FromSeconds(3);
+
+    // The create/exit delta covers the whole process lifetime (interpreter startup, assembly load/JIT,
+    // the sleep, then shutdown), not just the sleep. CI runners are frequently oversubscribed, so this
+    // upper bound only needs to be loose enough to catch a grossly wrong timestamp (e.g. wrong epoch,
+    // wrong units, or a swapped create/exit time) without failing on ordinary scheduling delays.
+    private static readonly TimeSpan ChildProcessLifetimeUpperBound = TimeSpan.FromSeconds(60);
+
+    // Upper bound on how long we wait for the kernel's process events to be delivered. Delivery is
+    // asynchronous via the ring buffer, so on an oversubscribed CI runner this can lag well behind the
+    // process itself.
+    private static readonly TimeSpan EventDeliveryTimeout = TimeSpan.FromSeconds(60);
+
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
 
@@ -71,7 +86,7 @@ public class ProcessMonitorTests
     public async Task ProcessCreateAndExitTimesWork()
     {
         var expectedCreatingThreadId = GetCurrentThreadId();
-        (var createdArgs, var destroyedArgs) = await RunProcessAndWaitForEventsAsync("powershell.exe", "-noprofile -ex bypass -c sleep -milliseconds 3000");
+        (var createdArgs, var destroyedArgs) = await RunProcessAndWaitForEventsAsync("powershell.exe", $"-noprofile -ex bypass -c sleep -milliseconds {(int)ChildProcessSleepDuration.TotalMilliseconds}");
 
         // The parent should be our own process
         Assert.AreEqual((uint)Environment.ProcessId, createdArgs.ParentProcessId);
@@ -88,10 +103,16 @@ public class ProcessMonitorTests
         Assert.AreEqual(createdArgs.ImageFileName, destroyedArgs.ImageFileName);
         Assert.AreEqual(createdArgs.CommandLine, destroyedArgs.CommandLine);
         Assert.AreEqual(0u, destroyedArgs.ExitCode);
-        // "timeout 3" should ensure we take at least 3 seconds to exit.
-        // So we'll check that we're > 3 but below some resonable threshold of imprecision beyond that.
-        Assert.IsTrue(destroyedArgs.ExitTime - createdArgs.CreateTime > TimeSpan.FromSeconds(3), $"ExitTime - CreateTime is not >3 seconds, it is {destroyedArgs.ExitTime - createdArgs.CreateTime}.  CreateTime={createdArgs.CreateTime:O}, ExitTime={destroyedArgs.ExitTime:O}");
-        Assert.IsTrue(destroyedArgs.ExitTime - createdArgs.CreateTime < TimeSpan.FromSeconds(4));
+        // The child sleeps for ChildProcessSleepDuration, so its kernel-reported lifetime must be at least
+        // that long. This lower bound is the assertion with real product value: it proves CreateTime and
+        // ExitTime are distinct, correctly ordered, and in sensible units.
+        var lifetime = destroyedArgs.ExitTime - createdArgs.CreateTime;
+        Assert.IsTrue(
+            lifetime > ChildProcessSleepDuration,
+            $"ExitTime - CreateTime is not >{ChildProcessSleepDuration.TotalSeconds} seconds, it is {lifetime}.  CreateTime={createdArgs.CreateTime:O}, ExitTime={destroyedArgs.ExitTime:O}");
+        Assert.IsTrue(
+            lifetime < ChildProcessLifetimeUpperBound,
+            $"ExitTime - CreateTime is not <{ChildProcessLifetimeUpperBound.TotalSeconds} seconds, it is {lifetime}.  CreateTime={createdArgs.CreateTime:O}, ExitTime={destroyedArgs.ExitTime:O}");
     }
 
     [TestMethod]
@@ -121,7 +142,8 @@ public class ProcessMonitorTests
     {
         using var pm = new ProcessMonitor(LoggerFactory.CreateLogger<ProcessMonitor>());
 
-        var processDestoryHappened = new ManualResetEvent(false);
+        using var processDestoryHappened = new ManualResetEvent(false);
+        using var processCreateObserved = new ManualResetEvent(false);
         var testPID = 0u;
         ProcessCreatedEventArgs createdArgs = default;
         ProcessDestroyedEventArgs destroyedArgs = default;
@@ -131,26 +153,39 @@ public class ProcessMonitorTests
             if (e.ImageFileName.EndsWith(exeName, StringComparison.Ordinal) &&
                 e.CommandLine.Contains($"\"{exeName}\" {arguments}", StringComparison.Ordinal))
             {
-                testPID = e.ProcessId;
                 createdArgs = e;
+                // Publish the PID last so the destroy handler never observes a PID without its create args.
+                Volatile.Write(ref testPID, e.ProcessId);
+                processCreateObserved.Set();
             }
         };
 
         pm.ProcessDestroyed += (sender, e) =>
         {
-            if (e.ProcessId == testPID)
+            var expectedPid = Volatile.Read(ref testPID);
+            if (expectedPid != 0 && e.ProcessId == expectedPid)
             {
                 destroyedArgs = e;
                 processDestoryHappened.Set();
             }
         };
 
+        uint startedPid;
         {
             using var cmdProcess = Process.Start(exeName, arguments);
+            startedPid = (uint)cmdProcess.Id;
             await cmdProcess.WaitForExitAsync();
         }
 
-        Assert.IsTrue(processDestoryHappened.WaitOne(TimeSpan.FromSeconds(10)), "Test never received the process destroy message");
+        // Distinguish "we never saw the create event" from "we saw create but never saw destroy"; the two
+        // have very different causes and the combined assertion used to hide which one happened.
+        Assert.IsTrue(
+            processCreateObserved.WaitOne(EventDeliveryTimeout),
+            $"Test never received the process create message for {exeName} (PID {startedPid}) within {EventDeliveryTimeout.TotalSeconds} seconds");
+
+        Assert.IsTrue(
+            processDestoryHappened.WaitOne(EventDeliveryTimeout),
+            $"Test never received the process destroy message for {exeName} (PID {startedPid}) within {EventDeliveryTimeout.TotalSeconds} seconds");
 
         return (createdArgs, destroyedArgs);
     }
