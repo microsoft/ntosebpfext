@@ -177,8 +177,7 @@ public class ProcessMonitorTests
             await cmdProcess.WaitForExitAsync();
         }
 
-        // Distinguish "we never saw the create event" from "we saw create but never saw destroy"; the two
-        // have very different causes and the combined assertion used to hide which one happened.
+        // Distinguish "we never saw the create event" from "we saw create but never saw destroy".
         Assert.IsTrue(
             processCreateObserved.WaitOne(EventDeliveryTimeout),
             $"Test never received the process create message for {exeName} (PID {startedPid}) within {EventDeliveryTimeout.TotalSeconds} seconds");
