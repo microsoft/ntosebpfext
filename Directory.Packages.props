@@ -4,16 +4,32 @@
 -->
 <Project>
   <PropertyGroup>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <_IsExternalProject>$([System.String]::Copy('$(MSBuildProjectDirectory)').Contains('external'))</_IsExternalProject>
+    <_IsGeneratedKernelModeProject>$([System.String]::Copy('$(MSBuildProjectDirectory)').Contains('_km'))</_IsGeneratedKernelModeProject>
+    <eBPFForWindowsVersion>1.6.0</eBPFForWindowsVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally Condition="'$(_IsExternalProject)' != 'True' and '$(_IsGeneratedKernelModeProject)' != 'True'">true</ManagePackageVersionsCentrally>
+    <NativeWdkVersion Condition="'$(WDKVersion)' != ''">$(WDKVersion)</NativeWdkVersion>
+    <NativeWdkVersion Condition="'$(NativeWdkVersion)' == '' and '$(MSBuildAssemblyVersion)' &gt;= '18.0'">10.0.28000.1839</NativeWdkVersion>
+    <NativeWdkVersion Condition="'$(NativeWdkVersion)' == '' and '$(MSBuildAssemblyVersion)' &lt; '18.0'">10.0.26100.4204</NativeWdkVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- Try to keep these in alphabetical order -->
     <PackageVersion Include="DotNet.ReproducibleBuilds" Version="1.2.4" />
     <PackageVersion Include="DotNet.ReproducibleBuilds.Isolated" Version="1.2.4" />
-    <PackageVersion Include="eBPF-for-Windows.x64" Version="1.6.0" />
+    <PackageVersion Include="eBPF-for-Windows.x64" Version="[$(eBPFForWindowsVersion)]" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="Microsoft.Windows.ImplementationLibrary" Version="[1.0.260126.7]" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP" Version="[$(NativeWdkVersion)]" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP.arm64" Version="[$(NativeWdkVersion)]" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP.x64" Version="[$(NativeWdkVersion)]" />
+    <PackageVersion Include="Microsoft.Windows.SDK.CPP.x86" Version="[$(NativeWdkVersion)]" />
+    <PackageVersion Include="Microsoft.Windows.WDK.ARM64" Version="[$(NativeWdkVersion)]" />
+    <PackageVersion Include="Microsoft.Windows.WDK.x64" Version="[$(NativeWdkVersion)]" />
+    <PackageVersion Include="Microsoft.Windows.WDK.x86" Version="[$(NativeWdkVersion)]" />
     <PackageVersion Include="MSTest.TestAdapter" Version="3.6.4" />
     <PackageVersion Include="MSTest.TestFramework" Version="3.6.4" />
   </ItemGroup>

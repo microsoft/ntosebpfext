@@ -5,7 +5,8 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <!-- eBPF -->
-    <eBPFForWindowsVersion>1.6.0</eBPFForWindowsVersion>
-    <eBPFForWindowsPackagePath>$(SolutionDir)packages\eBPF-for-Windows.x64.$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' and '$(NUGET_PACKAGES)' != ''">$(NUGET_PACKAGES)\</NuGetPackageRoot>
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
+    <eBPFForWindowsPackagePath>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))ebpf-for-windows.x64\$(eBPFForWindowsVersion)</eBPFForWindowsPackagePath>
   </PropertyGroup>
 </Project>

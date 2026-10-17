@@ -35,6 +35,15 @@ updates:
       actions:
         patterns:
           - "*"
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    groups:
+      nuget-packages:
+        patterns:
+          - "*"
   - package-ecosystem: dotnet-sdk
     directory: /
     schedule:
