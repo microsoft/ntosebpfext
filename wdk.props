@@ -7,8 +7,7 @@
   <PropertyGroup>
     <HostPlatform>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</HostPlatform>
     <!-- Visual Studio 2026 (MSBuild 18.0+) requires the newer WDK; Visual Studio 2022 (MSBuild 17)
-         uses the prior WDK. The matching NuGet packages for both versions are listed in
-         scripts\setup_build\packages.config so the imports below resolve to whichever toolset is active.
+         uses the prior WDK. Directory.Packages.props selects the matching package version.
 
          These gate on $(MSBuildAssemblyVersion) rather than $(VisualStudioVersion). $(VisualStudioVersion)
          is only populated when the build is launched from a Developer Command Prompt / VS and is empty
@@ -39,12 +38,53 @@
          (mismatched toolsets cause C1047 under Release LTCG). -->
     <EbpfExtPlatformToolset Condition="'$(EbpfExtPlatformToolset)' == '' and '$(MSBuildAssemblyVersion)' &gt;= '18.0'">v145</EbpfExtPlatformToolset>
     <EbpfExtPlatformToolset Condition="'$(EbpfExtPlatformToolset)' == '' and '$(MSBuildAssemblyVersion)' &lt; '18.0'">v143</EbpfExtPlatformToolset>
+
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' and '$(NUGET_PACKAGES)' != ''">$(NUGET_PACKAGES)\</NuGetPackageRoot>
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
+    <UsersimWindowsTargetPlatformVersion Condition="'$(UsersimWindowsTargetPlatformVersion)' == ''">$(WindowsTargetPlatformVersion)</UsersimWindowsTargetPlatformVersion>
+    <UsersimWDKVersion Condition="'$(UsersimWDKVersion)' == ''">$(WDKVersion)</UsersimWDKVersion>
+    <UsersimPlatformToolset Condition="'$(UsersimPlatformToolset)' == ''">$(EbpfPlatformToolset)</UsersimPlatformToolset>
+    <_EbpfIsUsersimProject>$([System.String]::Copy('$(MSBuildProjectDirectory)').Contains('\external\usersim\'))</_EbpfIsUsersimProject>
+    <_EbpfIsGeneratedKernelModeProject>$([System.String]::Copy('$(MSBuildProjectDirectory)').Contains('_km'))</_EbpfIsGeneratedKernelModeProject>
+    <_EbpfUseSolutionWdkReferences Condition="'$(_EbpfIsUsersimProject)' != 'True' and '$(_EbpfIsGeneratedKernelModeProject)' != 'True'">true</_EbpfUseSolutionWdkReferences>
+    <_EbpfTargetPackagePlatform Condition="'$(Platform)' != ''">$(Platform)</_EbpfTargetPackagePlatform>
+    <_EbpfTargetPackagePlatform Condition="'$(_EbpfTargetPackagePlatform)' == ''">x64</_EbpfTargetPackagePlatform>
+    <_EbpfTargetPackagePlatform>$(_EbpfTargetPackagePlatform.ToLowerInvariant())</_EbpfTargetPackagePlatform>
+    <_EbpfTargetPackagePlatform Condition="'$(_EbpfTargetPackagePlatform)' == 'amd64'">x64</_EbpfTargetPackagePlatform>
+    <_EbpfTargetPackagePlatform Condition="'$(_EbpfTargetPackagePlatform)' == 'win32'">x86</_EbpfTargetPackagePlatform>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">native</TargetFramework>
+    <_NuGetTargetFallbackMoniker Condition="'$(_NuGetTargetFallbackMoniker)' == ''">native,Version=v0.0</_NuGetTargetFallbackMoniker>
+    <RestorePackages Condition="'$(RestorePackages)' == ''">true</RestorePackages>
+    <RestoreProjectStyle Condition="'$(RestoreProjectStyle)' == ''">PackageReference</RestoreProjectStyle>
+    <MSBuildProjectExtensionsPath Condition="'$(MSBuildProjectExtensionsPath)' == ''">$(MSBuildProjectDirectory)\obj\$(MSBuildProjectName)\</MSBuildProjectExtensionsPath>
   </PropertyGroup>
 
-  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.props')" />
-  <Import Project="$(SolutionDir)packages\Microsoft.Windows.WDK.$(Platform).$(WDKVersion)\build\native\Microsoft.Windows.WDK.$(Platform).props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.WDK.$(Platform).$(WDKVersion)\build\native\Microsoft.Windows.WDK.$(Platform).props')" />
-  <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(Platform).$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.$(Platform).props" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(Platform).$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.$(Platform).props')" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('$(SolutionDir)packages\Microsoft.Windows.SDK.CPP.$(WDKVersion)\build\native\Microsoft.Windows.SDK.cpp.targets')" />
-  </ImportGroup>
+  <ItemGroup Condition="'$(_EbpfUseSolutionWdkReferences)' == 'true'">
+    <PackageReference Include="Microsoft.Windows.SDK.CPP" PrivateAssets="all">
+      <Version Condition="'$(ManagePackageVersionsCentrally)' != 'true'">$(WDKVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.SDK.CPP.$(_EbpfTargetPackagePlatform)" PrivateAssets="all">
+      <Version Condition="'$(ManagePackageVersionsCentrally)' != 'true'">$(WDKVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.WDK.$(_EbpfTargetPackagePlatform)" PrivateAssets="all">
+      <Version Condition="'$(ManagePackageVersionsCentrally)' != 'true'">$(WDKVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <Target Name="EnsureWdkPackageBuildImports" BeforeTargets="PrepareForBuild" Condition="'$(_EbpfUseSolutionWdkReferences)' == 'true'">
+    <PropertyGroup>
+      <_EbpfNormalizedNuGetPackageRoot>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))</_EbpfNormalizedNuGetPackageRoot>
+      <_EbpfExpectedWdkContentRoot>$([MSBuild]::EnsureTrailingSlash('$([MSBuild]::NormalizePath('$(_EbpfNormalizedNuGetPackageRoot)microsoft.windows.wdk.$(_EbpfTargetPackagePlatform)\$(NativeWdkVersion)\c'))'))</_EbpfExpectedWdkContentRoot>
+      <_EbpfActualWdkContentRoot Condition="'$(WdkContentRoot)' != ''">$([MSBuild]::EnsureTrailingSlash('$([MSBuild]::NormalizePath('$(WdkContentRoot)'))'))</_EbpfActualWdkContentRoot>
+      <_EbpfExpectedWdkInclude>$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km</_EbpfExpectedWdkInclude>
+      <_EbpfExpectedSdkInclude>$(WindowsSdkDir)\Include\$(WindowsTargetPlatformVersion)\shared</_EbpfExpectedSdkInclude>
+      <_EbpfMissingPackageError>The required WDK/SDK package assets are missing or do not match the selected Visual Studio version. Restore the solution or run .\scripts\initialize_repo.ps1. The missing path is {0}.</_EbpfMissingPackageError>
+    </PropertyGroup>
+    <Error Condition="'$(_EbpfActualWdkContentRoot)' != '$(_EbpfExpectedWdkContentRoot)'"
+           Text="$([System.String]::Format('$(_EbpfMissingPackageError)', '$(_EbpfExpectedWdkContentRoot)'))" />
+    <Error Condition="'$(WdkContentRoot)' == '' or !Exists('$(_EbpfExpectedWdkInclude)')"
+           Text="$([System.String]::Format('$(_EbpfMissingPackageError)', '$(_EbpfExpectedWdkInclude)'))" />
+    <Error Condition="'$(WindowsSdkDir)' == '' or !Exists('$(_EbpfExpectedSdkInclude)' )"
+           Text="$([System.String]::Format('$(_EbpfMissingPackageError)', '$(_EbpfExpectedSdkInclude)'))" />
+  </Target>
 </Project>

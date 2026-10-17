@@ -24,6 +24,5 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
 </Project>
