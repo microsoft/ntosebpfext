@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Checks for updates to dependencies downloaded via curl in CI workflows.
-# Currently monitors: ProcDump (Sysinternals), OpenCppCoverage.
+# Currently monitors: ProcDump and PSTools (Sysinternals), OpenCppCoverage.
 #
 # Versions and hashes live in .github/curl-dependencies.json (a regular,
 # non-workflow file) rather than inline in the workflow files. This lets the
@@ -24,25 +24,31 @@ permissions:
   pull-requests: write
 
 jobs:
-  check-procdump:
-    name: Check ProcDump for updates
+  check-sysinternals:
+    name: Check ${{ matrix.dependency }} for updates
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dependency: [procdump, pstools]
+    env:
+      DEPENDENCY: ${{ matrix.dependency }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Check for ProcDump update
+      - name: Check for Sysinternals archive update
         id: check
         run: |
           set -euo pipefail
-          # Download current ProcDump and compute hash.
-          URL=$(jq -er '.procdump.url' .github/curl-dependencies.json)
-          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o /tmp/Procdump.zip "$URL"
-          test -s /tmp/Procdump.zip || { echo "ERROR: ProcDump download is empty"; exit 1; }
-          NEW_HASH=$(sha256sum /tmp/Procdump.zip | awk '{print toupper($1)}')
-          rm /tmp/Procdump.zip
+          URL=$(jq -er --arg dep "$DEPENDENCY" '.[$dep].url' .github/curl-dependencies.json)
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 --max-time 300 -o /tmp/dependency.zip "$URL"
+          test -s /tmp/dependency.zip || { echo "ERROR: $DEPENDENCY download is empty"; exit 1; }
+          NEW_HASH=$(sha256sum /tmp/dependency.zip | awk '{print toupper($1)}')
+          rm /tmp/dependency.zip
 
           # Extract current hash from the dependency manifest.
-          OLD_HASH=$(jq -er '.procdump.hash' .github/curl-dependencies.json)
+          OLD_HASH=$(jq -er --arg dep "$DEPENDENCY" '.[$dep].hash' .github/curl-dependencies.json)
+          echo "$DEPENDENCY ($URL): pinned SHA256=$OLD_HASH; downloaded SHA256=$NEW_HASH"
           echo "old_hash=$OLD_HASH" >> "$GITHUB_OUTPUT"
           echo "new_hash=$NEW_HASH" >> "$GITHUB_OUTPUT"
           if [ "$OLD_HASH" != "$NEW_HASH" ]; then
@@ -59,20 +65,20 @@ jobs:
           NEW_HASH: ${{ steps.check.outputs.new_hash }}
         run: |
           set -euo pipefail
-          BRANCH="auto/update-procdump-hash"
+          BRANCH="auto/update-${DEPENDENCY}-hash"
           git switch -C "$BRANCH"
-          jq --arg h "$NEW_HASH" '.procdump.hash = $h' .github/curl-dependencies.json > /tmp/deps.json
+          jq --arg dep "$DEPENDENCY" --arg h "$NEW_HASH" '.[$dep].hash = $h' .github/curl-dependencies.json > /tmp/deps.json
           mv /tmp/deps.json .github/curl-dependencies.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/curl-dependencies.json
-          git commit -m "Update ProcDump expected hash to $NEW_HASH"
+          git commit -m "Update $DEPENDENCY expected hash to $NEW_HASH"
           git push -f origin "$BRANCH"
           if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
             echo "PR already exists for $BRANCH; skipping create."
           else
-            gh pr create --title "Update ProcDump hash" \
-              --body "ProcDump zip hash changed from \`$OLD_HASH\` to \`$NEW_HASH\`." \
+            gh pr create --title "Update $DEPENDENCY hash" \
+              --body "$DEPENDENCY zip hash changed from \`$OLD_HASH\` to \`$NEW_HASH\`. Review the upstream archive before merging." \
               --base main --head "$BRANCH" || gh pr view "$BRANCH" --json number >/dev/null 2>&1
           fi
 

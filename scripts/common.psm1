@@ -916,30 +916,39 @@ function Expand-ZipFile {
     )
 
     for ($i = 0; $i -lt $maxRetries; $i++) {
+        $job = $null
         try {
             $job = Start-Job -ScriptBlock {
                 param ($DownloadFilePath, $OutputDir)
-                Expand-Archive -Path $DownloadFilePath -DestinationPath $OutputDir -Force
-            } -ArgumentList $DownloadFilePath, $OutputDir
+                Expand-Archive -Path $DownloadFilePath -DestinationPath $OutputDir -Force -ErrorAction Stop
+            } -ArgumentList $DownloadFilePath, $OutputDir -ErrorAction Stop
 
-            if (Wait-Job -Job $job -Timeout $timeout) {
+            if (Wait-Job -Job $job -Timeout $timeout -ErrorAction Stop) {
+                Receive-Job -Job $job -ErrorAction Stop
+                if ($job.State -ne 'Completed') {
+                    throw "Extraction job ended in state '$($job.State)': $($job.ChildJobs[0].JobStateInfo.Reason)"
+                }
                 Write-Log "Extraction completed. $DownloadFilePath -> $OutputDir"
-                Receive-Job -Job $job
                 break
             } else {
-                Stop-Job -Job $job
-                Remove-Job -Job $job
-                if ($i -eq ($maxRetries - 1)) {
-                    throw "Failed to extract $DownloadFilePath after $maxRetries attempts."
-                } else {
-                    Start-Sleep -Seconds $retryDelay
-                }
+                throw "Extraction of '$DownloadFilePath' to '$OutputDir' timed out after $timeout seconds."
             }
         } catch {
+            $lastError = $_
+            Write-Log "Extraction attempt $($i + 1)/$maxRetries failed for '$DownloadFilePath' -> '${OutputDir}': $($lastError.Exception.ToString())" -ForegroundColor Red
+            if ($job -and $job.State -eq 'Running') {
+                Stop-Job -Job $job
+            }
             if ($i -eq ($maxRetries - 1)) {
-                throw "Failed to extract $DownloadFilePath after $maxRetries attempts."
+                throw [System.InvalidOperationException]::new(
+                    "Failed to extract '$DownloadFilePath' to '$OutputDir' after $maxRetries attempts. Last error: $($lastError.Exception.Message)",
+                    $lastError.Exception)
             } else {
                 Start-Sleep -Seconds $retryDelay
+            }
+        } finally {
+            if ($job) {
+                Remove-Job -Job $job -Force -ErrorAction Stop
             }
         }
     }
@@ -950,7 +959,7 @@ function Get-ZipFileFromUrl {
         [Parameter(Mandatory=$True)][string] $Url,
         [Parameter(Mandatory=$True)][string] $DownloadFilePath,
         [Parameter(Mandatory=$True)][string] $OutputDir,
-        [Parameter(Mandatory=$True)][string] $ExpectedHash
+        [Parameter(Mandatory=$True)][ValidatePattern('^[0-9A-Fa-f]{64}$')][string] $ExpectedHash
     )
     $maxRetries = 5
     $retryDelay = 5 # seconds
@@ -959,51 +968,62 @@ function Get-ZipFileFromUrl {
     Write-Log "Downloading $Url to $DownloadFilePath"
 
     for ($i = 0; $i -lt $maxRetries; $i++) {
+        $job = $null
+        Write-Log "Download attempt $($i + 1)/${maxRetries}: $Url -> $DownloadFilePath (expected SHA256: $ExpectedHash)"
         try {
-            $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -Method Head -TimeoutSec $timeout
+            $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -Method Head -TimeoutSec $timeout -ErrorAction Stop
             if ($response.StatusCode -ne 200) {
                 throw "Failed to reach $Url HTTP status code: $($response.StatusCode)"
             }
 
-            $ProgressPreference = 'SilentlyContinue'
-
             $job = Start-Job -ScriptBlock {
                 param ($Url, $DownloadFilePath, $timeout)
-                Invoke-WebRequest -Uri $Url -OutFile $DownloadFilePath -TimeoutSec $timeout
-            } -ArgumentList $Url, $DownloadFilePath, $timeout
+                $ProgressPreference = 'SilentlyContinue'
+                Invoke-WebRequest -Uri $Url -UseBasicParsing -OutFile $DownloadFilePath -TimeoutSec $timeout -ErrorAction Stop
+            } -ArgumentList $Url, $DownloadFilePath, $timeout -ErrorAction Stop
 
-            if (Wait-Job -Job $job -Timeout $timeout) {
-                Receive-Job -Job $job
+            if (Wait-Job -Job $job -Timeout $timeout -ErrorAction Stop) {
+                Receive-Job -Job $job -ErrorAction Stop
+                if ($job.State -ne 'Completed') {
+                    throw "Download job ended in state '$($job.State)': $($job.ChildJobs[0].JobStateInfo.Reason)"
+                }
 
-                $downloadedHash = (Get-FileHash -Path $DownloadFilePath -Algorithm SHA256).Hash
+                $downloadedHash = (Get-FileHash -Path $DownloadFilePath -Algorithm SHA256 -ErrorAction Stop).Hash
                 if ($downloadedHash -ne $ExpectedHash) {
-                    throw "Checksum mismatch for ${DownloadFilePath}: expected $ExpectedHash, got $downloadedHash"
+                    throw "Checksum mismatch for '$Url' at '${DownloadFilePath}': expected SHA256 $ExpectedHash, got $downloadedHash. The upstream archive may have changed; review the download and update its pinned hash. Do not disable checksum verification."
                 }
                 Write-Log "Verified SHA256 for $DownloadFilePath"
 
                 Write-Log "Extracting $DownloadFilePath to $OutputDir"
-                Expand-ZipFile -DownloadFilePath $DownloadFilePath -OutputDir $OutputDir -maxRetries $maxRetries -retryDelay $retryDelay -timeout $timeout
+                Expand-ZipFile -DownloadFilePath $DownloadFilePath -OutputDir $OutputDir -maxRetries $maxRetries -retryDelay $retryDelay -timeout $timeout -ErrorAction Stop
                 break
             } else {
-                Stop-Job -Job $job
-                Remove-Job -Job $job
-                if (Test-Path $DownloadFilePath) {
-                    Remove-Item -Path $DownloadFilePath -Force -ErrorAction Ignore
-                }
-                if ($i -eq ($maxRetries - 1)) {
-                    throw "Failed to download and verify $Url after $maxRetries attempts. Last error: $($_.Exception.Message)"
-                } else {
-                    Start-Sleep -Seconds $retryDelay
-                }
+                throw "Download of '$Url' to '$DownloadFilePath' timed out after $timeout seconds."
             }
         } catch {
+            $lastError = $_
+            Write-Log "Download attempt $($i + 1)/$maxRetries failed: $($lastError.Exception.ToString())" -ForegroundColor Red
+            if ($lastError.ErrorDetails.Message) {
+                Write-Log "Server error details: $($lastError.ErrorDetails.Message)" -ForegroundColor Red
+            }
+            Write-Log "Error ID: $($lastError.FullyQualifiedErrorId); location: $($lastError.ScriptStackTrace)" -ForegroundColor Red
+            if ($job -and $job.State -eq 'Running') {
+                Stop-Job -Job $job
+            }
             if (Test-Path $DownloadFilePath) {
-                Remove-Item -Path $DownloadFilePath -Force -ErrorAction Ignore
+                Remove-Item -Path $DownloadFilePath -Force -ErrorAction Stop
             }
             if ($i -eq ($maxRetries - 1)) {
-                throw "Failed to download $Url after $maxRetries attempts."
+                throw [System.InvalidOperationException]::new(
+                    "Failed to download and verify '$Url' to '$DownloadFilePath' after $maxRetries attempts. Expected SHA256: $ExpectedHash. Last error: $($lastError.Exception.Message)",
+                    $lastError.Exception)
             } else {
+                Write-Log "Retrying '$Url' in $retryDelay seconds."
                 Start-Sleep -Seconds $retryDelay
+            }
+        } finally {
+            if ($job) {
+                Remove-Job -Job $job -Force -ErrorAction Stop
             }
         }
     }
@@ -1107,8 +1127,16 @@ function Get-PSExec {
     if (Test-Path -Path $psExecPath) {
         return $psExecPath
     }
-    $url = "https://download.sysinternals.com/files/PSTools.zip"
-    $expectedHash = "2B10B3D9DAE0403B06D90B13BFB53E723A8B14A788F78CDFD43A445D8991415E"
+    $dependencyPath = Join-Path $PSScriptRoot "curl-dependencies.json"
+    if (-not (Test-Path -LiteralPath $dependencyPath)) {
+        $dependencyPath = Join-Path $PSScriptRoot "..\.github\curl-dependencies.json"
+    }
+    $dependencies = Get-Content -LiteralPath $dependencyPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    $url = $dependencies.pstools.url
+    $expectedHash = $dependencies.pstools.hash
+    if ($expectedHash -notmatch '^[0-9A-Fa-f]{64}$') {
+        throw "PSTools expected hash in '$dependencyPath' is not a valid SHA256 hex digest: '$expectedHash'."
+    }
     $DownloadPath = "$pwd\psexec"
 
     $uri = [System.Uri]$url
@@ -1150,6 +1178,10 @@ function Get-PSExec {
 .PARAMETER ArgumentList
     The arguments to pass to the script block.
 
+.PARAMETER MaxAttempts
+    Maximum attempts for transient local PowerShell Direct failures. Readiness polling uses one
+    attempt so its own deadline controls retries.
+
 .EXAMPLE
     Invoke-CommandOnVM -VMName "MyVM" -VMIsRemote $true -Credential $credential -ScriptBlock { Get-Process }
 #>
@@ -1159,13 +1191,13 @@ function Invoke-CommandOnVM {
         [Parameter(Mandatory = $false)][bool] $VMIsRemote = $false,
         [Parameter(Mandatory = $true)][PSCredential] $Credential,
         [Parameter(Mandatory = $true)][ScriptBlock] $ScriptBlock,
-        [Parameter(Mandatory = $false)][object[]] $ArgumentList = @()
+        [Parameter(Mandatory = $false)][object[]] $ArgumentList = @(),
+        [Parameter(Mandatory = $false)][ValidateRange(1, 5)][int] $MaxAttempts = 5
     )
     Write-Log "Invoking command on VM: $VMName (IsRemote: $VMIsRemote)"
     if ($VMIsRemote) {
         Invoke-Command -ComputerName $VMName -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop
     } else {
-        $maxAttempts = 5
         for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             try {
                 Invoke-Command -VMName $VMName -Credential $Credential -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop

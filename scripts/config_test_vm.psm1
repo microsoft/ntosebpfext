@@ -21,25 +21,54 @@ function Wait-AllVMsReadyForCommands
           [Parameter(Mandatory=$True)][PSCredential] $TestCredential,
           [Parameter(Mandatory=$false)][bool] $VMIsRemote = $false)
 
-    $totalSleepTime = 0
+    $TimeoutSeconds = 5*60
+    $timer = [System.Diagnostics.Stopwatch]::StartNew()
     $ReadyList = @{}
+    $LastStatus = @{}
     do {
         foreach($VM in $VMList) {
+            if ($timer.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                break
+            }
             $VMName = $VM.Name
             if ($ReadyList[$VMName] -ne $True) {
+                if (-not $VMIsRemote) {
+                    $state = (Get-VM -Name $VMName -ErrorAction Stop).State.ToString()
+                    $LastStatus[$VMName] = "state: $state"
+                    if ($state -match 'Critical|Failed') {
+                        throw "VM $VMName cannot become ready: $($LastStatus[$VMName])."
+                    }
+                    if ($state -ne 'Running') {
+                        Write-Log "Waiting for $VMName to be running ($($LastStatus[$VMName]))."
+                        continue
+                    }
+                    $HeartBeat = (Get-VMIntegrationService -VMName $VMName -ErrorAction Stop |
+                        Where-Object { $_.Name -eq 'Heartbeat' }).PrimaryStatusDescription
+                    $LastStatus[$VMName] = "state: $state, heartbeat: $HeartBeat"
+                    if ($HeartBeat -ne 'OK') {
+                        Write-Log "Waiting for heartbeat on $VMName ($($LastStatus[$VMName]))."
+                        continue
+                    }
+                }
                 Write-Log "Poking $VMName to see if it is ready to accept commands"
                 $ret = $False
                 try {
-                    Invoke-CommandOnVM -VMName $VMName -VMIsRemote $VMIsRemote -Credential $TestCredential -ErrorAction SilentlyContinue -ScriptBlock {$True}
+                    $null = Invoke-CommandOnVM -VMName $VMName -VMIsRemote $VMIsRemote -Credential $TestCredential -MaxAttempts 1 -ErrorAction Stop -ScriptBlock {$True}
+                    # A restored guest can reset between its heartbeat and the PowerShell Direct probe.
+                    if (-not $VMIsRemote -and
+                        (Get-VM -Name $VMName -ErrorAction Stop).State.ToString() -ne 'Running') {
+                        $LastStatus[$VMName] = 'VM left the running state during the readiness probe'
+                        Write-Log "$VMName reset during its readiness probe. Will retry."
+                        continue
+                    }
                     $ret = $True
                 } catch {
-                        if (-not $VMIsRemote) {
-                        # Transient PS Direct failures during restore/boot often look like this:
-                        # "The credential is invalid." with PSDirectException / PSSessionStateBroken
+                    $LastStatus[$VMName] = $_.Exception.Message
+                    if (-not $VMIsRemote) {
                         $isTransient =
                             ($_.CategoryInfo.Reason -eq 'PSDirectException') -or
-                            ($_.FullyQualifiedErrorId -eq 'PSSessionStateBroken') -or
-                            ($_.Exception.Message -match 'credential is invalid')
+                            ($_.FullyQualifiedErrorId -like 'PSSessionStateBroken*') -or
+                            ($_.Exception.Message -match 'credential is invalid|remote session might have ended|not in running state')
 
                         if ($isTransient) {
                             Write-Log "PS Direct threw transient exception for $VMName - $($_.Exception.Message). Will retry."
@@ -47,27 +76,33 @@ function Wait-AllVMsReadyForCommands
                             Write-Log "PS Direct threw fatal exception for $VMName - $($_.Exception.Message)."
                             throw
                         }
+                    } else {
+                        Write-Log "Remote readiness probe failed for $VMName - $($_.Exception.Message). Will retry."
                     }
                 }
                 if ($ret -eq $True) {
-                    $ReadyList += @{$VMName = $True}
+                    $ReadyList[$VMName] = $True
                 } else {
                     continue
                 }
                 Write-Log "VM $VMName is ready" -ForegroundColor Green
             }
         }
-        if ($ReadyList.Count -ne $VMList.Count) {
-            Write-Log "Waiting $sleepSeconds seconds for $VMName to be responsive."
-            # Sleep for sleepSeconds seconds.
-            Start-Sleep -seconds $sleepSeconds
-            $totalSleepTime += $sleepSeconds
+        $remainingSeconds = $TimeoutSeconds - $timer.Elapsed.TotalSeconds
+        if ($ReadyList.Count -ne $VMList.Count -and $remainingSeconds -gt 0) {
+            Write-Log "Waiting for VMs to be responsive."
+            Start-Sleep -Milliseconds ([int]([Math]::Min($sleepSeconds, $remainingSeconds) * 1000))
         }
     }
-    until (($ReadyList.Count -eq $VMList.Count) -or ($totalSleepTime -gt 5*60))
+    until (($ReadyList.Count -eq $VMList.Count) -or ($timer.Elapsed.TotalSeconds -ge $TimeoutSeconds))
 
     if ($ReadyList.Count -ne $VMList.Count) {
-        throw ("One or more VMs not ready after 5 minutes.")
+        $pendingVMs = foreach ($VM in $VMList) {
+            if ($ReadyList[$VM.Name] -ne $True) {
+                "$($VM.Name): $($LastStatus[$VM.Name])"
+            }
+        }
+        throw "VMs not ready after $TimeoutSeconds seconds: $($pendingVMs -join '; ')."
     }
 }
 
@@ -82,39 +117,11 @@ function Wait-AllVMsToInitialize
         return
     }
 
-    $totalSleepTime = 0
-    $ReadyList = @{}
-    do {
-        foreach ($VM in $VMList) {
-            $VMName= $VM.Name
-            if ($ReadyList[$VMName] -ne $True) {
-                $HeartBeat = (Get-VMIntegrationService $VMName | ?{$_.name -eq "Heartbeat"}).PrimaryStatusDescription
-                if ($HeartBeat -eq "OK") {
-                    $ReadyList += @{$VMName = $True}
-                } else {
-                    continue
-                }
-                Write-Log "Heartbeat OK on $VMName" -ForegroundColor Green
-            }
-        }
-        if ($ReadyList.Count -ne $VMList.Count) {
-            Write-Log ("{0} of {1} VMs are ready." -f $ReadyList.Count, $VMList.Count)
-            # Sleep for sleepSeconds seconds.
-            Start-Sleep -seconds $sleepSeconds
-            $totalSleepTime += $sleepSeconds
-        }
-    }
-    until (($ReadyList.Count -eq $VMList.Count) -or ($totalSleepTime -gt 5*60))
-
-    if ($ReadyList.Count -ne $VMList.Count) {
-        throw ("Did not get heartbeat from one or more VMs 5 minutes after starting")
-    }
-
     $TestCredential = Get-VMCredential -Username 'Administrator' -VMIsRemote $VMIsRemote
     Wait-AllVMsReadyForCommands -VMList $VMList -TestCredential $TestCredential -VMIsRemote:$VMIsRemote
 
     # Enable guest-services on each VM.
-    $ReadyList.Clear()
+    $ReadyList = @{}
     $totalSleepTime = 0
 
     do {
