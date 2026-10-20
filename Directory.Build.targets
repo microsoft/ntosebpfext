@@ -4,6 +4,17 @@
   SPDX-License-Identifier: MIT
 -->
 <Project>
+   <PropertyGroup Condition="'$(_EbpfIsUsersimProject)' == '' and '$(MSBuildProjectExtension)' == '.vcxproj'">
+     <_EbpfIsUsersimProject>$([System.String]::Copy('$(MSBuildProjectDirectory)').Contains('\external\usersim\'))</_EbpfIsUsersimProject>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(_EbpfIsUsersimProject)' == 'True'">
+     <_EbpfUsersimWdkInclude>$([System.Environment]::GetFolderPath(SpecialFolder.ProgramFilesX86))\Windows Kits\10\Include\$(UsersimWindowsTargetPlatformVersion)\km</_EbpfUsersimWdkInclude>
+   </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(MSBuildProjectExtension)' == '.vcxproj'">
+     <ClCompile>
+       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(WdkContentRoot)\Include\$(WindowsTargetPlatformVersion)\km;$(_EbpfUsersimWdkInclude)</AdditionalIncludeDirectories>
+     </ClCompile>
+   </ItemDefinitionGroup>
    <ItemGroup Condition="'$(MSBuildProjectExtension)'=='.proj' or '$(MSBuildProjectExtension)' == '.csproj'">
     <PackageReference Include="DotNet.ReproducibleBuilds">
       <PrivateAssets>all</PrivateAssets>

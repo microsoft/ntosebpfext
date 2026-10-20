@@ -12,10 +12,24 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 # Change the parent directory for the script directory
 Set-Location $scriptPath\..
 
-# Read the eBPF-for-Windows version from ntosebpfext.props (single source of truth).
-[xml]$props = Get-Content "ntosebpfext.props"
-$ebpfVersion = $props.Project.PropertyGroup.eBPFForWindowsVersion
-$exportProgramInfoPath = ".\packages\eBPF-for-Windows.x64.$ebpfVersion\build\native\bin\export_program_info.exe"
+# Read the eBPF-for-Windows version from the central package versions file.
+[xml]$packageProps = Get-Content "Directory.Packages.props"
+$ebpfVersion = ($packageProps.Project.PropertyGroup |
+    Where-Object { $_.eBPFForWindowsVersion } |
+    Select-Object -ExpandProperty eBPFForWindowsVersion -First 1).Trim()
+$globalPackagesPath = $env:NUGET_PACKAGES
+if (-not $globalPackagesPath) {
+    $globalPackagesOutput = & dotnet nuget locals global-packages --list
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to locate the NuGet global packages directory."
+    }
+    $globalPackagesPathLine = $globalPackagesOutput | Select-Object -First 1
+    $globalPackagesPath = $globalPackagesPathLine.Substring($globalPackagesPathLine.IndexOf(":") + 1).Trim()
+}
+if (-not $globalPackagesPath) {
+    throw "The NuGet global packages directory path is empty."
+}
+$exportProgramInfoPath = Join-Path $globalPackagesPath "ebpf-for-windows.x64\$ebpfVersion\build\native\bin\export_program_info.exe"
 
 # Auto-detect the installed Visual Studio version to pick the matching CMake generator, so this works
 # on machines/runners with Visual Studio 2022 (v17) or Visual Studio 2026 (v18) installed.
@@ -44,9 +58,8 @@ Write-Host "Using CMake generator: $cmakeGenerator"
 $commands = @(
     "git submodule update --init --recursive",
     { & cmake -G $cmakeGenerator -S external\catch2 -B external\catch2\build -DBUILD_TESTING=OFF '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<CONFIG:FuzzerDebug>:Debug>' },
-    "nuget restore ntosebpfext.sln",
-    "dotnet restore ntosebpfext.sln",
-    $exportProgramInfoPath
+    "msbuild ntosebpfext.sln /t:Restore /p:Configuration=Debug /p:Platform=x64",
+    { & $exportProgramInfoPath }
 )
 
 # Loop through each command and run them sequentially without opening a new window

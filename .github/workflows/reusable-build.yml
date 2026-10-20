@@ -47,6 +47,46 @@ permissions:
   security-events: write # Required by codeql task
 
 jobs:
+  package_reference_restore:
+    name: PackageReference restore (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: ${{github.repository}}
+        submodules: 'recursive'
+        ref: ${{inputs.ref}}
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57
+      with:
+        msbuild-architecture: x64
+
+    - name: Install .NET 8 SDK
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      with:
+        dotnet-version: 8.x
+
+    - name: Restore with the installed MSBuild
+      shell: pwsh
+      run: |
+        $env:NUGET_PACKAGES = Join-Path $env:RUNNER_TEMP 'nuget-package-reference-validation'
+        $expectedVersion = if ('${{ matrix.runner }}' -eq 'windows-2022') { '17.*' } else { '18.*' }
+        $msbuildVersion = (& msbuild -version -nologo | Select-Object -Last 1).Trim()
+        Write-Host "Using MSBuild $msbuildVersion"
+        if ($msbuildVersion -notlike $expectedVersion) {
+          throw "Expected MSBuild $expectedVersion on ${{ matrix.runner }}, got $msbuildVersion."
+        }
+        if (Test-Path $env:NUGET_PACKAGES) {
+          throw "Expected an empty NuGet package root at $env:NUGET_PACKAGES."
+        }
+        New-Item -ItemType Directory -Path $env:NUGET_PACKAGES | Out-Null
+        .\scripts\initialize_repo.ps1
+
   build:
     timeout-minutes: 90
 
@@ -63,7 +103,6 @@ jobs:
       BUILD_OPTIONS: ${{inputs.build_options}}
       CXX_FLAGS: ${{inputs.cxx_flags}}
       LD_FLAGS: ${{inputs.ld_flags}}
-
     steps:
     - name: Harden Runner
       uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
@@ -205,8 +244,16 @@ jobs:
       env:
         cache-name: cache-nuget-modules
       with:
-        path: packages
-        key: ${{ runner.os }}-${{env.BUILD_PLATFORM}}-${{env.BUILD_CONFIGURATION}}-${{env.BUILD_ARTIFACT_NAME}}-${{ hashFiles('**/packages.config') }}-${{env.msvc_tools_version}}
+        path: |
+          ${{ runner.temp }}\nuget-packages
+          packages
+        key: ${{ runner.os }}-${{env.BUILD_PLATFORM}}-${{env.BUILD_CONFIGURATION}}-${{env.BUILD_ARTIFACT_NAME}}-${{ hashFiles('Directory.Packages.props') }}-${{env.msvc_tools_version}}
+
+    - name: Configure NuGet package cache path
+      if: steps.skip_check.outputs.should_skip != 'true'
+      shell: pwsh
+      run: |
+        "NUGET_PACKAGES=$env:RUNNER_TEMP\nuget-packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Configuring repo for first build
       if: steps.skip_check.outputs.should_skip != 'true'
@@ -216,11 +263,6 @@ jobs:
         LDFLAGS: ${{env.LD_FLAGS}}
       run: |
         .\scripts\initialize_repo.ps1
-
-    - name: NuGet Restore
-      if: steps.skip_check.outputs.should_skip != 'true'
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: dotnet restore ${{env.SOLUTION_FILE_PATH}} /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{env.BUILD_PLATFORM}}
 
     - name: Build
       if: steps.skip_check.outputs.should_skip != 'true'

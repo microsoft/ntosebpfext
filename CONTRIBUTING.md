@@ -71,6 +71,13 @@ Then do one-time repo setup:
 1. cd `<root of your clone>`
 1. `powershell -file scripts\initialize_repo.ps1`
 
+NuGet package versions are centrally managed in `Directory.Packages.props`. The WDK package
+version is selected for the active MSBuild version (17 or 18); use the `WDKVersion` MSBuild
+property only when intentionally overriding that selection. PackageReference packages restore
+to NuGet's global packages directory, which can be changed with the `NUGET_PACKAGES` environment
+variable. NuGet package updates are handled by Dependabot; update the central WDK package version
+when changing the supported WDK toolset.
+
 Then you can build normally in Visual Studio:
 
 1. Open `ntosebpfext.sln` in Visual Studio.  You may want to run VS as admin if you want to debug in VS.
