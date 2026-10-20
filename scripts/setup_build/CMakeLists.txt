@@ -61,6 +61,9 @@ foreach(file ${misc_files})
     set( output_misc_files ${output_misc_files} "${output_dir}/${file}")
 endforeach()
 
+list(APPEND input_misc_files "${CMAKE_SOURCE_DIR}/.github/curl-dependencies.json")
+list(APPEND output_misc_files "${output_dir}/curl-dependencies.json")
+
 set (dependency_list ${CMAKE_SOURCE_DIR}/scripts/pre-commit;
         ${CMAKE_SOURCE_DIR}/include/git_commit_id.h;
         "${output_redist_bins}"
