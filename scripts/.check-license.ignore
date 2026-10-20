@@ -25,6 +25,7 @@ Doxyfile
 \.clang-format
 \.gitattributes
 \.github/CODEOWNERS
+\.github/curl-dependencies\.json$
 \.github/workflows/build.yml
 \.gitignore
 \.gitmodules
