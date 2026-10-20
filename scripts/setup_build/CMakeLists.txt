@@ -105,6 +105,8 @@ add_custom_command(
 add_custom_command (
     OUTPUT
         "${output_misc_files}"
+    DEPENDS
+        ${input_misc_files}
     COMMAND
         ${CMAKE_COMMAND} -E copy ${input_misc_files} ${output_dir}
 )
