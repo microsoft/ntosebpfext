@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "schedule": ["* * * * 6"],
+  "git-submodules": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "matchManagers": ["git-submodules"],
+      "matchDepNames": ["external/**"],
+      "groupName": "git-submodules"
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": ["images/**"],
+      "groupName": "docker"
+    },
+    {
+      "description": "Leave NuGet package updates to the nuget_update workflow.",
+      "matchManagers": ["nuget"],
+      "enabled": false
+    },
+    {
+      "description": "Preserve Wednesday updates for the .NET SDK.",
+      "matchManagers": ["nuget"],
+      "matchDepTypes": ["dotnet-sdk"],
+      "enabled": true,
+      "schedule": ["* * * * 3"]
+    },
+    {
+      "description": "Keep .NET SDK updates patch-only.",
+      "matchManagers": ["nuget"],
+      "matchDepTypes": ["dotnet-sdk"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    }
+  ]
+}
