@@ -56,7 +56,7 @@ static const void* _ebpf_process_helper_functions[] = {
 };
 
 static ebpf_helper_function_addresses_t _ebpf_process_helper_function_address_table = {
-    .header = {EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION, EBPF_HELPER_FUNCTION_ADDRESSES_CURRENT_VERSION_SIZE},
+    .header = EBPF_HELPER_FUNCTION_ADDRESSES_HEADER,
     .helper_function_count = EBPF_COUNT_OF(_ebpf_process_helper_functions),
     .helper_function_address = (uint64_t*)_ebpf_process_helper_functions,
 };
@@ -85,7 +85,7 @@ static ebpf_extension_program_info_provider_t* _ebpf_process_program_info_provid
 // Process Hook NPI Provider.
 //
 ebpf_attach_provider_data_t _ntos_ebpf_process_hook_provider_data = {
-    .header = {EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION, EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION_SIZE},
+    .header = EBPF_ATTACH_PROVIDER_DATA_HEADER,
     .supported_program_type = EBPF_PROGRAM_TYPE_PROCESS_GUID,
     .bpf_attach_type = (bpf_attach_type_t)BPF_ATTACH_TYPE_PROCESS,
 };
