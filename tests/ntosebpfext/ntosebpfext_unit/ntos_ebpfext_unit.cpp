@@ -8,7 +8,6 @@
 #include "ebpf_ntos_hooks.h"
 #include "ebpf_ntos_program_attach_type_guids.h"
 #include "ebpf_structs.h"
-#include "netevent_ebpf_ext_program_info.h"
 #include "ntos_ebpf_ext_helper.h"
 #include "ntos_ebpf_ext_program_info.h"
 #include "utils.h"
@@ -29,24 +28,14 @@ TEST_CASE("program_metadata_headers", "[ntosebpfext][metadata]")
         REQUIRE(object.header.total_size >= object.header.size);
         REQUIRE(object.header.total_size == sizeof(object));
     };
-    const auto require_valid_program_metadata = [&](const ebpf_program_info_t& program_info,
-                                                    const ebpf_program_section_info_t& section_info) {
-        require_valid_header(program_info);
-        REQUIRE(program_info.program_type_descriptor != nullptr);
-        require_valid_header(*program_info.program_type_descriptor);
-        REQUIRE(program_info.program_type_specific_helper_prototype != nullptr);
-        for (uint32_t i = 0; i < program_info.count_of_program_type_specific_helpers; i++) {
-            require_valid_header(program_info.program_type_specific_helper_prototype[i]);
-        }
-        require_valid_header(section_info);
-    };
-
-    SECTION("process") { require_valid_program_metadata(_ebpf_process_program_info, _ebpf_process_section_info[0]); }
-
-    SECTION("netevent")
-    {
-        require_valid_program_metadata(_ebpf_netevent_event_program_info, _ebpf_netevent_event_section_info[0]);
+    require_valid_header(_ebpf_process_program_info);
+    REQUIRE(_ebpf_process_program_info.program_type_descriptor != nullptr);
+    require_valid_header(*_ebpf_process_program_info.program_type_descriptor);
+    REQUIRE(_ebpf_process_program_info.program_type_specific_helper_prototype != nullptr);
+    for (uint32_t i = 0; i < _ebpf_process_program_info.count_of_program_type_specific_helpers; i++) {
+        require_valid_header(_ebpf_process_program_info.program_type_specific_helper_prototype[i]);
     }
+    require_valid_header(_ebpf_process_section_info[0]);
 }
 
 #pragma region process
