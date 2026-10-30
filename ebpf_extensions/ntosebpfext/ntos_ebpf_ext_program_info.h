@@ -11,19 +11,19 @@
 
 // Process program information.
 static const ebpf_helper_function_prototype_t _process_ebpf_extension_helper_function_prototype[] = {
-    {.header = {EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION, EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION_SIZE},
+    {.header = EBPF_HELPER_FUNCTION_PROTOTYPE_HEADER,
      .helper_id = EBPF_MAX_GENERAL_HELPER_FUNCTION + 1,
      .name = "bpf_process_get_image_path",
      .return_type = EBPF_RETURN_TYPE_INTEGER,
      .arguments =
          {EBPF_ARGUMENT_TYPE_PTR_TO_CTX, EBPF_ARGUMENT_TYPE_PTR_TO_WRITABLE_MEM, EBPF_ARGUMENT_TYPE_CONST_SIZE}},
-    {.header = {EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION, EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION_SIZE},
+    {.header = EBPF_HELPER_FUNCTION_PROTOTYPE_HEADER,
      .helper_id = EBPF_MAX_GENERAL_HELPER_FUNCTION + 2,
      .name = "bpf_process_get_account_name",
      .return_type = EBPF_RETURN_TYPE_INTEGER,
      .arguments =
          {EBPF_ARGUMENT_TYPE_PTR_TO_CTX, EBPF_ARGUMENT_TYPE_PTR_TO_WRITABLE_MEM, EBPF_ARGUMENT_TYPE_CONST_SIZE}},
-    {.header = {EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION, EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION_SIZE},
+    {.header = EBPF_HELPER_FUNCTION_PROTOTYPE_HEADER,
      .helper_id = EBPF_MAX_GENERAL_HELPER_FUNCTION + 3,
      .name = "bpf_process_get_account_domain",
      .return_type = EBPF_RETURN_TYPE_INTEGER,
@@ -39,7 +39,7 @@ static const ebpf_ctx_descriptor_t _ebpf_process_context_descriptor = {
 };
 
 static const ebpf_program_type_descriptor_t _ebpf_process_program_type_descriptor = {
-    .header = {EBPF_PROGRAM_TYPE_DESCRIPTOR_CURRENT_VERSION, EBPF_PROGRAM_TYPE_DESCRIPTOR_CURRENT_VERSION_SIZE},
+    .header = EBPF_PROGRAM_TYPE_DESCRIPTOR_HEADER,
     .name = "process",
     .context_descriptor = &_ebpf_process_context_descriptor,
     .program_type = EBPF_PROGRAM_TYPE_PROCESS_GUID,
@@ -47,7 +47,7 @@ static const ebpf_program_type_descriptor_t _ebpf_process_program_type_descripto
 };
 
 static const ebpf_program_info_t _ebpf_process_program_info = {
-    .header = {EBPF_PROGRAM_INFORMATION_CURRENT_VERSION, EBPF_PROGRAM_INFORMATION_CURRENT_VERSION_SIZE},
+    .header = EBPF_PROGRAM_INFORMATION_HEADER,
     .program_type_descriptor = &_ebpf_process_program_type_descriptor,
     .count_of_program_type_specific_helpers = EBPF_COUNT_OF(_process_ebpf_extension_helper_function_prototype),
     .program_type_specific_helper_prototype = _process_ebpf_extension_helper_function_prototype,
@@ -55,8 +55,7 @@ static const ebpf_program_info_t _ebpf_process_program_info = {
 
 static const ebpf_program_section_info_t _ebpf_process_section_info[] = {
     {
-        .header =
-            {EBPF_PROGRAM_SECTION_INFORMATION_CURRENT_VERSION, EBPF_PROGRAM_SECTION_INFORMATION_CURRENT_VERSION_SIZE},
+        .header = EBPF_PROGRAM_SECTION_INFORMATION_HEADER,
         .section_name = (wchar_t*)L"process",
         .program_type = &EBPF_PROGRAM_TYPE_PROCESS,
         .attach_type = &EBPF_ATTACH_TYPE_PROCESS,

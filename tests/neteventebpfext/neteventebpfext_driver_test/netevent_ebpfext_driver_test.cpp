@@ -30,6 +30,22 @@ struct _DEVICE_OBJECT* _ebpf_ext_driver_device_object;
 CATCH_REGISTER_LISTENER(_watchdog)
 CATCH_REGISTER_LISTENER(cxplat_passed_test_log)
 
+TEST_CASE("program_metadata_headers", "[neteventebpfext][metadata]")
+{
+    const auto require_valid_header = [](const auto& object) {
+        REQUIRE(object.header.total_size >= object.header.size);
+        REQUIRE(object.header.total_size == sizeof(object));
+    };
+    require_valid_header(_ebpf_netevent_event_program_info);
+    REQUIRE(_ebpf_netevent_event_program_info.program_type_descriptor != nullptr);
+    require_valid_header(*_ebpf_netevent_event_program_info.program_type_descriptor);
+    REQUIRE(_ebpf_netevent_event_program_info.program_type_specific_helper_prototype != nullptr);
+    for (uint32_t i = 0; i < _ebpf_netevent_event_program_info.count_of_program_type_specific_helpers; i++) {
+        require_valid_header(_ebpf_netevent_event_program_info.program_type_specific_helper_prototype[i]);
+    }
+    require_valid_header(_ebpf_netevent_event_section_info[0]);
+}
+
 struct bpf_map* netevent_event_map;
 struct bpf_map* command_map;
 static uint32_t event_count = 0;
