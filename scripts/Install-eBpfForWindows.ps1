@@ -19,6 +19,7 @@ $installer_url = $installer_url -replace "%%VER%%", $version
 
 $knownInstallerHashes = @{
     "1.6.0" = "DBCAAF09A767BEFA9517F469713F56B26DE933B8831B39EFC304973195D2880B"
+    "1.7.0" = "9A45D8F8D1F7D2018CF48CCA33A3C59248B3883031D4B76A5FA7824FAA9DBCCF"
 }
 if (-not $ExpectedHash) {
     $ExpectedHash = $knownInstallerHashes[$version]
