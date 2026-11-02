@@ -10,9 +10,7 @@
 #include "ebpf_structs.h"
 
 static const ebpf_helper_function_prototype_t _netevent_event_ebpf_extension_helper_function_prototype[] = {
-    {.header =
-         {.version = EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION,
-          .size = EBPF_HELPER_FUNCTION_PROTOTYPE_CURRENT_VERSION_SIZE},
+    {.header = EBPF_HELPER_FUNCTION_PROTOTYPE_HEADER,
      .helper_id = EBPF_MAX_GENERAL_HELPER_FUNCTION + 1,
      .name = "bpf_netevent_push_event",
      .return_type = EBPF_RETURN_TYPE_INTEGER,
@@ -26,9 +24,7 @@ static const ebpf_ctx_descriptor_t _ebpf_netevent_program_context_descriptor = {
 };
 
 static const ebpf_program_type_descriptor_t _ebpf_program_type_netevent_guid = {
-    .header =
-        {.version = EBPF_PROGRAM_TYPE_DESCRIPTOR_CURRENT_VERSION,
-         .size = EBPF_PROGRAM_TYPE_DESCRIPTOR_CURRENT_VERSION_SIZE},
+    .header = EBPF_PROGRAM_TYPE_DESCRIPTOR_HEADER,
     .name = "netevent_monitor",
     .context_descriptor = &_ebpf_netevent_program_context_descriptor,
     .program_type = EBPF_PROGRAM_TYPE_NETEVENT_GUID,
@@ -36,8 +32,7 @@ static const ebpf_program_type_descriptor_t _ebpf_program_type_netevent_guid = {
     .is_privileged = 0};
 
 static const ebpf_program_info_t _ebpf_netevent_event_program_info = {
-    .header =
-        {.version = EBPF_PROGRAM_INFORMATION_CURRENT_VERSION, .size = EBPF_PROGRAM_INFORMATION_CURRENT_VERSION_SIZE},
+    .header = EBPF_PROGRAM_INFORMATION_HEADER,
     .program_type_descriptor = &_ebpf_program_type_netevent_guid,
     .count_of_program_type_specific_helpers = EBPF_COUNT_OF(_netevent_event_ebpf_extension_helper_function_prototype),
     .program_type_specific_helper_prototype = _netevent_event_ebpf_extension_helper_function_prototype,
@@ -46,9 +41,7 @@ static const ebpf_program_info_t _ebpf_netevent_event_program_info = {
 
 static const ebpf_program_section_info_t _ebpf_netevent_event_section_info[] = {
     {
-        .header =
-            {.version = EBPF_PROGRAM_SECTION_INFORMATION_CURRENT_VERSION,
-             .size = EBPF_PROGRAM_SECTION_INFORMATION_CURRENT_VERSION_SIZE},
+        .header = EBPF_PROGRAM_SECTION_INFORMATION_HEADER,
         .section_name = L"netevent_monitor",
         .program_type = &EBPF_PROGRAM_TYPE_NETEVENT,
         .attach_type = &EBPF_ATTACH_TYPE_NETEVENT,

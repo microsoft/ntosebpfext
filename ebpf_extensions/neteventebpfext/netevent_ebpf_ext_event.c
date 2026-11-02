@@ -191,8 +191,7 @@ _netevent_ebpf_extension_detach_provider(_In_ HANDLE nmr_binding_handle)
 // Event Hook NPI Provider.
 //
 ebpf_attach_provider_data_t _netevent_ebpf_netevent_event_hook_provider_data = {
-    .header =
-        {.version = EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION, .size = EBPF_ATTACH_PROVIDER_DATA_CURRENT_VERSION_SIZE},
+    .header = EBPF_ATTACH_PROVIDER_DATA_HEADER,
     .supported_program_type = EBPF_PROGRAM_TYPE_NETEVENT_GUID,
     .bpf_attach_type = (bpf_attach_type_t)BPF_ATTACH_TYPE_NETEVENT};
 ebpf_extension_data_t _netevent_ebpf_extension_netevent_event_hook_provider_data = {
