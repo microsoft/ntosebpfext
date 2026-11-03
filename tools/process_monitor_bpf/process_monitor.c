@@ -27,7 +27,7 @@
 struct
 {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __type(key, uint64_t); // key is pid_tgid
+    __type(key, uint32_t);
     __uint(value_size, COMMAND_SCRATCH_SIZE);
     __uint(max_entries, 1);
 } temp SEC(".maps");
@@ -108,7 +108,7 @@ inline __attribute__((always_inline)) void*
 get_scratch_space()
 {
     uint64_t current_pid_tgid_key = bpf_get_current_pid_tgid();
-    void* scratch = bpf_map_lookup_elem(&temp, &current_pid_tgid_key);
+    void* scratch = bpf_map_lookup_elem(&scratch_space, &current_pid_tgid_key);
     if (!scratch) {
         uint32_t temp_key = 0;
         // Allocate scratch space for this CPU.
