@@ -109,6 +109,9 @@ get_scratch_space()
 {
     uint64_t current_pid_tgid_key = bpf_get_current_pid_tgid();
     void* scratch = bpf_map_lookup_elem(&scratch_space, &current_pid_tgid_key);
+    if (scratch) {
+        memset(scratch, 0, COMMAND_SCRATCH_SIZE);
+    }
     if (!scratch) {
         uint32_t temp_key = 0;
         // Allocate scratch space for this CPU.
