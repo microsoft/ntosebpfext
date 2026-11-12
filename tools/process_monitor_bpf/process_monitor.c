@@ -27,7 +27,7 @@
 struct
 {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __type(key, uint32_t);
+    __type(key, uint32_t); // key is the array index (always 0).
     __uint(value_size, COMMAND_SCRATCH_SIZE);
     __uint(max_entries, 1);
 } temp SEC(".maps");
