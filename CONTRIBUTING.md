@@ -62,12 +62,12 @@ This will also allow us to better coordinate our efforts and minimize duplicated
 
 To build locally, ensure your environment is set up:
 
-1. Install Visual Studio 2022 with at least the "Desktop development with C++" and ".NET desktop development" workloads
-1. Install the .NET 8 SDK from https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+1. Install Visual Studio 2026 version 18.12 or later with at least the "Desktop development with C++" and ".NET desktop development" workloads
+1. Install the .NET 11 SDK (11.0.100 or a compatible version per `global.json`) from https://dotnet.microsoft.com/en-us/download/dotnet/11.0
 
 Then do one-time repo setup:
 
-1. Open a Visual Studio 2022 Developer Command Prompt
+1. Open a Visual Studio 2026 Developer Command Prompt
 1. cd `<root of your clone>`
 1. `powershell -file scripts\initialize_repo.ps1`
 
