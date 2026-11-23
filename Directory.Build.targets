@@ -5,11 +5,11 @@
 -->
 <Project>
    <ItemGroup Condition="'$(MSBuildProjectExtension)'=='.proj' or '$(MSBuildProjectExtension)' == '.csproj'">
-    <PackageReference Include="DotNet.ReproducibleBuilds">
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="DotNet.ReproducibleBuilds.Isolated">
+    <PackageReference Include="DotNet.ReproducibleBuilds.Isolated" Version="1.2.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
